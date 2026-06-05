@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>RobinCall 🏹</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', 'Inter', 'Georgia', serif;
+        }
+        body {
+            background: linear-gradient(135deg, #1a2a1f 0%, #0d1a0c 100%);
+            color: #e8e2c7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100dvh;
+            position: relative;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('../assets/background.webp');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 0;
+            opacity: 0.3;
+        }
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, rgba(30,40,25,0.6), rgba(10,20,8,0.9));
+            z-index: 0;
+        }
+        .container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 2em;
+            background: linear-gradient(135deg, #e8d5a3, #c4a24b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+        }
+        .status {
+            color: #b8a87a;
+            font-size: 1em;
+            margin: 15px 0;
+            min-height: 30px;
+        }
+        .btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #c4a24b;
+            cursor: pointer;
+            font-size: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto;
+            transition: all 0.3s;
+            background: rgba(196, 162, 75, 0.15);
+            color: #e8e2c7;
+        }
+        .btn:hover {
+            background: rgba(196, 162, 75, 0.35);
+            box-shadow: 0 0 30px rgba(196, 162, 75, 0.4);
+            transform: scale(1.1);
+        }
+        .btn-call { border-color: #4caf50; color: #4caf50; }
+        .btn-hangup { border-color: #f44336; color: #f44336; }
+        .btn-answer { border-color: #4caf50; color: #4caf50; }
+        .btn-reject { border-color: #f44336; color: #f44336; }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn:disabled:hover {
+            background: rgba(196, 162, 75, 0.15);
+            box-shadow: none;
+            transform: none;
+        }
+        .hidden { display: none !important; }
+        .controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .debug {
+            color: #666;
+            font-size: 0.7em;
+            margin-top: 30px;
+            word-break: break-all;
+        }
+        .ripple {
+            animation: ripple 1.5s infinite;
+        }
+        @keyframes ripple {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5); }
+            70% { box-shadow: 0 0 0 30px rgba(76, 175, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏹 RobinCall</h1>
+        <div class="status" id="status">Ожидание...</div>
+
+        <!-- Кнопка вызова (исходящий) -->
+        <button class="btn btn-call hidden" id="btn-call" title="Позвонить">📞</button>
+
+        <!-- Входящий звонок -->
+        <div class="controls hidden" id="incoming-controls">
+            <button class="btn btn-answer" id="btn-answer" title="Принять">📞</button>
+            <button class="btn btn-reject" id="btn-reject" title="Отклонить">❌</button>
+        </div>
+
+        <!-- Активный звонок -->
+        <div class="controls hidden" id="active-controls">
+            <button class="btn btn-hangup ripple" id="btn-hangup" title="Завершить">📞</button>
+        </div>
+
+        <div class="debug" id="debug"></div>
+    </div>
+
+    <iframe id="pong-frame" src="" style="display:none;" title="p2p engine"></iframe>
+
+    <script>
+        (function() {
+            // ==================== DOM ====================
+            const statusDiv = document.getElementById('status');
+            const debugDiv = document.getElementById('debug');
+            const btnCall = document.getElementById('btn-call');
+            const btnHangup = document.getElementById('btn-hangup');
+            const btnAnswer = document.getElementById('btn-answer');
+            const btnReject = document.getElementById('btn-reject');
+            const incomingControls = document.getElementById('incoming-controls');
+            const activeControls = document.getElementById('active-controls');
+            const pongFrame = document.getElementById('pong-frame');
+
+            // ==================== ICE СЕРВЕРЫ ====================
+            const iceServers = [
+                // STUN — Google (бесплатно, 80% соединений)
+                { urls: "stun:stun.l.google.com:19302" },
+                { urls: "stun:stun1.l.google.com:19302" },
+                // TURN — Metered.ca (бесплатно, если STUN не сработал)
+                {
+                    urls: "turn:openrelay.metered.ca:80",
+                    username: "openrelayproject",
+                    credential: "openrelayproject"
+                },
+                {
+                    urls: "turn:openrelay.metered.ca:443",
+                    username: "openrelayproject",
+                    credential: "openrelayproject"
+                }
+            ];
+
+            // ==================== СОСТОЯНИЕ ====================
+            let peerConnection = null;
+            let localStream = null;
+            let handshakeSecret = null;
+            let channelId = null;
+            let sessionSecret = null;
+            let isCaller = false;
+            let callActive = false;
+
+            // ==================== АУДИО ====================
+            async function getLocalStream() {
+                try {
+                    localStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        },
+                        video: false
+                    });
+                    return true;
+                } catch (e) {
+                    log('Ошибка микрофона: ' + e.message);
+                    statusDiv.textContent = '❌ Нет доступа к микрофону';
+                    return false;
+                }
+            }
+
+            // ==================== WEBRTC ====================
+            function createPeerConnection() {
+                peerConnection = new RTCPeerConnection({ iceServers });
+
+                // Добавляем локальный аудио-поток
+                if (localStream) {
+                    localStream.getTracks().forEach(track => {
+                        peerConnection.addTrack(track, localStream);
+                    });
+                }
+
+                // Получаем удалённый аудио-поток
+                peerConnection.ontrack = (event) => {
+                    log('Получен удалённый аудио');
+                    const audio = new Audio();
+                    audio.srcObject = event.streams[0];
+                    audio.play().catch(e => log('Автовоспроизведение заблокировано'));
+                };
+
+                // ICE кандидаты → отправляем через Pong
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        sendToPong({
+                            action: 'send',
+                            text: '__ICE__' + JSON.stringify(event.candidate),
+                            channelId: channelId
+                        });
+                    }
+                };
+
+                // Статус соединения
+                peerConnection.onconnectionstatechange = () => {
+                    log('Состояние: ' + peerConnection.connectionState);
+                    if (peerConnection.connectionState === 'connected') {
+                        statusDiv.textContent = '✅ Связь установлена';
+                        callActive = true;
+                    } else if (peerConnection.connectionState === 'disconnected' ||
+                        peerConnection.connectionState === 'failed') {
+                        statusDiv.textContent = '❌ Связь потеряна';
+                        hangup();
+                    }
+                };
+
+                peerConnection.oniceconnectionstatechange = () => {
+                    log('ICE: ' + peerConnection.iceConnectionState);
+                };
+            }
+
+            // ==================== ЗВОНОК ====================
+            async function startCall() {
+                if (callActive) return;
+                isCaller = true;
+                statusDiv.textContent = '📞 Вызов...';
+                btnCall.classList.add('hidden');
+                activeControls.classList.remove('hidden');
+
+                if (!await getLocalStream()) return;
+                createPeerConnection();
+
+                // Создаём offer
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                // Отправляем offer через Pong
+                sendToPong({
+                    action: 'send',
+                    text: '__OFFER__' + JSON.stringify(offer),
+                    channelId: channelId
+                });
+                log('Offer отправлен');
+            }
+
+            async function acceptCall() {
+                if (callActive) return;
+                statusDiv.textContent = '📞 Соединение...';
+                incomingControls.classList.add('hidden');
+                activeControls.classList.remove('hidden');
+
+                if (!await getLocalStream()) return;
+                createPeerConnection();
+            }
+
+            function hangup() {
+                callActive = false;
+                statusDiv.textContent = '📞 Звонок завершён';
+                activeControls.classList.add('hidden');
+                incomingControls.classList.add('hidden');
+                btnCall.classList.remove('hidden');
+
+                // Отправляем сигнал завершения
+                sendToPong({
+                    action: 'send',
+                    text: '__HANGUP__',
+                    channelId: channelId
+                });
+
+                // Закрываем соединение
+                if (peerConnection) {
+                    peerConnection.close();
+                    peerConnection = null;
+                }
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                    localStream = null;
+                }
+            }
+
+            // ==================== КОММУНИКАЦИЯ С PONG ====================
+            function sendToPong(msg) {
+                if (sessionSecret) msg.secret = sessionSecret;
+                if (channelId) msg.channelId = channelId;
+                if (handshakeSecret && msg.action === 'handshake') msg.handshake = handshakeSecret;
+                if (pongFrame.contentWindow) {
+                    pongFrame.contentWindow.postMessage(msg, '*');
+                }
+            }
+
+            window.addEventListener('message', async (event) => {
+                if (event.source !== pongFrame.contentWindow) return;
+                const data = event.data;
+
+                switch (data.type) {
+                    case 'pong-ready':
+                        handshakeSecret = data.handshake;
+                        sendToPong({ action: 'handshake' });
+                        statusDiv.textContent = '🏹 Готов к вызову';
+                        btnCall.classList.remove('hidden');
+                        break;
+
+                    case 'channel-open':
+                        channelId = data.channelId;
+                        sessionSecret = data.secret;
+                        log('Канал открыт: ' + channelId);
+                        break;
+
+                    case 'message':
+                        if (!data.text || typeof data.text !== 'string') return;
+
+                        // Входящий вызов (OFFER)
+                        if (data.text.startsWith('__OFFER__')) {
+                            if (callActive) return;
+                            const offer = JSON.parse(data.text.replace('__OFFER__', ''));
+                            statusDiv.textContent = '📞 Входящий вызов...';
+                            btnCall.classList.add('hidden');
+                            incomingControls.classList.remove('hidden');
+
+                            await acceptCall();
+                            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+
+                            const answer = await peerConnection.createAnswer();
+                            await peerConnection.setLocalDescription(answer);
+
+                            sendToPong({
+                                action: 'send',
+                                text: '__ANSWER__' + JSON.stringify(answer),
+                                channelId: channelId
+                            });
+                            log('Answer отправлен');
+                            return;
+                        }
+
+                        // Ответ на вызов (ANSWER)
+                        if (data.text.startsWith('__ANSWER__')) {
+                            if (!peerConnection) return;
+                            const answer = JSON.parse(data.text.replace('__ANSWER__', ''));
+                            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+                            log('Answer получен');
+                            return;
+                        }
+
+                        // ICE кандидат
+                        if (data.text.startsWith('__ICE__')) {
+                            if (!peerConnection) return;
+                            const candidate = JSON.parse(data.text.replace('__ICE__', ''));
+                            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                            return;
+                        }
+
+                        // Завершение звонка
+                        if (data.text === '__HANGUP__') {
+                            statusDiv.textContent = '📞 Собеседник завершил звонок';
+                            hangup();
+                            return;
+                        }
+                        break;
+                }
+            });
+
+            // ==================== КНОПКИ ====================
+            btnCall.addEventListener('click', startCall);
+            btnHangup.addEventListener('click', hangup);
+            btnAnswer.addEventListener('click', async () => {
+                await startCall(); // acceptCall уже вызван, здесь просто ждём
+            });
+            btnReject.addEventListener('click', () => {
+                sendToPong({ action: 'send', text: '__HANGUP__', channelId: channelId });
+                hangup();
+            });
+
+            // ==================== ДЕБАГ ====================
+            function log(msg) {
+                console.log('[RobinCall]', msg);
+                debugDiv.textContent += msg + '\n';
+                debugDiv.scrollTop = debugDiv.scrollHeight;
+            }
+
+            // ==================== ПАРАМЕТРЫ ИЗ URL ====================
+            function getParamsFromParent() {
+                const urlParams = new URLSearchParams(window.location.search);
+                return {
+                    id: urlParams.get('id'),
+                    key: urlParams.get('key'),
+                    secret: urlParams.get('secret'),
+                    channel: urlParams.get('channel')
+                };
+            }
+
+            // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+            async function init() {
+                const params = getParamsFromParent();
+                channelId = params.channel || params.id;
+                sessionSecret = params.secret;
+
+                const pongUrl = new URL('https://stepweather-prog.github.io/P2PPong/');
+                pongUrl.searchParams.set('v', Date.now());
+                if (params.id) pongUrl.searchParams.set('id', params.id);
+                if (params.key) pongUrl.searchParams.set('key', params.key);
+                pongFrame.src = pongUrl.toString();
+
+                statusDiv.textContent = '🏹 Пробуждение...';
+                log('Канал: ' + (channelId || 'ожидание'));
+            }
+
+            window.addEventListener('load', init);
+        })();
+    </script>
+</body>
+</html>
