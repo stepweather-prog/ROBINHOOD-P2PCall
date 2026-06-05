@@ -72,30 +72,24 @@
             min-height: 30px;
         }
         .btn {
-            width: 80px;
-            height: 80px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             border: 3px solid #c4a24b;
             cursor: pointer;
-            font-size: 35px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 20px auto;
             transition: all 0.3s;
             background: rgba(196, 162, 75, 0.15);
-            color: #e8e2c7;
+            padding: 20px;
         }
         .btn:hover {
             background: rgba(196, 162, 75, 0.35);
             box-shadow: 0 0 30px rgba(196, 162, 75, 0.4);
             transform: scale(1.1);
         }
-        .btn-call { border-color: #4caf50; color: #4caf50; }
-        .btn-hangup { border-color: #f44336; color: #f44336; }
-        .btn-answer { border-color: #4caf50; color: #4caf50; }
-        .btn-reject { border-color: #f44336; color: #f44336; }
-
         .btn:disabled {
             opacity: 0.4;
             cursor: not-allowed;
@@ -106,26 +100,32 @@
             box-shadow: none;
             transform: none;
         }
+        .btn img {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+        }
         .hidden { display: none !important; }
         .controls {
             display: flex;
-            gap: 20px;
+            gap: 30px;
             justify-content: center;
             margin-top: 20px;
+        }
+        .ripple {
+            animation: ripple 1.5s infinite;
+        }
+        @keyframes ripple {
+            0% { box-shadow: 0 0 0 0 rgba(196, 162, 75, 0.5); }
+            70% { box-shadow: 0 0 0 30px rgba(196, 162, 75, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(196, 162, 75, 0); }
         }
         .debug {
             color: #666;
             font-size: 0.7em;
             margin-top: 30px;
             word-break: break-all;
-        }
-        .ripple {
-            animation: ripple 1.5s infinite;
-        }
-        @keyframes ripple {
-            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5); }
-            70% { box-shadow: 0 0 0 30px rgba(76, 175, 80, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+            max-width: 300px;
         }
     </style>
 </head>
@@ -135,17 +135,25 @@
         <div class="status" id="status">Ожидание...</div>
 
         <!-- Кнопка вызова (исходящий) -->
-        <button class="btn btn-call hidden" id="btn-call" title="Позвонить">📞</button>
+        <button class="btn hidden" id="btn-call" title="Позвонить">
+            <img src="assets/phone-go.png" alt="Вызов">
+        </button>
 
         <!-- Входящий звонок -->
         <div class="controls hidden" id="incoming-controls">
-            <button class="btn btn-answer" id="btn-answer" title="Принять">📞</button>
-            <button class="btn btn-reject" id="btn-reject" title="Отклонить">❌</button>
+            <button class="btn" id="btn-answer" title="Принять">
+                <img src="assets/phone-go.png" alt="Принять">
+            </button>
+            <button class="btn" id="btn-reject" title="Отклонить">
+                <img src="assets/phone-stop.png" alt="Отклонить">
+            </button>
         </div>
 
         <!-- Активный звонок -->
         <div class="controls hidden" id="active-controls">
-            <button class="btn btn-hangup ripple" id="btn-hangup" title="Завершить">📞</button>
+            <button class="btn ripple" id="btn-hangup" title="Завершить">
+                <img src="assets/phone-stop.png" alt="Завершить">
+            </button>
         </div>
 
         <div class="debug" id="debug"></div>
@@ -155,7 +163,6 @@
 
     <script>
         (function() {
-            // ==================== DOM ====================
             const statusDiv = document.getElementById('status');
             const debugDiv = document.getElementById('debug');
             const btnCall = document.getElementById('btn-call');
@@ -166,12 +173,9 @@
             const activeControls = document.getElementById('active-controls');
             const pongFrame = document.getElementById('pong-frame');
 
-            // ==================== ICE СЕРВЕРЫ ====================
             const iceServers = [
-                // STUN — Google (бесплатно, 80% соединений)
                 { urls: "stun:stun.l.google.com:19302" },
                 { urls: "stun:stun1.l.google.com:19302" },
-                // TURN — Metered.ca (бесплатно, если STUN не сработал)
                 {
                     urls: "turn:openrelay.metered.ca:80",
                     username: "openrelayproject",
@@ -184,7 +188,6 @@
                 }
             ];
 
-            // ==================== СОСТОЯНИЕ ====================
             let peerConnection = null;
             let localStream = null;
             let handshakeSecret = null;
@@ -193,7 +196,6 @@
             let isCaller = false;
             let callActive = false;
 
-            // ==================== АУДИО ====================
             async function getLocalStream() {
                 try {
                     localStream = await navigator.mediaDevices.getUserMedia({
@@ -212,18 +214,15 @@
                 }
             }
 
-            // ==================== WEBRTC ====================
             function createPeerConnection() {
                 peerConnection = new RTCPeerConnection({ iceServers });
 
-                // Добавляем локальный аудио-поток
                 if (localStream) {
                     localStream.getTracks().forEach(track => {
                         peerConnection.addTrack(track, localStream);
                     });
                 }
 
-                // Получаем удалённый аудио-поток
                 peerConnection.ontrack = (event) => {
                     log('Получен удалённый аудио');
                     const audio = new Audio();
@@ -231,7 +230,6 @@
                     audio.play().catch(e => log('Автовоспроизведение заблокировано'));
                 };
 
-                // ICE кандидаты → отправляем через Pong
                 peerConnection.onicecandidate = (event) => {
                     if (event.candidate) {
                         sendToPong({
@@ -242,7 +240,6 @@
                     }
                 };
 
-                // Статус соединения
                 peerConnection.onconnectionstatechange = () => {
                     log('Состояние: ' + peerConnection.connectionState);
                     if (peerConnection.connectionState === 'connected') {
@@ -260,7 +257,6 @@
                 };
             }
 
-            // ==================== ЗВОНОК ====================
             async function startCall() {
                 if (callActive) return;
                 isCaller = true;
@@ -271,11 +267,9 @@
                 if (!await getLocalStream()) return;
                 createPeerConnection();
 
-                // Создаём offer
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
 
-                // Отправляем offer через Pong
                 sendToPong({
                     action: 'send',
                     text: '__OFFER__' + JSON.stringify(offer),
@@ -301,14 +295,12 @@
                 incomingControls.classList.add('hidden');
                 btnCall.classList.remove('hidden');
 
-                // Отправляем сигнал завершения
                 sendToPong({
                     action: 'send',
                     text: '__HANGUP__',
                     channelId: channelId
                 });
 
-                // Закрываем соединение
                 if (peerConnection) {
                     peerConnection.close();
                     peerConnection = null;
@@ -319,7 +311,6 @@
                 }
             }
 
-            // ==================== КОММУНИКАЦИЯ С PONG ====================
             function sendToPong(msg) {
                 if (sessionSecret) msg.secret = sessionSecret;
                 if (channelId) msg.channelId = channelId;
@@ -350,7 +341,6 @@
                     case 'message':
                         if (!data.text || typeof data.text !== 'string') return;
 
-                        // Входящий вызов (OFFER)
                         if (data.text.startsWith('__OFFER__')) {
                             if (callActive) return;
                             const offer = JSON.parse(data.text.replace('__OFFER__', ''));
@@ -373,7 +363,6 @@
                             return;
                         }
 
-                        // Ответ на вызов (ANSWER)
                         if (data.text.startsWith('__ANSWER__')) {
                             if (!peerConnection) return;
                             const answer = JSON.parse(data.text.replace('__ANSWER__', ''));
@@ -382,7 +371,6 @@
                             return;
                         }
 
-                        // ICE кандидат
                         if (data.text.startsWith('__ICE__')) {
                             if (!peerConnection) return;
                             const candidate = JSON.parse(data.text.replace('__ICE__', ''));
@@ -390,7 +378,6 @@
                             return;
                         }
 
-                        // Завершение звонка
                         if (data.text === '__HANGUP__') {
                             statusDiv.textContent = '📞 Собеседник завершил звонок';
                             hangup();
@@ -400,25 +387,22 @@
                 }
             });
 
-            // ==================== КНОПКИ ====================
             btnCall.addEventListener('click', startCall);
             btnHangup.addEventListener('click', hangup);
             btnAnswer.addEventListener('click', async () => {
-                await startCall(); // acceptCall уже вызван, здесь просто ждём
+                await startCall();
             });
             btnReject.addEventListener('click', () => {
                 sendToPong({ action: 'send', text: '__HANGUP__', channelId: channelId });
                 hangup();
             });
 
-            // ==================== ДЕБАГ ====================
             function log(msg) {
                 console.log('[RobinCall]', msg);
                 debugDiv.textContent += msg + '\n';
                 debugDiv.scrollTop = debugDiv.scrollHeight;
             }
 
-            // ==================== ПАРАМЕТРЫ ИЗ URL ====================
             function getParamsFromParent() {
                 const urlParams = new URLSearchParams(window.location.search);
                 return {
@@ -429,7 +413,6 @@
                 };
             }
 
-            // ==================== ИНИЦИАЛИЗАЦИЯ ====================
             async function init() {
                 const params = getParamsFromParent();
                 channelId = params.channel || params.id;
