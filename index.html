@@ -14,21 +14,9 @@
         }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', 'Inter', 'Georgia', serif; }
-        body {
-            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-            color: var(--text); display: flex; flex-direction: column; align-items: center;
-            justify-content: center; height: 100dvh; position: relative;
-        }
-        body::before {
-            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url('https://stepweather-prog.github.io/ROBINHOOD-P2P/assets/background.webp');
-            background-size: cover; background-position: center; background-repeat: no-repeat;
-            z-index: 0; opacity: 0.3;
-        }
-        body::after {
-            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 50% 50%, rgba(30,40,25,0.6), rgba(10,20,8,0.9)); z-index: 0;
-        }
+        body { background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%); color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100dvh; position: relative; }
+        body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url('https://stepweather-prog.github.io/ROBINHOOD-P2P/assets/background.webp'); background-size: cover; background-position: center; background-repeat: no-repeat; z-index: 0; opacity: 0.3; }
+        body::after { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 50%, rgba(30,40,25,0.6), rgba(10,20,8,0.9)); z-index: 0; }
         .container { position: relative; z-index: 1; text-align: center; padding: 20px; width: 100%; max-width: 400px; }
         h1 { font-size: 1.8em; background: linear-gradient(135deg, var(--accent-light), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 10px; }
         .status { color: var(--text-dim); font-size: 0.9em; margin: 10px 0; min-height: 24px; }
@@ -47,37 +35,36 @@
         .btn-invite { width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent), var(--accent)); color: #1a1f0f; border: none; border-radius: 12px; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 8px; transition: all 0.2s; }
         .btn-invite:hover { transform: translateY(-2px); }
         .btn-dark { background: #4a3a2a; color: #eee; }
-        .btn-warp { background: linear-gradient(135deg, #4b9ec4, #7bd4f0); color: #0a1018; }
         .debug { color: #555; font-size: 0.6em; margin-top: 20px; word-break: break-all; max-width: 300px; }
         .call-panel { margin-top: 10px; }
         .call-btns { display: flex; gap: 15px; justify-content: center; align-items: center; }
         .ripple { animation: ripple 1.5s infinite; }
         @keyframes ripple { 0% { box-shadow: 0 0 0 0 rgba(196,162,75,0.5); } 70% { box-shadow: 0 0 0 20px rgba(196,162,75,0); } 100% { box-shadow: 0 0 0 0 rgba(196,162,75,0); } }
-        .arrow-choice { display: flex; gap: 12px; justify-content: center; margin: 16px 0; }
-        .arrow-choice button { flex: 1; padding: 16px 12px; border-radius: 16px; border: 2px solid var(--border); cursor: pointer; transition: all 0.2s; font-size: 0.85em; font-weight: bold; }
-        .arrow-choice button:hover { transform: translateY(-3px); }
-        .arrow-sherwood { background: linear-gradient(135deg, rgba(196,162,75,0.2), rgba(30,40,25,0.9)); color: var(--text); border-color: var(--accent); }
-        .arrow-warp { background: linear-gradient(135deg, rgba(75,158,196,0.3), rgba(15,25,35,0.9)); color: #c0e8f0; border-color: #4b9ec4; }
-        .arrow-icon { font-size: 2em; display: block; margin-bottom: 8px; }
-        .arrow-desc { font-size: 0.65em; opacity: 0.7; font-weight: normal; margin-top: 4px; }
+        .toggle-switch { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.1); border-radius: 26px; border: 2px solid var(--border); transition: all 0.3s; }
+        .toggle-slider:before { content: ""; position: absolute; height: 18px; width: 18px; left: 2px; bottom: 2px; background: var(--text-dim); border-radius: 50%; transition: all 0.3s; }
+        .toggle-switch input:checked + .toggle-slider { background: #4caf50; border-color: #4caf50; }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(22px); background: white; }
+        .server-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; font-size: 0.8em; color: var(--text-dim); }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🏹 RobinCall</h1>
         <div class="status" id="status">Пробуждение...</div>
+        <div class="server-row">
+            <span>Сервер:</span>
+            <span id="server-label">Render</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="server-toggle" onchange="window._toggleServer()">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
         <div class="btn-row" id="main-btns">
             <div><button class="btn" id="btn-arrow" title="Стрела"><span style="font-size:30px;">🏹</span></button><div class="btn-label">Стрела</div></div>
             <div><button class="btn hidden" id="btn-call" title="Позвонить"><img src="assets/phone-go.png" alt="Вызов"></button><div class="btn-label hidden" id="call-label-btn">Звонок</div></div>
         </div>
-
-        <div class="modal-overlay" id="arrow-modal"><div class="modal-dialog"><h3>🏹 Выбери стрелу</h3>
-            <div class="arrow-choice">
-                <button class="arrow-sherwood" id="btn-arrow-sherwood"><span class="arrow-icon">🏕️</span>Стрела Шервуда<span class="arrow-desc">Через Render (везде)</span></button>
-                <button class="arrow-warp" id="btn-arrow-warp"><span class="arrow-icon">⚡</span>Варп-стрела<span class="arrow-desc">Через Workers (с VPN)</span></button>
-            </div>
-            <button class="btn-dark" id="btn-close-arrow" style="width:100%;">Отмена</button>
-        </div></div>
 
         <div class="modal-overlay" id="invite-modal"><div class="modal-dialog"><h3>🏹 Стрела готова!</h3><div class="code-display" id="invite-link"></div><button class="btn-invite" id="btn-share">📤 Поделиться</button><button class="btn-dark" id="btn-close-invite" style="width:100%;margin-top:5px;">Закрыть</button></div></div>
 
@@ -99,7 +86,6 @@
             const btnArrow = document.getElementById('btn-arrow');
             const btnCall = document.getElementById('btn-call');
             const callLabelBtn = document.getElementById('call-label-btn');
-            const arrowModal = document.getElementById('arrow-modal');
             const inviteModal = document.getElementById('invite-modal');
             const inviteLink = document.getElementById('invite-link');
             const btnShare = document.getElementById('btn-share');
@@ -111,6 +97,11 @@
             const callSpeaker = document.getElementById('call-speaker');
             const mainBtns = document.getElementById('main-btns');
             const pongFrame = document.getElementById('pong-frame');
+            const serverToggle = document.getElementById('server-toggle');
+            const serverLabel = document.getElementById('server-label');
+
+            const WORKERS_URL = 'https://robincall.stephanclaps-491.workers.dev';
+            let currentServer = localStorage.getItem('robinhood_server') || 'render';
 
             function getIceServers() {
                 return [
@@ -122,7 +113,6 @@
             let peerConnection = null, localStream = null, handshakeSecret = null;
             let channelId = null, sessionSecret = null, callActive = false, speakerOn = true;
             let ringtoneAudio = null, ringbackAudio = null, inviteTimer = null;
-            let currentServer = 'render';
 
             function log(msg) { console.log('[RobinCall]', msg); debugDiv.textContent += msg + '\n'; debugDiv.scrollTop = debugDiv.scrollHeight; }
             async function getLocalStream() { try { localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false }); return true; } catch (e) { statusDiv.textContent = '❌ Нет доступа к микрофону'; return false; } }
@@ -172,17 +162,22 @@
 
             function toggleSpeaker() { speakerOn = !speakerOn; callSpeaker.textContent = speakerOn ? '🔊' : '🔇'; }
 
-            btnArrow.addEventListener('click', () => { arrowModal.classList.add('active'); });
-            document.getElementById('btn-close-arrow').addEventListener('click', () => { arrowModal.classList.remove('active'); });
-            document.getElementById('btn-arrow-sherwood').addEventListener('click', () => { arrowModal.classList.remove('active'); currentServer = 'render'; createArrow(); });
-            document.getElementById('btn-arrow-warp').addEventListener('click', () => { arrowModal.classList.remove('active'); currentServer = 'workers'; createArrow(); });
+            // Тумблер сервера
+            serverToggle.checked = currentServer === 'workers';
+            serverLabel.textContent = currentServer === 'workers' ? 'Workers' : 'Render';
+            window._toggleServer = function() {
+                currentServer = serverToggle.checked ? 'workers' : 'render';
+                localStorage.setItem('robinhood_server', currentServer);
+                serverLabel.textContent = currentServer === 'workers' ? 'Workers' : 'Render';
+                statusDiv.textContent = '🌐 Сервер: ' + (currentServer === 'workers' ? 'Workers' : 'Render');
+            };
 
-            function createArrow() {
+            btnArrow.addEventListener('click', () => {
                 if (!handshakeSecret && !channelId) { statusDiv.textContent = '⏳ Ждите подключения...'; return; }
                 statusDiv.textContent = '⚒ Крафт стрелы [' + (currentServer === 'workers' ? 'Warp' : 'Шервуд') + ']...';
                 inviteModal.classList.remove('active'); sendToPong({ action: 'create' }); clearTimeout(inviteTimer);
-                inviteTimer = setTimeout(() => { if (!inviteModal.classList.contains('active') && statusDiv.textContent.includes('Крафт')) { statusDiv.textContent = '❌ Сервер не ответил. Попробуйте позже.'; } }, 30000);
-            }
+                inviteTimer = setTimeout(() => { if (!inviteModal.classList.contains('active') && statusDiv.textContent.includes('Крафт')) { statusDiv.textContent = '❌ Сервер не ответил.'; } }, 30000);
+            });
 
             btnCall.addEventListener('click', () => { if (callActive) { hangup(); return; } startCall(); });
             callEnd.addEventListener('click', hangup);
@@ -198,7 +193,7 @@
                     case 'handshake-ok':
                         statusDiv.textContent = '🏹 Тетива натянута!';
                         const urlParams = new URLSearchParams(window.location.search);
-                        if (urlParams.get('id') && urlParams.get('key')) { currentServer = urlParams.get('server') || 'render'; statusDiv.textContent = '📨 Принимаю стрелу...'; sendToPong({ action: 'accept', id: urlParams.get('id'), key: urlParams.get('key') }); }
+                        if (urlParams.get('id') && urlParams.get('key')) { currentServer = urlParams.get('server') || 'render'; serverToggle.checked = currentServer === 'workers'; serverLabel.textContent = currentServer === 'workers' ? 'Workers' : 'Render'; statusDiv.textContent = '📨 Принимаю стрелу...'; sendToPong({ action: 'accept', id: urlParams.get('id'), key: urlParams.get('key'), server: currentServer }); }
                         break;
                     case 'session-created': clearTimeout(inviteTimer); inviteLink.textContent = data.fullLink; inviteModal.classList.add('active'); mainBtns.classList.add('hidden'); statusDiv.textContent = '🏹 Стрела готова!'; navigator.clipboard.writeText(data.fullLink).catch(() => {}); break;
                     case 'channel-open': channelId = data.channelId; sessionSecret = data.secret; statusDiv.textContent = '✅ Канал открыт!'; btnCall.classList.remove('hidden'); callLabelBtn.classList.remove('hidden'); inviteModal.classList.remove('active'); mainBtns.classList.remove('hidden'); log('Канал: ' + channelId); break;
@@ -222,7 +217,9 @@
             async function init() {
                 const params = new URLSearchParams(window.location.search);
                 channelId = params.get('channel'); sessionSecret = params.get('secret');
-                currentServer = params.get('server') || 'render';
+                currentServer = params.get('server') || localStorage.getItem('robinhood_server') || 'render';
+                serverToggle.checked = currentServer === 'workers';
+                serverLabel.textContent = currentServer === 'workers' ? 'Workers' : 'Render';
                 const pongUrl = 'https://stepweather-prog.github.io/P2PPong/?v=' + Date.now();
                 if (params.get('id')) pongUrl += '&id=' + params.get('id') + '&key=' + params.get('key');
                 pongFrame.src = pongUrl; statusDiv.textContent = '🏹 Пробуждение...';
