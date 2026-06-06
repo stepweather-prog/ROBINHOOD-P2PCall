@@ -1,8 +1,10 @@
 {
   "name": "RobinCall P2P",
   "short_name": "RobinCall",
+  "description": "🏹 P2P звонки и каналы — телефон RobinHood",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0d1a0c",
   "theme_color": "#1a2a1f",
   "icons": [
