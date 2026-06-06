@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>RobinCall 🏹</title>
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/phone-go.png">
     <style>
         * {
             margin: 0;
@@ -34,7 +35,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('../assets/background.webp');
+            background-image: url('https://stepweather-prog.github.io/ROBINHOOD-P2P/assets/background.webp');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -134,12 +135,10 @@
         <h1>🏹 RobinCall</h1>
         <div class="status" id="status">Ожидание...</div>
 
-        <!-- Кнопка вызова (исходящий) -->
         <button class="btn hidden" id="btn-call" title="Позвонить">
             <img src="assets/phone-go.png" alt="Вызов">
         </button>
 
-        <!-- Входящий звонок -->
         <div class="controls hidden" id="incoming-controls">
             <button class="btn" id="btn-answer" title="Принять">
                 <img src="assets/phone-go.png" alt="Принять">
@@ -149,7 +148,6 @@
             </button>
         </div>
 
-        <!-- Активный звонок -->
         <div class="controls hidden" id="active-controls">
             <button class="btn ripple" id="btn-hangup" title="Завершить">
                 <img src="assets/phone-stop.png" alt="Завершить">
@@ -193,7 +191,6 @@
             let handshakeSecret = null;
             let channelId = null;
             let sessionSecret = null;
-            let isCaller = false;
             let callActive = false;
 
             async function getLocalStream() {
@@ -259,7 +256,6 @@
 
             async function startCall() {
                 if (callActive) return;
-                isCaller = true;
                 statusDiv.textContent = '📞 Вызов...';
                 btnCall.classList.add('hidden');
                 activeControls.classList.remove('hidden');
@@ -389,9 +385,7 @@
 
             btnCall.addEventListener('click', startCall);
             btnHangup.addEventListener('click', hangup);
-            btnAnswer.addEventListener('click', async () => {
-                await startCall();
-            });
+            btnAnswer.addEventListener('click', async () => { await startCall(); });
             btnReject.addEventListener('click', () => {
                 sendToPong({ action: 'send', text: '__HANGUP__', channelId: channelId });
                 hangup();
@@ -403,25 +397,21 @@
                 debugDiv.scrollTop = debugDiv.scrollHeight;
             }
 
-            function getParamsFromParent() {
+            function getParams() {
                 const urlParams = new URLSearchParams(window.location.search);
                 return {
-                    id: urlParams.get('id'),
-                    key: urlParams.get('key'),
-                    secret: urlParams.get('secret'),
-                    channel: urlParams.get('channel')
+                    channel: urlParams.get('channel'),
+                    secret: urlParams.get('secret')
                 };
             }
 
             async function init() {
-                const params = getParamsFromParent();
-                channelId = params.channel || params.id;
+                const params = getParams();
+                channelId = params.channel;
                 sessionSecret = params.secret;
 
                 const pongUrl = new URL('https://stepweather-prog.github.io/P2PPong/');
                 pongUrl.searchParams.set('v', Date.now());
-                if (params.id) pongUrl.searchParams.set('id', params.id);
-                if (params.key) pongUrl.searchParams.set('key', params.key);
                 pongFrame.src = pongUrl.toString();
 
                 statusDiv.textContent = '🏹 Пробуждение...';
