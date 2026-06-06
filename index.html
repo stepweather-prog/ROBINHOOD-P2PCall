@@ -39,16 +39,27 @@
         .btn img { width: 100%; height: 100%; object-fit: contain; }
         .btn-label { color: var(--text-dim); font-size: 0.65em; margin-top: 4px; text-align: center; width: 80px; }
         .hidden { display: none !important; }
-        .invite-row { margin-top: 15px; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 300; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-dialog { background: linear-gradient(145deg, #1e2a1a 0%, #0f180d 100%); padding: 24px; border-radius: 24px; width: 85%; max-width: 400px; text-align: center; border: 2px solid var(--border); max-height: 85vh; overflow-y: auto; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+        .modal-dialog h3 { color: var(--accent-light); margin: 0 0 16px; font-size: 1.2em; }
         .code-display { background: #0a1208; border: 1px solid var(--border); color: var(--accent-light); border-radius: 10px; padding: 10px; font-size: 0.7em; word-break: break-all; margin: 10px 0; text-align: center; user-select: all; font-family: monospace; }
         .btn-invite { width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent), var(--accent)); color: #1a1f0f; border: none; border-radius: 12px; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 8px; transition: all 0.2s; }
         .btn-invite:hover { transform: translateY(-2px); }
         .btn-dark { background: #4a3a2a; color: #eee; }
+        .btn-warp { background: linear-gradient(135deg, #4b9ec4, #7bd4f0); color: #0a1018; }
         .debug { color: #555; font-size: 0.6em; margin-top: 20px; word-break: break-all; max-width: 300px; }
         .call-panel { margin-top: 10px; }
         .call-btns { display: flex; gap: 15px; justify-content: center; align-items: center; }
         .ripple { animation: ripple 1.5s infinite; }
         @keyframes ripple { 0% { box-shadow: 0 0 0 0 rgba(196,162,75,0.5); } 70% { box-shadow: 0 0 0 20px rgba(196,162,75,0); } 100% { box-shadow: 0 0 0 0 rgba(196,162,75,0); } }
+        .arrow-choice { display: flex; gap: 12px; justify-content: center; margin: 16px 0; }
+        .arrow-choice button { flex: 1; padding: 16px 12px; border-radius: 16px; border: 2px solid var(--border); cursor: pointer; transition: all 0.2s; font-size: 0.85em; font-weight: bold; }
+        .arrow-choice button:hover { transform: translateY(-3px); }
+        .arrow-sherwood { background: linear-gradient(135deg, rgba(196,162,75,0.2), rgba(30,40,25,0.9)); color: var(--text); border-color: var(--accent); }
+        .arrow-warp { background: linear-gradient(135deg, rgba(75,158,196,0.3), rgba(15,25,35,0.9)); color: #c0e8f0; border-color: #4b9ec4; }
+        .arrow-icon { font-size: 2em; display: block; margin-bottom: 8px; }
+        .arrow-desc { font-size: 0.65em; opacity: 0.7; font-weight: normal; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -59,12 +70,17 @@
             <div><button class="btn" id="btn-arrow" title="Стрела"><span style="font-size:30px;">🏹</span></button><div class="btn-label">Стрела</div></div>
             <div><button class="btn hidden" id="btn-call" title="Позвонить"><img src="assets/phone-go.png" alt="Вызов"></button><div class="btn-label hidden" id="call-label-btn">Звонок</div></div>
         </div>
-        <div class="invite-row hidden" id="invite-panel">
-            <div class="status">🏹 Стрела готова!</div>
-            <div class="code-display" id="invite-link"></div>
-            <button class="btn-invite" id="btn-share">📤 Поделиться ссылкой</button>
-            <button class="btn-invite btn-dark" id="btn-close-invite">Закрыть</button>
-        </div>
+
+        <div class="modal-overlay" id="arrow-modal"><div class="modal-dialog"><h3>🏹 Выбери стрелу</h3>
+            <div class="arrow-choice">
+                <button class="arrow-sherwood" id="btn-arrow-sherwood"><span class="arrow-icon">🏕️</span>Стрела Шервуда<span class="arrow-desc">Через Render (везде)</span></button>
+                <button class="arrow-warp" id="btn-arrow-warp"><span class="arrow-icon">⚡</span>Варп-стрела<span class="arrow-desc">Через Workers (с VPN)</span></button>
+            </div>
+            <button class="btn-dark" id="btn-close-arrow" style="width:100%;">Отмена</button>
+        </div></div>
+
+        <div class="modal-overlay" id="invite-modal"><div class="modal-dialog"><h3>🏹 Стрела готова!</h3><div class="code-display" id="invite-link"></div><button class="btn-invite" id="btn-share">📤 Поделиться</button><button class="btn-dark" id="btn-close-invite" style="width:100%;margin-top:5px;">Закрыть</button></div></div>
+
         <div class="call-panel hidden" id="call-panel">
             <div class="status" id="call-status">📞 Вызов...</div>
             <div class="call-btns">
@@ -83,7 +99,8 @@
             const btnArrow = document.getElementById('btn-arrow');
             const btnCall = document.getElementById('btn-call');
             const callLabelBtn = document.getElementById('call-label-btn');
-            const invitePanel = document.getElementById('invite-panel');
+            const arrowModal = document.getElementById('arrow-modal');
+            const inviteModal = document.getElementById('invite-modal');
             const inviteLink = document.getElementById('invite-link');
             const btnShare = document.getElementById('btn-share');
             const btnCloseInvite = document.getElementById('btn-close-invite');
@@ -96,42 +113,37 @@
             const pongFrame = document.getElementById('pong-frame');
 
             function getIceServers() {
-                const servers = [
-                    { urls: "stun:stun.l.google.com:19302" },
-                    { urls: "stun:stun1.l.google.com:19302" }
+                return [
+                    { urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" },
+                    { urls: ["turn:openrelay.metered.ca:80?transport=tcp", "turn:openrelay.metered.ca:443?transport=tcp"], username: "openrelayproject", credential: "openrelayproject" }
                 ];
-                servers.push({
-                    urls: ["turn:openrelay.metered.ca:80?transport=tcp", "turn:openrelay.metered.ca:443?transport=tcp"],
-                    username: "openrelayproject",
-                    credential: "openrelayproject"
-                });
-                return servers;
             }
 
             let peerConnection = null, localStream = null, handshakeSecret = null;
             let channelId = null, sessionSecret = null, callActive = false, speakerOn = true;
             let ringtoneAudio = null, ringbackAudio = null, inviteTimer = null;
+            let currentServer = 'render';
 
             function log(msg) { console.log('[RobinCall]', msg); debugDiv.textContent += msg + '\n'; debugDiv.scrollTop = debugDiv.scrollHeight; }
-
-            async function getLocalStream() {
-                try { localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false }); return true; }
-                catch (e) { statusDiv.textContent = '❌ Нет доступа к микрофону'; return false; }
-            }
+            async function getLocalStream() { try { localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false }); return true; } catch (e) { statusDiv.textContent = '❌ Нет доступа к микрофону'; return false; } }
 
             function createPeerConn() {
-                peerConnection = new RTCPeerConnection({ iceServers: getIceServers(), iceTransportPolicy: 'all', iceCandidatePoolSize: 2 });
+                peerConnection = new RTCPeerConnection({ iceServers: getIceServers(), iceTransportPolicy: 'all' });
                 if (localStream) localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
                 peerConnection.ontrack = (e) => { const a = new Audio(); a.srcObject = e.streams[0]; a.play().catch(() => {}); };
-                peerConnection.onicecandidate = (e) => { if (e.candidate && peerConnection.remoteDescription && peerConnection.remoteDescription.type) { sendToPong({ action: 'send', text: '__ICE__' + JSON.stringify(e.candidate), channelId }); } };
+                peerConnection.onicecandidate = (e) => { if (e.candidate) { sendToPong({ action: 'send', text: '__ICE__' + JSON.stringify(e.candidate), channelId }); } };
                 peerConnection.oniceconnectionstatechange = () => {
                     if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') { callStatus.textContent = '✅ Разговор'; }
-                    if (peerConnection.iceConnectionState === 'disconnected') { setTimeout(() => { if (peerConnection && peerConnection.iceConnectionState === 'disconnected') hangup(); }, 8000); }
-                    if (peerConnection.iceConnectionState === 'failed') { peerConnection.restartIce(); setTimeout(() => { if (peerConnection && peerConnection.iceConnectionState !== 'connected' && peerConnection.iceConnectionState !== 'completed') hangup(); }, 10000); }
+                    if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') hangup();
                 };
             }
 
-            function sendToPong(msg) { if (sessionSecret) msg.secret = sessionSecret; if (channelId) msg.channelId = channelId; if (handshakeSecret && msg.action === 'handshake') msg.handshake = handshakeSecret; if (pongFrame.contentWindow) pongFrame.contentWindow.postMessage(msg, '*'); }
+            function sendToPong(msg) {
+                if (sessionSecret) msg.secret = sessionSecret; if (channelId) msg.channelId = channelId;
+                if (handshakeSecret && msg.action === 'handshake') msg.handshake = handshakeSecret;
+                msg.server = currentServer;
+                if (pongFrame.contentWindow) pongFrame.contentWindow.postMessage(msg, '*');
+            }
             function sendCallSignal(text) { sendToPong({ action: 'send', text: text, channelId }); }
 
             function playRingtone() { stopRingtone(); ringtoneAudio = new Audio('assets/sounds/melodi.mp3'); ringtoneAudio.loop = true; ringtoneAudio.volume = 0.7; ringtoneAudio.play().catch(() => {}); }
@@ -160,18 +172,23 @@
 
             function toggleSpeaker() { speakerOn = !speakerOn; callSpeaker.textContent = speakerOn ? '🔊' : '🔇'; }
 
-            btnArrow.addEventListener('click', () => {
-                if (!handshakeSecret && !channelId) { statusDiv.textContent = '⏳ Ждите подключения к серверу...'; return; }
-                statusDiv.textContent = '⚒ Крафт стрелы...'; invitePanel.classList.add('hidden');
-                sendToPong({ action: 'create' }); clearTimeout(inviteTimer);
-                inviteTimer = setTimeout(() => { if (invitePanel.classList.contains('hidden') && statusDiv.textContent === '⚒ Крафт стрелы...') { statusDiv.textContent = '❌ Сервер не ответил. Попробуйте позже.'; } }, 30000);
-            });
+            btnArrow.addEventListener('click', () => { arrowModal.classList.add('active'); });
+            document.getElementById('btn-close-arrow').addEventListener('click', () => { arrowModal.classList.remove('active'); });
+            document.getElementById('btn-arrow-sherwood').addEventListener('click', () => { arrowModal.classList.remove('active'); currentServer = 'render'; createArrow(); });
+            document.getElementById('btn-arrow-warp').addEventListener('click', () => { arrowModal.classList.remove('active'); currentServer = 'workers'; createArrow(); });
+
+            function createArrow() {
+                if (!handshakeSecret && !channelId) { statusDiv.textContent = '⏳ Ждите подключения...'; return; }
+                statusDiv.textContent = '⚒ Крафт стрелы [' + (currentServer === 'workers' ? 'Warp' : 'Шервуд') + ']...';
+                inviteModal.classList.remove('active'); sendToPong({ action: 'create' }); clearTimeout(inviteTimer);
+                inviteTimer = setTimeout(() => { if (!inviteModal.classList.contains('active') && statusDiv.textContent.includes('Крафт')) { statusDiv.textContent = '❌ Сервер не ответил. Попробуйте позже.'; } }, 30000);
+            }
 
             btnCall.addEventListener('click', () => { if (callActive) { hangup(); return; } startCall(); });
             callEnd.addEventListener('click', hangup);
             callSpeaker.addEventListener('click', toggleSpeaker);
             btnShare.addEventListener('click', () => { const link = inviteLink.textContent; if (link && navigator.share) { navigator.share({ title: 'RobinCall', url: link }).catch(() => {}); } });
-            btnCloseInvite.addEventListener('click', () => { invitePanel.classList.add('hidden'); mainBtns.classList.remove('hidden'); statusDiv.textContent = '🏹 Готов'; });
+            btnCloseInvite.addEventListener('click', () => { inviteModal.classList.remove('active'); mainBtns.classList.remove('hidden'); statusDiv.textContent = '🏹 Готов'; });
 
             window.addEventListener('message', async (event) => {
                 if (event.source !== pongFrame.contentWindow) return;
@@ -181,10 +198,10 @@
                     case 'handshake-ok':
                         statusDiv.textContent = '🏹 Тетива натянута!';
                         const urlParams = new URLSearchParams(window.location.search);
-                        if (urlParams.get('id') && urlParams.get('key')) { statusDiv.textContent = '📨 Принимаю стрелу...'; sendToPong({ action: 'accept', id: urlParams.get('id'), key: urlParams.get('key') }); }
+                        if (urlParams.get('id') && urlParams.get('key')) { currentServer = urlParams.get('server') || 'render'; statusDiv.textContent = '📨 Принимаю стрелу...'; sendToPong({ action: 'accept', id: urlParams.get('id'), key: urlParams.get('key') }); }
                         break;
-                    case 'session-created': clearTimeout(inviteTimer); inviteLink.textContent = data.fullLink; invitePanel.classList.remove('hidden'); mainBtns.classList.add('hidden'); statusDiv.textContent = '🏹 Стрела готова!'; navigator.clipboard.writeText(data.fullLink).catch(() => {}); break;
-                    case 'channel-open': channelId = data.channelId; sessionSecret = data.secret; statusDiv.textContent = '✅ Канал открыт!'; btnCall.classList.remove('hidden'); callLabelBtn.classList.remove('hidden'); invitePanel.classList.add('hidden'); mainBtns.classList.remove('hidden'); log('Канал: ' + channelId); break;
+                    case 'session-created': clearTimeout(inviteTimer); inviteLink.textContent = data.fullLink; inviteModal.classList.add('active'); mainBtns.classList.add('hidden'); statusDiv.textContent = '🏹 Стрела готова!'; navigator.clipboard.writeText(data.fullLink).catch(() => {}); break;
+                    case 'channel-open': channelId = data.channelId; sessionSecret = data.secret; statusDiv.textContent = '✅ Канал открыт!'; btnCall.classList.remove('hidden'); callLabelBtn.classList.remove('hidden'); inviteModal.classList.remove('active'); mainBtns.classList.remove('hidden'); log('Канал: ' + channelId); break;
                     case 'message':
                         if (!data.text || typeof data.text !== 'string') return;
                         if (data.text.startsWith('__OFFER__')) {
@@ -192,13 +209,7 @@
                             const offer = JSON.parse(data.text.replace('__OFFER__', ''));
                             callPanel.classList.remove('hidden'); mainBtns.classList.add('hidden');
                             callStatus.textContent = '📞 Входящий вызов...'; callAccept.classList.remove('hidden'); playRingtone();
-                            callAccept.onclick = async () => {
-                                stopRingtone(); callStatus.textContent = '📞 Соединение...'; callAccept.classList.add('hidden'); playCallStart();
-                                if (!await getLocalStream()) { hangup(); return; }
-                                createPeerConn(); await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-                                const answer = await peerConnection.createAnswer(); await peerConnection.setLocalDescription(answer);
-                                sendCallSignal('__ANSWER__' + JSON.stringify(answer)); callActive = true;
-                            };
+                            callAccept.onclick = async () => { stopRingtone(); callStatus.textContent = '📞 Соединение...'; callAccept.classList.add('hidden'); playCallStart(); if (!await getLocalStream()) { hangup(); return; } createPeerConn(); await peerConnection.setRemoteDescription(new RTCSessionDescription(offer)); const answer = await peerConnection.createAnswer(); await peerConnection.setLocalDescription(answer); sendCallSignal('__ANSWER__' + JSON.stringify(answer)); callActive = true; };
                             return;
                         }
                         if (data.text.startsWith('__ANSWER__')) { stopRingback(); callStatus.textContent = '✅ Разговор'; const answer = JSON.parse(data.text.replace('__ANSWER__', '')); if (peerConnection) peerConnection.setRemoteDescription(new RTCSessionDescription(answer)); return; }
@@ -211,6 +222,7 @@
             async function init() {
                 const params = new URLSearchParams(window.location.search);
                 channelId = params.get('channel'); sessionSecret = params.get('secret');
+                currentServer = params.get('server') || 'render';
                 const pongUrl = 'https://stepweather-prog.github.io/P2PPong/?v=' + Date.now();
                 if (params.get('id')) pongUrl += '&id=' + params.get('id') + '&key=' + params.get('key');
                 pongFrame.src = pongUrl; statusDiv.textContent = '🏹 Пробуждение...';
