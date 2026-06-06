@@ -7,7 +7,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/phone-go.png">
     <style>
-        :root, [data-theme="forest"] {
+        :root {
             --bg-primary: #1a2a1f; --bg-secondary: #0d1a0c; --accent: #c4a24b; --accent-light: #e8d5a3;
             --text: #e8e2c7; --text-dim: #b8a87a; --border: #c4a24b;
             --btn-bg: rgba(196,162,75,0.1); --btn-border: rgba(196,162,75,0.3);
@@ -58,6 +58,7 @@
             cursor: pointer; margin-top: 8px; transition: all 0.2s;
         }
         .btn-invite:hover { transform: translateY(-2px); }
+        .btn-dark { background: #4a3a2a; color: #eee; }
         .debug { color: #555; font-size: 0.6em; margin-top: 20px; word-break: break-all; max-width: 300px; }
         .call-panel { margin-top: 10px; }
         .call-btns { display: flex; gap: 15px; justify-content: center; align-items: center; }
@@ -72,9 +73,8 @@
 <body>
     <div class="container">
         <h1>🏹 RobinCall</h1>
-        <div class="status" id="status">Готов к работе</div>
+        <div class="status" id="status">Пробуждение...</div>
 
-        <!-- Основные кнопки -->
         <div class="btn-row" id="main-btns">
             <div>
                 <button class="btn" id="btn-arrow" title="Стрела"><span style="font-size:30px;">🏹</span></button>
@@ -86,14 +86,13 @@
             </div>
         </div>
 
-        <!-- Панель приглашения -->
         <div class="invite-row hidden" id="invite-panel">
+            <div class="status">🏹 Стрела готова!</div>
             <div class="code-display" id="invite-link"></div>
             <button class="btn-invite" id="btn-share">📤 Поделиться ссылкой</button>
-            <button class="btn-invite" id="btn-close-invite" style="background:#4a3a2a;margin-top:5px;">Закрыть</button>
+            <button class="btn-invite btn-dark" id="btn-close-invite">Закрыть</button>
         </div>
 
-        <!-- Панель звонка -->
         <div class="call-panel hidden" id="call-panel">
             <div class="status" id="call-status">📞 Вызов...</div>
             <div class="call-btns">
@@ -133,7 +132,7 @@
 
             let peerConnection = null, localStream = null, handshakeSecret = null;
             let channelId = null, sessionSecret = null, callActive = false, speakerOn = true;
-            let ringtoneAudio = null, ringbackAudio = null;
+            let ringtoneAudio = null, ringbackAudio = null, inviteTimer = null;
 
             function log(msg) { console.log('[RobinCall]', msg); debugDiv.textContent += msg + '\n'; debugDiv.scrollTop = debugDiv.scrollHeight; }
 
@@ -168,6 +167,7 @@
             function playCallEnd() { const a = new Audio('assets/sounds/exet.mp3'); a.volume = 0.7; a.play().catch(() => {}); }
 
             async function startCall() {
+                if (callActive) return;
                 callPanel.classList.remove('hidden'); mainBtns.classList.add('hidden');
                 callStatus.textContent = '📞 Вызов...'; callAccept.classList.add('hidden');
                 playRingback(); if (!await getLocalStream()) { hangup(); return; }
@@ -185,20 +185,23 @@
 
             function toggleSpeaker() { speakerOn = !speakerOn; callSpeaker.textContent = speakerOn ? '🔊' : '🔇'; }
 
-            // Кнопка Стрела — создать канал
             btnArrow.addEventListener('click', () => {
-                if (!handshakeSecret && !channelId) { statusDiv.textContent = '⏳ Ждите подключения...'; return; }
-                statusDiv.textContent = '⚒ Крафт стрелы...'; sendToPong({ action: 'create' });
+                if (!handshakeSecret && !channelId) { statusDiv.textContent = '⏳ Ждите подключения к серверу...'; return; }
+                statusDiv.textContent = '⚒ Крафт стрелы...'; invitePanel.classList.add('hidden');
+                sendToPong({ action: 'create' });
+                clearTimeout(inviteTimer);
+                inviteTimer = setTimeout(() => {
+                    if (invitePanel.classList.contains('hidden') && statusDiv.textContent === '⚒ Крафт стрелы...') {
+                        statusDiv.textContent = '❌ Сервер не ответил. Попробуйте позже.';
+                    }
+                }, 30000);
             });
 
-            // Кнопка Звонок
             btnCall.addEventListener('click', () => { if (callActive) { hangup(); return; } startCall(); });
             callEnd.addEventListener('click', hangup);
             callSpeaker.addEventListener('click', toggleSpeaker);
-
-            // Приглашение
             btnShare.addEventListener('click', () => { const link = inviteLink.textContent; if (link && navigator.share) { navigator.share({ title: 'RobinCall', url: link }).catch(() => {}); } });
-            btnCloseInvite.addEventListener('click', () => { invitePanel.classList.add('hidden'); mainBtns.classList.remove('hidden'); });
+            btnCloseInvite.addEventListener('click', () => { invitePanel.classList.add('hidden'); mainBtns.classList.remove('hidden'); statusDiv.textContent = '🏹 Готов'; });
 
             window.addEventListener('message', async (event) => {
                 if (event.source !== pongFrame.contentWindow) return;
@@ -208,11 +211,12 @@
                     case 'handshake-ok':
                         statusDiv.textContent = '🏹 Тетива натянута!';
                         const urlParams = new URLSearchParams(window.location.search);
-                        if (urlParams.get('id') && urlParams.get('key')) { sendToPong({ action: 'accept', id: urlParams.get('id'), key: urlParams.get('key') }); }
+                        if (urlParams.get('id') && urlParams.get('key')) { statusDiv.textContent = '📨 Принимаю стрелу...'; sendToPong({ action: 'accept', id: urlParams.get('id'), key: urlParams.get('key') }); }
                         break;
                     case 'session-created':
-                        inviteLink.textContent = data.fullLink; invitePanel.classList.remove('hidden'); mainBtns.classList.add('hidden');
-                        navigator.clipboard.writeText(data.fullLink).catch(() => {});
+                        clearTimeout(inviteTimer); inviteLink.textContent = data.fullLink;
+                        invitePanel.classList.remove('hidden'); mainBtns.classList.add('hidden');
+                        statusDiv.textContent = '🏹 Стрела готова!'; navigator.clipboard.writeText(data.fullLink).catch(() => {});
                         break;
                     case 'channel-open':
                         channelId = data.channelId; sessionSecret = data.secret;
@@ -245,7 +249,9 @@
             async function init() {
                 const params = new URLSearchParams(window.location.search);
                 channelId = params.get('channel'); sessionSecret = params.get('secret');
-                pongFrame.src = 'https://stepweather-prog.github.io/P2PPong/?v=' + Date.now() + (params.get('id') ? '&id=' + params.get('id') + '&key=' + params.get('key') : '');
+                const pongUrl = 'https://stepweather-prog.github.io/P2PPong/?v=' + Date.now();
+                if (params.get('id')) pongUrl += '&id=' + params.get('id') + '&key=' + params.get('key');
+                pongFrame.src = pongUrl;
                 statusDiv.textContent = '🏹 Пробуждение...';
             }
             window.addEventListener('load', init);
