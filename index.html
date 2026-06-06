@@ -30,69 +30,41 @@
             background: radial-gradient(circle at 50% 50%, rgba(30,40,25,0.6), rgba(10,20,8,0.9)); z-index: 0;
         }
         .container { position: relative; z-index: 1; text-align: center; padding: 20px; width: 100%; max-width: 400px; }
-        h1 {
-            font-size: 1.8em; background: linear-gradient(135deg, var(--accent-light), var(--accent));
-            -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 10px;
-        }
+        h1 { font-size: 1.8em; background: linear-gradient(135deg, var(--accent-light), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 10px; }
         .status { color: var(--text-dim); font-size: 0.9em; margin: 10px 0; min-height: 24px; }
         .btn-row { display: flex; justify-content: center; gap: 20px; margin: 15px 0; flex-wrap: wrap; }
-        .btn {
-            width: 80px; height: 80px; border-radius: 50%; cursor: pointer; display: flex;
-            align-items: center; justify-content: center; transition: all 0.3s;
-            background: var(--btn-bg); border: 2px solid var(--btn-border); padding: 16px;
-        }
+        .btn { width: 80px; height: 80px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; background: var(--btn-bg); border: 2px solid var(--btn-border); padding: 16px; }
         .btn:hover { background: rgba(196,162,75,0.35); box-shadow: 0 0 20px rgba(196,162,75,0.3); transform: scale(1.08); }
         .btn:active { transform: scale(0.95); }
         .btn img { width: 100%; height: 100%; object-fit: contain; }
         .btn-label { color: var(--text-dim); font-size: 0.65em; margin-top: 4px; text-align: center; width: 80px; }
         .hidden { display: none !important; }
         .invite-row { margin-top: 15px; }
-        .code-display {
-            background: #0a1208; border: 1px solid var(--border); color: var(--accent-light);
-            border-radius: 10px; padding: 10px; font-size: 0.7em; word-break: break-all;
-            margin: 10px 0; text-align: center; user-select: all; font-family: monospace;
-        }
-        .btn-invite {
-            width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent), var(--accent));
-            color: #1a1f0f; border: none; border-radius: 12px; font-size: 14px; font-weight: bold;
-            cursor: pointer; margin-top: 8px; transition: all 0.2s;
-        }
+        .code-display { background: #0a1208; border: 1px solid var(--border); color: var(--accent-light); border-radius: 10px; padding: 10px; font-size: 0.7em; word-break: break-all; margin: 10px 0; text-align: center; user-select: all; font-family: monospace; }
+        .btn-invite { width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent), var(--accent)); color: #1a1f0f; border: none; border-radius: 12px; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 8px; transition: all 0.2s; }
         .btn-invite:hover { transform: translateY(-2px); }
         .btn-dark { background: #4a3a2a; color: #eee; }
         .debug { color: #555; font-size: 0.6em; margin-top: 20px; word-break: break-all; max-width: 300px; }
         .call-panel { margin-top: 10px; }
         .call-btns { display: flex; gap: 15px; justify-content: center; align-items: center; }
         .ripple { animation: ripple 1.5s infinite; }
-        @keyframes ripple {
-            0% { box-shadow: 0 0 0 0 rgba(196,162,75,0.5); }
-            70% { box-shadow: 0 0 0 20px rgba(196,162,75,0); }
-            100% { box-shadow: 0 0 0 0 rgba(196,162,75,0); }
-        }
+        @keyframes ripple { 0% { box-shadow: 0 0 0 0 rgba(196,162,75,0.5); } 70% { box-shadow: 0 0 0 20px rgba(196,162,75,0); } 100% { box-shadow: 0 0 0 0 rgba(196,162,75,0); } }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🏹 RobinCall</h1>
         <div class="status" id="status">Пробуждение...</div>
-
         <div class="btn-row" id="main-btns">
-            <div>
-                <button class="btn" id="btn-arrow" title="Стрела"><span style="font-size:30px;">🏹</span></button>
-                <div class="btn-label">Стрела</div>
-            </div>
-            <div>
-                <button class="btn hidden" id="btn-call" title="Позвонить"><img src="assets/phone-go.png" alt="Вызов"></button>
-                <div class="btn-label hidden" id="call-label-btn">Звонок</div>
-            </div>
+            <div><button class="btn" id="btn-arrow" title="Стрела"><span style="font-size:30px;">🏹</span></button><div class="btn-label">Стрела</div></div>
+            <div><button class="btn hidden" id="btn-call" title="Позвонить"><img src="assets/phone-go.png" alt="Вызов"></button><div class="btn-label hidden" id="call-label-btn">Звонок</div></div>
         </div>
-
         <div class="invite-row hidden" id="invite-panel">
             <div class="status">🏹 Стрела готова!</div>
             <div class="code-display" id="invite-link"></div>
             <button class="btn-invite" id="btn-share">📤 Поделиться ссылкой</button>
             <button class="btn-invite btn-dark" id="btn-close-invite">Закрыть</button>
         </div>
-
         <div class="call-panel hidden" id="call-panel">
             <div class="status" id="call-status">📞 Вызов...</div>
             <div class="call-btns">
@@ -101,7 +73,6 @@
                 <button class="btn" id="call-speaker" style="width:50px;height:50px;font-size:22px;">🔊</button>
             </div>
         </div>
-
         <div class="debug" id="debug"></div>
     </div>
     <iframe id="pong-frame" src="" style="display:none;" title="p2p engine"></iframe>
@@ -124,11 +95,18 @@
             const mainBtns = document.getElementById('main-btns');
             const pongFrame = document.getElementById('pong-frame');
 
-            const iceServers = [
-                { urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" },
-                { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
-                { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" }
-            ];
+            function getIceServers() {
+                const servers = [
+                    { urls: "stun:stun.l.google.com:19302" },
+                    { urls: "stun:stun1.l.google.com:19302" }
+                ];
+                servers.push({
+                    urls: ["turn:openrelay.metered.ca:80?transport=tcp", "turn:openrelay.metered.ca:443?transport=tcp"],
+                    username: "openrelayproject",
+                    credential: "openrelayproject"
+                });
+                return servers;
+            }
 
             let peerConnection = null, localStream = null, handshakeSecret = null;
             let channelId = null, sessionSecret = null, callActive = false, speakerOn = true;
@@ -142,21 +120,18 @@
             }
 
             function createPeerConn() {
-                peerConnection = new RTCPeerConnection({ iceServers });
+                peerConnection = new RTCPeerConnection({ iceServers: getIceServers(), iceTransportPolicy: 'all', iceCandidatePoolSize: 2 });
                 if (localStream) localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
                 peerConnection.ontrack = (e) => { const a = new Audio(); a.srcObject = e.streams[0]; a.play().catch(() => {}); };
-                peerConnection.onicecandidate = (e) => { if (e.candidate && peerConnection.remoteDescription) { sendToPong({ action: 'send', text: '__ICE__' + JSON.stringify(e.candidate), channelId }); } };
+                peerConnection.onicecandidate = (e) => { if (e.candidate && peerConnection.remoteDescription && peerConnection.remoteDescription.type) { sendToPong({ action: 'send', text: '__ICE__' + JSON.stringify(e.candidate), channelId }); } };
                 peerConnection.oniceconnectionstatechange = () => {
                     if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') { callStatus.textContent = '✅ Разговор'; }
-                    if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') hangup();
+                    if (peerConnection.iceConnectionState === 'disconnected') { setTimeout(() => { if (peerConnection && peerConnection.iceConnectionState === 'disconnected') hangup(); }, 8000); }
+                    if (peerConnection.iceConnectionState === 'failed') { peerConnection.restartIce(); setTimeout(() => { if (peerConnection && peerConnection.iceConnectionState !== 'connected' && peerConnection.iceConnectionState !== 'completed') hangup(); }, 10000); }
                 };
             }
 
-            function sendToPong(msg) {
-                if (sessionSecret) msg.secret = sessionSecret; if (channelId) msg.channelId = channelId;
-                if (handshakeSecret && msg.action === 'handshake') msg.handshake = handshakeSecret;
-                if (pongFrame.contentWindow) pongFrame.contentWindow.postMessage(msg, '*');
-            }
+            function sendToPong(msg) { if (sessionSecret) msg.secret = sessionSecret; if (channelId) msg.channelId = channelId; if (handshakeSecret && msg.action === 'handshake') msg.handshake = handshakeSecret; if (pongFrame.contentWindow) pongFrame.contentWindow.postMessage(msg, '*'); }
             function sendCallSignal(text) { sendToPong({ action: 'send', text: text, channelId }); }
 
             function playRingtone() { stopRingtone(); ringtoneAudio = new Audio('assets/sounds/melodi.mp3'); ringtoneAudio.loop = true; ringtoneAudio.volume = 0.7; ringtoneAudio.play().catch(() => {}); }
@@ -188,13 +163,8 @@
             btnArrow.addEventListener('click', () => {
                 if (!handshakeSecret && !channelId) { statusDiv.textContent = '⏳ Ждите подключения к серверу...'; return; }
                 statusDiv.textContent = '⚒ Крафт стрелы...'; invitePanel.classList.add('hidden');
-                sendToPong({ action: 'create' });
-                clearTimeout(inviteTimer);
-                inviteTimer = setTimeout(() => {
-                    if (invitePanel.classList.contains('hidden') && statusDiv.textContent === '⚒ Крафт стрелы...') {
-                        statusDiv.textContent = '❌ Сервер не ответил. Попробуйте позже.';
-                    }
-                }, 30000);
+                sendToPong({ action: 'create' }); clearTimeout(inviteTimer);
+                inviteTimer = setTimeout(() => { if (invitePanel.classList.contains('hidden') && statusDiv.textContent === '⚒ Крафт стрелы...') { statusDiv.textContent = '❌ Сервер не ответил. Попробуйте позже.'; } }, 30000);
             });
 
             btnCall.addEventListener('click', () => { if (callActive) { hangup(); return; } startCall(); });
@@ -213,16 +183,8 @@
                         const urlParams = new URLSearchParams(window.location.search);
                         if (urlParams.get('id') && urlParams.get('key')) { statusDiv.textContent = '📨 Принимаю стрелу...'; sendToPong({ action: 'accept', id: urlParams.get('id'), key: urlParams.get('key') }); }
                         break;
-                    case 'session-created':
-                        clearTimeout(inviteTimer); inviteLink.textContent = data.fullLink;
-                        invitePanel.classList.remove('hidden'); mainBtns.classList.add('hidden');
-                        statusDiv.textContent = '🏹 Стрела готова!'; navigator.clipboard.writeText(data.fullLink).catch(() => {});
-                        break;
-                    case 'channel-open':
-                        channelId = data.channelId; sessionSecret = data.secret;
-                        statusDiv.textContent = '✅ Канал открыт!'; btnCall.classList.remove('hidden'); callLabelBtn.classList.remove('hidden');
-                        invitePanel.classList.add('hidden'); mainBtns.classList.remove('hidden'); log('Канал: ' + channelId);
-                        break;
+                    case 'session-created': clearTimeout(inviteTimer); inviteLink.textContent = data.fullLink; invitePanel.classList.remove('hidden'); mainBtns.classList.add('hidden'); statusDiv.textContent = '🏹 Стрела готова!'; navigator.clipboard.writeText(data.fullLink).catch(() => {}); break;
+                    case 'channel-open': channelId = data.channelId; sessionSecret = data.secret; statusDiv.textContent = '✅ Канал открыт!'; btnCall.classList.remove('hidden'); callLabelBtn.classList.remove('hidden'); invitePanel.classList.add('hidden'); mainBtns.classList.remove('hidden'); log('Канал: ' + channelId); break;
                     case 'message':
                         if (!data.text || typeof data.text !== 'string') return;
                         if (data.text.startsWith('__OFFER__')) {
@@ -251,8 +213,7 @@
                 channelId = params.get('channel'); sessionSecret = params.get('secret');
                 const pongUrl = 'https://stepweather-prog.github.io/P2PPong/?v=' + Date.now();
                 if (params.get('id')) pongUrl += '&id=' + params.get('id') + '&key=' + params.get('key');
-                pongFrame.src = pongUrl;
-                statusDiv.textContent = '🏹 Пробуждение...';
+                pongFrame.src = pongUrl; statusDiv.textContent = '🏹 Пробуждение...';
             }
             window.addEventListener('load', init);
         })();
