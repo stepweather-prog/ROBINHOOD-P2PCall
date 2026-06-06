@@ -6,6 +6,7 @@
     <title>RobinCall 🏹</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/phone-go.png">
+    <script src="sherwood-core.js"></script>
     <style>
         :root {
             --bg-primary: #1a2a1f; --bg-secondary: #0d1a0c; --accent: #c4a24b; --accent-light: #e8d5a3;
@@ -47,6 +48,14 @@
         .toggle-switch input:checked + .toggle-slider { background: #4caf50; border-color: #4caf50; }
         .toggle-switch input:checked + .toggle-slider:before { transform: translateX(22px); background: white; }
         .server-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; font-size: 0.8em; color: var(--text-dim); }
+        #remote-video-container { display: none; position: fixed; top: 50px; right: 10px; width: 150px; height: 200px; z-index: 500; border: 2px solid var(--border); border-radius: 12px; overflow: hidden; background: #000; }
+        #remote-video { width: 100%; height: 100%; object-fit: cover; }
+        #local-video-container { display: none; position: fixed; bottom: 80px; right: 10px; width: 100px; height: 140px; z-index: 500; border: 2px solid var(--accent); border-radius: 12px; overflow: hidden; background: #000; }
+        #local-video { width: 100%; height: 100%; object-fit: cover; }
+        .video-controls { display: none; position: fixed; bottom: 140px; right: 10px; z-index: 501; gap: 8px; }
+        .video-controls.active { display: flex; }
+        .video-btn { width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.6); border: 1px solid var(--border); color: white; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .video-btn:hover { background: rgba(0,0,0,0.8); }
     </style>
 </head>
 <body>
@@ -64,6 +73,7 @@
         <div class="btn-row" id="main-btns">
             <div><button class="btn" id="btn-arrow" title="Стрела"><span style="font-size:30px;">🏹</span></button><div class="btn-label">Стрела</div></div>
             <div><button class="btn hidden" id="btn-call" title="Позвонить"><img src="assets/phone-go.png" alt="Вызов"></button><div class="btn-label hidden" id="call-label-btn">Звонок</div></div>
+            <div><button class="btn hidden" id="btn-video" title="Видеозвонок"><span style="font-size:30px;">📹</span></button><div class="btn-label hidden" id="video-label-btn">Видео</div></div>
         </div>
 
         <div class="modal-overlay" id="invite-modal"><div class="modal-dialog"><h3>🏹 Стрела готова!</h3><div class="code-display" id="invite-link"></div><button class="btn-invite" id="btn-share">📤 Поделиться</button><button class="btn-dark" id="btn-cancel-arrow" style="width:100%;margin-top:5px;">⏹ Отмена</button><button class="btn-dark" id="btn-close-invite" style="width:100%;margin-top:5px;">Закрыть</button></div></div>
@@ -74,8 +84,17 @@
                 <button class="btn" id="call-accept" style="width:65px;height:65px;background:rgba(76,175,80,0.3);border-color:#4caf50;"><img src="assets/phone-go.png" alt="Принять"></button>
                 <button class="btn" id="call-end" style="width:65px;height:65px;background:rgba(244,67,54,0.3);border-color:#f44336;"><img src="assets/phone-stop.png" alt="Завершить"></button>
                 <button class="btn" id="call-speaker" style="width:50px;height:50px;font-size:22px;">🔊</button>
+                <button class="btn" id="call-camera" style="width:50px;height:50px;font-size:22px;">📸</button>
+                <button class="btn" id="call-mic" style="width:50px;height:50px;font-size:22px;">🎤</button>
             </div>
         </div>
+
+        <div id="remote-video-container"><video id="remote-video" autoplay playsinline></video></div>
+        <div id="local-video-container"><video id="local-video" autoplay playsinline muted></video></div>
+        <div class="video-controls" id="video-controls">
+            <button class="video-btn" id="vc-fullscreen" title="На весь экран">⛶</button>
+        </div>
+
         <div class="debug" id="debug"></div>
     </div>
     <iframe id="pong-frame" src="" style="display:none;" title="p2p engine"></iframe>
@@ -85,7 +104,9 @@
             const debugDiv = document.getElementById('debug');
             const btnArrow = document.getElementById('btn-arrow');
             const btnCall = document.getElementById('btn-call');
+            const btnVideo = document.getElementById('btn-video');
             const callLabelBtn = document.getElementById('call-label-btn');
+            const videoLabelBtn = document.getElementById('video-label-btn');
             const inviteModal = document.getElementById('invite-modal');
             const inviteLink = document.getElementById('invite-link');
             const btnShare = document.getElementById('btn-share');
@@ -96,44 +117,57 @@
             const callAccept = document.getElementById('call-accept');
             const callEnd = document.getElementById('call-end');
             const callSpeaker = document.getElementById('call-speaker');
+            const callCamera = document.getElementById('call-camera');
+            const callMic = document.getElementById('call-mic');
             const mainBtns = document.getElementById('main-btns');
             const pongFrame = document.getElementById('pong-frame');
             const serverToggle = document.getElementById('server-toggle');
             const serverLabel = document.getElementById('server-label');
+            const remoteVideo = document.getElementById('remote-video');
+            const localVideo = document.getElementById('local-video');
+            const remoteVideoContainer = document.getElementById('remote-video-container');
+            const localVideoContainer = document.getElementById('local-video-container');
+            const videoControls = document.getElementById('video-controls');
+            const vcFullscreen = document.getElementById('vc-fullscreen');
 
             const WORKERS_URL = 'https://robincall.stephanclaps-491.workers.dev';
             let currentServer = localStorage.getItem('robinhood_server') || 'render';
-            let pendingIceCandidates = [];
-            let audioPool = {};
 
-            // Переиспользование аудио
-            function getAudio(filename) { if (!audioPool[filename]) { audioPool[filename] = new Audio('assets/sounds/' + filename); audioPool[filename].volume = 0.5; } const a = audioPool[filename]; a.currentTime = 0; return a; }
+            let handshakeSecret = null;
+            let channelId = null;
+            let sessionSecret = null;
+            let inviteTimer = null;
+            let videoCallActive = false;
+            let cameraOn = true;
+            let micOn = true;
 
-            function getIceServers() {
-                return [
-                    { urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" },
-                    { urls: ["turn:openrelay.metered.ca:80?transport=tcp", "turn:openrelay.metered.ca:443?transport=tcp"], username: "openrelayproject", credential: "openrelayproject" }
-                ];
-            }
-
-            let peerConnection = null, localStream = null, handshakeSecret = null;
-            let channelId = null, sessionSecret = null, callActive = false, speakerOn = true;
-            let ringtoneAudio = null, ringbackAudio = null, inviteTimer = null;
+            // ===================== SherwoodCall =====================
+            const sherwoodCall = new SherwoodCall({
+                enableVideo: false,
+                sendSignal: function(text) {
+                    sendToPong({ action: 'send', text: text, channelId: channelId });
+                },
+                onStatus: function(status) {
+                    callStatus.textContent = status;
+                    statusDiv.textContent = status;
+                },
+                onTrack: function(stream) {
+                    if (videoCallActive) {
+                        remoteVideo.srcObject = stream;
+                        remoteVideoContainer.style.display = 'block';
+                        videoControls.classList.add('active');
+                    } else {
+                        const audio = new Audio();
+                        audio.srcObject = stream;
+                        audio.play().catch(function() {});
+                    }
+                },
+                onHangup: function() {
+                    endCallUI();
+                }
+            });
 
             function log(msg) { console.log('[RobinCall]', msg); debugDiv.textContent += msg + '\n'; debugDiv.scrollTop = debugDiv.scrollHeight; }
-            async function getLocalStream() { try { localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false }); return true; } catch (e) { statusDiv.textContent = '❌ Нет доступа к микрофону'; return false; } }
-
-            function createPeerConn() {
-                if (peerConnection) { peerConnection.close(); peerConnection = null; }
-                peerConnection = new RTCPeerConnection({ iceServers: getIceServers(), iceTransportPolicy: 'all' });
-                if (localStream) localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
-                peerConnection.ontrack = (e) => { const a = new Audio(); a.srcObject = e.streams[0]; a.play().catch(() => {}); };
-                peerConnection.onicecandidate = (e) => { if (e.candidate) { sendCallSignal('__ICE__' + JSON.stringify(e.candidate)); } };
-                peerConnection.oniceconnectionstatechange = () => {
-                    if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') { callStatus.textContent = '✅ Разговор'; }
-                    if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') hangup();
-                };
-            }
 
             function sendToPong(msg) {
                 if (sessionSecret) msg.secret = sessionSecret; if (channelId) msg.channelId = channelId;
@@ -141,46 +175,8 @@
                 msg.server = currentServer;
                 if (pongFrame.contentWindow) { pongFrame.contentWindow.postMessage(msg, '*'); }
             }
-            function sendCallSignal(text) { sendToPong({ action: 'send', text: text, channelId }); }
+            function sendCallSignal(text) { sendToPong({ action: 'send', text: text, channelId: channelId }); }
 
-            function flushIceCandidates() {
-                if (!peerConnection || !peerConnection.remoteDescription || !peerConnection.remoteDescription.type) return;
-                for (const candidateStr of pendingIceCandidates) {
-                    try {
-                        const candidate = JSON.parse(candidateStr.replace('__ICE__', ''));
-                        peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => {});
-                    } catch(e) {}
-                }
-                pendingIceCandidates = [];
-            }
-
-            function playRingtone() { stopRingtone(); ringtoneAudio = getAudio('melodi.mp3'); ringtoneAudio.loop = true; ringtoneAudio.play().catch(() => {}); }
-            function stopRingtone() { if (ringtoneAudio) { ringtoneAudio.pause(); ringtoneAudio.loop = false; ringtoneAudio = null; } }
-            function playRingback() { stopRingback(); ringbackAudio = getAudio('Welk.mp3'); ringbackAudio.loop = true; ringbackAudio.play().catch(() => {}); }
-            function stopRingback() { if (ringbackAudio) { ringbackAudio.pause(); ringbackAudio.loop = false; ringbackAudio = null; } }
-            function playCallStart() { const a = getAudio('open.mp3'); a.volume = 0.7; a.play().catch(() => {}); }
-            function playCallEnd() { const a = getAudio('exet.mp3'); a.volume = 0.7; a.play().catch(() => {}); }
-
-            async function startCall() {
-                if (callActive) return;
-                callPanel.classList.remove('hidden'); mainBtns.classList.add('hidden');
-                callStatus.textContent = '📞 Вызов...'; callAccept.classList.add('hidden');
-                playRingback(); if (!await getLocalStream()) { hangup(); return; }
-                createPeerConn(); const offer = await peerConnection.createOffer(); await peerConnection.setLocalDescription(offer);
-                sendCallSignal('__OFFER__' + JSON.stringify(offer)); callActive = true;
-            }
-
-            function hangup() {
-                callActive = false; stopRingtone(); stopRingback(); playCallEnd(); sendCallSignal('__HANGUP__');
-                if (peerConnection) { peerConnection.close(); peerConnection = null; }
-                if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
-                callPanel.classList.add('hidden'); mainBtns.classList.remove('hidden');
-                callAccept.classList.remove('hidden'); pendingIceCandidates = []; statusDiv.textContent = '📞 Звонок завершён';
-            }
-
-            function toggleSpeaker() { speakerOn = !speakerOn; callSpeaker.textContent = speakerOn ? '🔊' : '🔇'; }
-
-            // Сохранение сессии для восстановления
             function saveSession() {
                 if (channelId && sessionSecret) {
                     localStorage.setItem('robincall_channel', channelId);
@@ -199,6 +195,8 @@
                     sessionSecret = savedSecret;
                     btnCall.classList.remove('hidden');
                     callLabelBtn.classList.remove('hidden');
+                    btnVideo.classList.remove('hidden');
+                    videoLabelBtn.classList.remove('hidden');
                     statusDiv.textContent = '🔄 Канал восстановлен';
                     log('Канал: ' + channelId);
                     return true;
@@ -206,6 +204,92 @@
                 return false;
             }
 
+            // ===================== UI звонков =====================
+            function showCallPanel() {
+                callPanel.classList.remove('hidden');
+                mainBtns.classList.add('hidden');
+            }
+
+            function hideCallPanel() {
+                callPanel.classList.add('hidden');
+                mainBtns.classList.remove('hidden');
+                endVideoUI();
+            }
+
+            function endCallUI() {
+                hideCallPanel();
+                statusDiv.textContent = '📞 Звонок завершён';
+            }
+
+            function endVideoUI() {
+                videoCallActive = false;
+                remoteVideo.srcObject = null;
+                localVideo.srcObject = null;
+                remoteVideoContainer.style.display = 'none';
+                localVideoContainer.style.display = 'none';
+                videoControls.classList.remove('active');
+                callCamera.classList.add('hidden');
+                callMic.classList.add('hidden');
+                callSpeaker.classList.remove('hidden');
+            }
+
+            async function startAudioCall() {
+                if (sherwoodCall.isActive()) return;
+                sherwoodCall._enableVideo = false;
+                videoCallActive = false;
+                showCallPanel();
+                callAccept.classList.add('hidden');
+                callCamera.classList.add('hidden');
+                callMic.classList.add('hidden');
+                callSpeaker.classList.remove('hidden');
+                await sherwoodCall.start();
+            }
+
+            async function startVideoCall() {
+                if (sherwoodCall.isActive()) return;
+                sherwoodCall._enableVideo = true;
+                videoCallActive = true;
+                showCallPanel();
+                callAccept.classList.add('hidden');
+                callCamera.classList.remove('hidden');
+                callMic.classList.remove('hidden');
+                callSpeaker.classList.add('hidden');
+                await sherwoodCall.start();
+                if (sherwoodCall._localStream) {
+                    localVideo.srcObject = sherwoodCall._localStream;
+                    localVideoContainer.style.display = 'block';
+                    videoControls.classList.add('active');
+                }
+            }
+
+            function toggleSpeaker() {
+                const on = sherwoodCall.toggleSpeaker();
+                callSpeaker.textContent = on ? '🔊' : '🔇';
+            }
+
+            function toggleCamera() {
+                if (!sherwoodCall._localStream) return;
+                cameraOn = !cameraOn;
+                sherwoodCall._localStream.getVideoTracks().forEach(function(t) { t.enabled = cameraOn; });
+                callCamera.textContent = cameraOn ? '📸' : '🚫';
+            }
+
+            function toggleMic() {
+                if (!sherwoodCall._localStream) return;
+                micOn = !micOn;
+                sherwoodCall._localStream.getAudioTracks().forEach(function(t) { t.enabled = micOn; });
+                callMic.textContent = micOn ? '🎤' : '🔇';
+            }
+
+            function toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    remoteVideoContainer.requestFullscreen().catch(function() {});
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+
+            // ===================== Сервер =====================
             serverToggle.checked = currentServer === 'workers';
             serverLabel.textContent = currentServer === 'workers' ? 'Workers' : 'Render';
             window._toggleServer = function() {
@@ -215,14 +299,15 @@
                 statusDiv.textContent = '🌐 Сервер: ' + (currentServer === 'workers' ? 'Workers' : 'Render');
             };
 
-            btnArrow.addEventListener('click', () => {
+            // ===================== Кнопки =====================
+            btnArrow.addEventListener('click', function() {
                 if (!handshakeSecret && !channelId) { statusDiv.textContent = '⏳ Ждите подключения...'; return; }
                 statusDiv.textContent = '⚒ Крафт стрелы [' + (currentServer === 'workers' ? 'Warp' : 'Шервуд') + ']...';
                 inviteModal.classList.remove('active'); sendToPong({ action: 'create' }); clearTimeout(inviteTimer);
-                inviteTimer = setTimeout(() => { if (!inviteModal.classList.contains('active') && statusDiv.textContent.includes('Крафт')) { statusDiv.textContent = '❌ Сервер не ответил.'; } }, 30000);
+                inviteTimer = setTimeout(function() { if (!inviteModal.classList.contains('active') && statusDiv.textContent.includes('Крафт')) { statusDiv.textContent = '❌ Сервер не ответил.'; } }, 30000);
             });
 
-            btnCancelArrow.addEventListener('click', () => {
+            btnCancelArrow.addEventListener('click', function() {
                 sendToPong({ action: 'cancel-create' });
                 inviteModal.classList.remove('active');
                 mainBtns.classList.remove('hidden');
@@ -230,20 +315,52 @@
                 clearTimeout(inviteTimer);
             });
 
-            btnCall.addEventListener('click', () => { if (callActive) { hangup(); return; } startCall(); });
-            callEnd.addEventListener('click', hangup);
-            callSpeaker.addEventListener('click', toggleSpeaker);
-            btnShare.addEventListener('click', () => { const link = inviteLink.textContent; if (link && navigator.share) { navigator.share({ title: 'RobinCall', url: link }).catch(() => {}); } });
-            btnCloseInvite.addEventListener('click', () => { inviteModal.classList.remove('active'); mainBtns.classList.remove('hidden'); statusDiv.textContent = '🏹 Готов'; });
+            btnCall.addEventListener('click', function() { 
+                if (sherwoodCall.isActive()) { sherwoodCall.hangup(); return; } 
+                startAudioCall(); 
+            });
 
-            window.addEventListener('message', async (event) => {
+            btnVideo.addEventListener('click', function() {
+                if (sherwoodCall.isActive()) { sherwoodCall.hangup(); return; }
+                startVideoCall();
+            });
+
+            callAccept.addEventListener('click', function() {
+                sherwoodCall.accept();
+                callAccept.classList.add('hidden');
+                if (videoCallActive) {
+                    callCamera.classList.remove('hidden');
+                    callMic.classList.remove('hidden');
+                    callSpeaker.classList.add('hidden');
+                    if (sherwoodCall._localStream) {
+                        localVideo.srcObject = sherwoodCall._localStream;
+                        localVideoContainer.style.display = 'block';
+                        videoControls.classList.add('active');
+                    }
+                } else {
+                    callCamera.classList.add('hidden');
+                    callMic.classList.add('hidden');
+                    callSpeaker.classList.remove('hidden');
+                }
+            });
+
+            callEnd.addEventListener('click', function() { sherwoodCall.hangup(); });
+            callSpeaker.addEventListener('click', toggleSpeaker);
+            callCamera.addEventListener('click', toggleCamera);
+            callMic.addEventListener('click', toggleMic);
+            vcFullscreen.addEventListener('click', toggleFullscreen);
+
+            btnShare.addEventListener('click', function() { const link = inviteLink.textContent; if (link && navigator.share) { navigator.share({ title: 'RobinCall', url: link }).catch(function() {}); } });
+            btnCloseInvite.addEventListener('click', function() { inviteModal.classList.remove('active'); mainBtns.classList.remove('hidden'); statusDiv.textContent = '🏹 Готов'; });
+
+            // ===================== Обработка сообщений от Гонца =====================
+            window.addEventListener('message', async function(event) {
                 if (event.source !== pongFrame.contentWindow) return;
                 const data = event.data;
                 switch (data.type) {
                     case 'pong-ready': handshakeSecret = data.handshake; sendToPong({ action: 'handshake' }); statusDiv.textContent = '🏹 Готов'; break;
                     case 'handshake-ok':
                         statusDiv.textContent = '🏹 Тетива натянута!';
-                        // Восстановление сессии
                         if (restoreSession()) {
                             sendToPong({ action: 'restore-channels' });
                             break;
@@ -251,52 +368,69 @@
                         const urlParams = new URLSearchParams(window.location.search);
                         if (urlParams.get('id') && urlParams.get('key')) { currentServer = urlParams.get('server') || 'render'; serverToggle.checked = currentServer === 'workers'; serverLabel.textContent = currentServer === 'workers' ? 'Workers' : 'Render'; statusDiv.textContent = '📨 Принимаю стрелу...'; sendToPong({ action: 'accept', id: urlParams.get('id'), key: urlParams.get('key'), server: currentServer }); }
                         break;
-                    case 'session-created': clearTimeout(inviteTimer); inviteLink.textContent = data.fullLink; inviteModal.classList.add('active'); mainBtns.classList.add('hidden'); statusDiv.textContent = '🏹 Стрела готова!'; navigator.clipboard.writeText(data.fullLink).catch(() => {}); break;
+                    case 'session-created': clearTimeout(inviteTimer); inviteLink.textContent = data.fullLink; inviteModal.classList.add('active'); mainBtns.classList.add('hidden'); statusDiv.textContent = '🏹 Стрела готова!'; navigator.clipboard.writeText(data.fullLink).catch(function() {}); break;
                     case 'channel-open': 
                         channelId = data.channelId; sessionSecret = data.secret; 
-                        statusDiv.textContent = '✅ Канал открыт!'; btnCall.classList.remove('hidden'); callLabelBtn.classList.remove('hidden'); inviteModal.classList.remove('active'); mainBtns.classList.remove('hidden'); 
+                        statusDiv.textContent = '✅ Канал открыт!'; btnCall.classList.remove('hidden'); callLabelBtn.classList.remove('hidden'); btnVideo.classList.remove('hidden'); videoLabelBtn.classList.remove('hidden'); inviteModal.classList.remove('active'); mainBtns.classList.remove('hidden'); 
                         saveSession(); log('Канал: ' + channelId); 
                         break;
                     case 'channel-restored':
                         channelId = data.channelId; sessionSecret = data.secret;
-                        btnCall.classList.remove('hidden'); callLabelBtn.classList.remove('hidden');
+                        btnCall.classList.remove('hidden'); callLabelBtn.classList.remove('hidden'); btnVideo.classList.remove('hidden'); videoLabelBtn.classList.remove('hidden');
                         saveSession(); statusDiv.textContent = '🔄 Канал восстановлен'; log('Восстановлен: ' + channelId);
                         break;
                     case 'restored-channels':
                         if (data.channels && data.channels.length > 0) {
                             const ch = data.channels[0];
                             channelId = ch.channelId; sessionSecret = ch.secret;
-                            btnCall.classList.remove('hidden'); callLabelBtn.classList.remove('hidden');
+                            btnCall.classList.remove('hidden'); callLabelBtn.classList.remove('hidden'); btnVideo.classList.remove('hidden'); videoLabelBtn.classList.remove('hidden');
                             saveSession(); statusDiv.textContent = '🔄 Канал восстановлен (' + data.channels.length + ')';
                         }
                         break;
                     case 'message':
                         if (!data.text || typeof data.text !== 'string') return;
                         if (data.text.startsWith('__OFFER__')) {
-                            if (callActive) return;
                             const offer = JSON.parse(data.text.replace('__OFFER__', ''));
-                            callPanel.classList.remove('hidden'); mainBtns.classList.add('hidden');
-                            callStatus.textContent = '📞 Входящий вызов...'; callAccept.classList.remove('hidden'); playRingtone();
-                            callAccept.onclick = async () => { stopRingtone(); callStatus.textContent = '📞 Соединение...'; callAccept.classList.add('hidden'); playCallStart(); if (!await getLocalStream()) { hangup(); return; } createPeerConn(); await peerConnection.setRemoteDescription(new RTCSessionDescription(offer)); const answer = await peerConnection.createAnswer(); await peerConnection.setLocalDescription(answer); sendCallSignal('__ANSWER__' + JSON.stringify(answer)); callActive = true; flushIceCandidates(); };
+                            videoCallActive = false;
+                            const accepted = sherwoodCall.handleOffer(offer);
+                            if (accepted) {
+                                showCallPanel();
+                                callAccept.classList.remove('hidden');
+                                callCamera.classList.add('hidden');
+                                callMic.classList.add('hidden');
+                                callSpeaker.classList.add('hidden');
+                            }
                             return;
                         }
-                        if (data.text.startsWith('__ANSWER__')) { stopRingback(); callStatus.textContent = '✅ Разговор'; const answer = JSON.parse(data.text.replace('__ANSWER__', '')); if (peerConnection) { peerConnection.setRemoteDescription(new RTCSessionDescription(answer)).then(() => flushIceCandidates()); } return; }
-                        if (data.text.startsWith('__ICE__')) { 
-                            pendingIceCandidates.push(data.text);
-                            flushIceCandidates();
+                        if (data.text.startsWith('__ANSWER__')) {
+                            const answer = JSON.parse(data.text.replace('__ANSWER__', ''));
+                            sherwoodCall.handleAnswer(answer);
+                            return;
+                        }
+                        if (data.text.startsWith('__ICE__')) {
+                            sherwoodCall.addIceCandidate(data.text);
+                            return;
+                        }
+                        if (data.text === '__HANGUP__') { 
+                            if (sherwoodCall.isActive()) { 
+                                sherwoodCall.hangup(); 
+                                statusDiv.textContent = '📞 Собеседник завершил звонок'; 
+                            } else { 
+                                SherwoodAudio.stopRingtone(); 
+                                hideCallPanel(); 
+                                statusDiv.textContent = '📞 Вызов отменён'; 
+                            } 
                             return; 
                         }
-                        if (data.text === '__HANGUP__') { if (callActive) { hangup(); statusDiv.textContent = '📞 Собеседник завершил звонок'; } else { stopRingtone(); callPanel.classList.add('hidden'); mainBtns.classList.remove('hidden'); statusDiv.textContent = '📞 Вызов отменён'; } return; }
                         break;
                 }
             });
 
-            // Очистка при уходе
-            window.addEventListener('beforeunload', () => {
-                if (callActive) { sendCallSignal('__HANGUP__'); }
-                stopRingtone(); stopRingback();
-                if (peerConnection) { peerConnection.close(); }
-                if (localStream) { localStream.getTracks().forEach(t => t.stop()); }
+            window.addEventListener('beforeunload', function() {
+                if (sherwoodCall.isActive()) { sendCallSignal('__HANGUP__'); }
+                SherwoodAudio.stopRingtone(); SherwoodAudio.stopRingback();
+                if (sherwoodCall._peerConnection) { sherwoodCall._peerConnection.close(); }
+                if (sherwoodCall._localStream) { sherwoodCall._localStream.getTracks().forEach(function(t) { t.stop(); }); }
             });
 
             async function init() {
@@ -306,7 +440,6 @@
                 serverToggle.checked = currentServer === 'workers';
                 serverLabel.textContent = currentServer === 'workers' ? 'Workers' : 'Render';
                 
-                // Восстановление из localStorage если нет в URL
                 if (!channelId || !sessionSecret) {
                     const savedChannel = localStorage.getItem('robincall_channel');
                     const savedSecret = localStorage.getItem('robincall_secret');
