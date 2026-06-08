@@ -6,414 +6,200 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>RobinCall</title>
+    <title>RobinCall v3.2-sec</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/avatars/001-.png">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; media-src 'self' blob:; connect-src * blob:; img-src 'self' data: blob:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; media-src 'self' blob:; connect-src 'self' https://p2ppong.onrender.com https://robincall.stephanclaps-491.workers.dev https://stepweather-prog.github.io blob:; img-src 'self' data: blob:;">
     <style>
-        :root {
-            --bg-primary: #1a2a1f;
-            --bg-secondary: #0d1a0c;
-            --accent: #c4a24b;
-            --accent-light: #e8d5a3;
-            --accent-glow: rgba(196,162,75,0.5);
-            --text: #e8e2c7;
-            --text-bright: #f5e6b8;
-            --text-dim: #b8a87a;
-            --border: #c4a24b;
-            --btn-bg: rgba(196,162,75,0.1);
-            --btn-border: rgba(196,162,75,0.3);
-            --btn-hover: rgba(196,162,75,0.25);
-            --sheet-bg: linear-gradient(145deg, #1e2a1a 0%, #0f180d 100%);
-            --input-bg: rgba(20,30,18,0.9);
-            --robin-bg: rgba(50,70,40,0.9);
-            --robin-accent: #e8c97a;
-        }
+        :root { --bg-primary: #1a2a1f; --bg-secondary: #0d1a0c; --accent: #c4a24b; --accent-light: #e8d5a3; --accent-glow: rgba(196,162,75,0.5); --text: #e8e2c7; --text-bright: #f5e6b8; --text-dim: #b8a87a; --border: #c4a24b; --btn-bg: rgba(196,162,75,0.1); --btn-border: rgba(196,162,75,0.3); --btn-hover: rgba(196,162,75,0.25); --sheet-bg: linear-gradient(145deg, #1e2a1a 0%, #0f180d 100%); --input-bg: rgba(20,30,18,0.9); --robin-bg: rgba(50,70,40,0.9); --robin-accent: #e8c97a; }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-        html,body { margin:0; padding:0; height:100%; overflow:hidden; -webkit-text-size-adjust:100%; font-family:'Segoe UI','Inter','Georgia',serif; }
-        body {
-            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-            color: var(--text);
-            display:flex; flex-direction:column;
-            height:100vh; height:100dvh; position:relative;
-        }
-        body::before {
-            content:""; position:fixed; top:0; left:0; width:100%; height:100%;
-            background-image:url('assets/background.webp');
-            background-size:cover; background-position:center; background-repeat:no-repeat;
-            z-index:0; opacity:0.35;
-        }
-        body::after {
-            content:""; position:fixed; top:0; left:0; width:100%; height:100%;
-            background:radial-gradient(circle at 50% 50%, rgba(30,40,25,0.6), rgba(10,20,8,0.9));
-            z-index:0;
-        }
-
-        .header {
-            background:linear-gradient(135deg, rgba(25,35,20,0.96), rgba(15,25,12,0.98));
-            border-bottom:2px solid var(--border);
-            backdrop-filter:blur(8px);
-            z-index:10;
-            padding:8px 12px;
-            display:flex; flex-direction:column; gap:4px;
-            box-shadow:0 4px 20px rgba(0,0,0,0.3);
-        }
+        html,body { height:100%; overflow:hidden; font-family:'Segoe UI','Inter','Georgia',serif; }
+        body { background:linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%); color:var(--text); display:flex; flex-direction:column; height:100dvh; position:relative; }
+        body::before { content:""; position:fixed; top:0; left:0; width:100%; height:100%; background-image:url('assets/background.webp'); background-size:cover; background-position:center; background-repeat:no-repeat; z-index:0; opacity:0.35; }
+        body::after { content:""; position:fixed; top:0; left:0; width:100%; height:100%; background:radial-gradient(circle at 50% 50%, rgba(30,40,25,0.6), rgba(10,20,8,0.9)); z-index:0; }
+        .header { background:linear-gradient(135deg, rgba(25,35,20,0.96), rgba(15,25,12,0.98)); border-bottom:2px solid var(--border); backdrop-filter:blur(8px); z-index:10; padding:8px 12px; display:flex; flex-direction:column; gap:4px; }
         .header-row-1 { display:flex; align-items:center; gap:8px; }
-        .header-title-text {
-            font-size:1.2em; font-weight:bold;
-            background:linear-gradient(135deg, var(--accent-light), var(--accent));
-            -webkit-background-clip:text; background-clip:text; color:transparent;
-        }
-        .header-shield { font-size:1em; filter:drop-shadow(0 0 3px var(--accent-glow)); }
-        .header-version { font-size:0.6em; color:var(--text-dim); margin-left:auto; }
+        .header-title { font-size:1.1em; font-weight:bold; background:linear-gradient(135deg, var(--accent-light), var(--accent)); -webkit-background-clip:text; background-clip:text; color:transparent; }
         .connection-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; }
         .connection-dot.online { background:#4caf50; box-shadow:0 0 6px #4caf50; }
         .connection-dot.offline { background:#f44336; }
         .connection-dot.checking { background:#ff9800; animation:pulse 1s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        
         .header-row-2 { display:flex; justify-content:space-around; align-items:center; }
-        .header-btn {
-            width:42px; height:42px;
-            display:flex; align-items:center; justify-content:center;
-            cursor:pointer; border-radius:10px;
-            background:var(--btn-bg); border:1px solid var(--btn-border);
-            transition:all 0.2s;
-        }
-        .header-btn:hover { background:var(--btn-hover); transform:scale(1.05); border-color:var(--accent); }
+        .header-btn { width:40px; height:40px; display:flex; align-items:center; justify-content:center; cursor:pointer; border-radius:10px; background:var(--btn-bg); border:1px solid var(--btn-border); transition:all 0.2s; }
+        .header-btn:hover { background:var(--btn-hover); }
         .header-btn img { width:100%; height:100%; object-fit:contain; padding:5px; }
-        .header-label { font-size:0.5em; color:var(--text-dim); text-align:center; width:42px; cursor:pointer; font-weight:bold; }
-        .header-avatar { width:30px; height:30px; border-radius:50%; object-fit:cover; border:2px solid var(--border); }
-
-        .main-area {
-            flex:1; display:flex; flex-direction:column;
-            align-items:center; justify-content:center;
-            position:relative; z-index:1; padding:15px; gap:12px;
-        }
-
-        .robin-row {
-            background:var(--robin-bg); border-left:3px solid var(--robin-accent);
-            border-radius:14px; padding:10px 14px;
-            display:flex; align-items:center; gap:10px;
-            max-width:90%; box-shadow:0 2px 12px rgba(0,0,0,0.2);
-            backdrop-filter:blur(8px);
-        }
-        .robin-avatar { width:42px; height:42px; border-radius:50%; border:2px solid var(--robin-accent); object-fit:cover; }
+        .header-label { font-size:0.5em; color:var(--text-dim); text-align:center; width:40px; }
+        .header-avatar { width:28px; height:28px; border-radius:50%; object-fit:cover; border:2px solid var(--border); }
+        .main-area { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; z-index:1; padding:15px; gap:10px; }
+        .robin-row { background:var(--robin-bg); border-left:3px solid var(--robin-accent); border-radius:14px; padding:10px 14px; display:flex; align-items:center; gap:10px; max-width:90%; }
+        .robin-avatar { width:40px; height:40px; border-radius:50%; border:2px solid var(--robin-accent); object-fit:cover; }
         .robin-text { font-weight:700; font-size:0.8em; color:var(--text-bright); }
-
-        .status-text { font-size:0.9em; color:var(--accent-light); text-align:center; min-height:22px; }
+        .status-text { font-size:0.9em; color:var(--accent-light); text-align:center; }
         .call-timer { font-size:1.4em; font-weight:bold; color:#4caf50; font-family:monospace; }
-        .session-id { font-family:monospace; font-size:0.6em; color:var(--text-dim); background:rgba(0,0,0,0.3); padding:6px 10px; border-radius:8px; word-break:break-all; }
-
-        .btn-round {
-            width:75px; height:75px; border-radius:50%;
-            border:3px solid var(--border); cursor:pointer;
-            display:flex; align-items:center; justify-content:center;
-            transition:all 0.3s; background:var(--btn-bg);
-        }
+        .btn-round { width:75px; height:75px; border-radius:50%; border:3px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.3s; background:var(--btn-bg); }
         .btn-round:hover { background:var(--btn-hover); box-shadow:0 0 30px var(--accent-glow); transform:scale(1.08); }
-        .btn-round:active { transform:scale(0.95); }
         .btn-round img { width:100%; height:100%; object-fit:contain; padding:12px; }
         .btn-call { border-color:#4caf50; }
         .btn-hangup { border-color:#f44336; background:rgba(244,67,54,0.2); }
-
-        .btn-main {
-            width:85px; height:85px; border-radius:50%;
-            border:3px solid var(--accent); cursor:pointer;
-            background:var(--btn-bg); transition:all 0.3s;
-            display:flex; align-items:center; justify-content:center;
-        }
-        .btn-main:hover { background:var(--btn-hover); box-shadow:0 0 35px var(--accent-glow); transform:scale(1.1); }
+        .btn-main { width:85px; height:85px; border-radius:50%; border:3px solid var(--accent); cursor:pointer; background:var(--btn-bg); display:flex; align-items:center; justify-content:center; }
         .btn-main img { width:100%; height:100%; object-fit:contain; padding:14px; }
-
-        .hidden { display:none !important; }
+        .hidden { display:none!important; }
         .controls-row { display:flex; gap:20px; align-items:center; justify-content:center; }
-
-        .input-row {
-            display:flex; gap:8px; align-items:center;
-            background:var(--input-bg); border:1px solid var(--border);
-            border-radius:12px; padding:5px; max-width:90%;
-        }
-        .input-row input {
-            flex:1; background:transparent; border:none;
-            color:var(--text); font-size:13px; padding:10px; outline:none; font-family:monospace;
-        }
-        .input-row button {
-            padding:8px 12px; border-radius:8px; border:1px solid var(--border);
-            background:var(--btn-bg); color:var(--text); cursor:pointer;
-            font-size:11px; font-weight:bold; white-space:nowrap;
-        }
-
+        .input-row { display:flex; gap:8px; align-items:center; background:var(--input-bg); border:1px solid var(--border); border-radius:12px; padding:5px; max-width:90%; }
+        .input-row input { flex:1; background:transparent; border:none; color:var(--text); font-size:13px; padding:10px; outline:none; font-family:monospace; }
+        .input-row button { padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--btn-bg); color:var(--text); cursor:pointer; font-size:11px; font-weight:bold; }
         .server-row { display:flex; gap:8px; align-items:center; justify-content:center; font-size:0.6em; color:var(--text-dim); }
-        .server-btn {
-            padding:4px 10px; border-radius:8px; border:1px solid var(--btn-border);
-            background:var(--btn-bg); color:var(--text); cursor:pointer; font-size:11px;
-        }
+        .server-btn { padding:4px 10px; border-radius:8px; border:1px solid var(--btn-border); background:var(--btn-bg); color:var(--text); cursor:pointer; font-size:11px; }
         .server-btn.active { border-color:#4caf50; background:rgba(76,175,80,0.15); color:#4caf50; }
-
-        .modal-overlay {
-            display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-            background:rgba(0,0,0,0.85); backdrop-filter:blur(8px);
-            z-index:300; justify-content:center; align-items:center;
-        }
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:300; justify-content:center; align-items:center; }
         .modal-overlay.active { display:flex; }
-        .modal-dialog {
-            background:var(--sheet-bg); padding:20px; border-radius:20px;
-            width:85%; max-width:360px; text-align:center;
-            border:2px solid var(--border); box-shadow:0 12px 40px rgba(0,0,0,0.5);
-        }
+        .modal-dialog { background:var(--sheet-bg); padding:20px; border-radius:20px; width:85%; max-width:360px; text-align:center; border:2px solid var(--border); }
         .modal-dialog h3 { color:var(--accent-light); margin:0 0 12px; }
         .modal-dialog button { width:100%; padding:10px; margin-top:6px; border:none; border-radius:10px; font-size:13px; font-weight:bold; cursor:pointer; }
         .btn-primary { background:linear-gradient(135deg, var(--accent), #b8903a); color:#1a1f0f; }
         .btn-dark { background:#4a3a2a; color:#eee; }
-        .code-display {
-            background:#0a1208; border:1px solid var(--border);
-            color:var(--accent-light); border-radius:10px; padding:10px;
-            font-size:0.7em; word-break:break-all; margin:12px 0; font-family:monospace; user-select:all;
-        }
-
-        .bottom-bar {
-            background:linear-gradient(135deg, rgba(25,35,20,0.96), rgba(15,25,12,0.98));
-            border-top:1px solid var(--border); backdrop-filter:blur(8px);
-            z-index:10; padding:8px 12px;
-            padding-bottom:calc(8px + env(safe-area-inset-bottom, 0px));
-            display:flex; gap:8px; align-items:center; justify-content:center;
-        }
-        .bottom-btn {
-            width:38px; height:38px; border-radius:10px;
-            border:1px solid var(--btn-border); background:var(--btn-bg);
-            color:var(--text); cursor:pointer; font-size:16px;
-            display:flex; align-items:center; justify-content:center; transition:all 0.2s;
-        }
-        .bottom-btn:hover { background:var(--btn-hover); border-color:var(--accent); }
+        .code-display { background:#0a1208; border:1px solid var(--border); color:var(--accent-light); border-radius:10px; padding:10px; font-size:0.7em; word-break:break-all; margin:12px 0; font-family:monospace; user-select:all; }
+        .bottom-bar { background:linear-gradient(135deg, rgba(25,35,20,0.96), rgba(15,25,12,0.98)); border-top:1px solid var(--border); backdrop-filter:blur(8px); z-index:10; padding:8px 12px; padding-bottom:calc(8px + env(safe-area-inset-bottom, 0px)); display:flex; gap:8px; align-items:center; justify-content:center; }
+        .bottom-btn { width:38px; height:38px; border-radius:10px; border:1px solid var(--btn-border); background:var(--btn-bg); color:var(--text); cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; }
         .bottom-btn img { width:100%; height:100%; object-fit:contain; padding:5px; }
-
         .debug-text { color:#555; font-size:0.5em; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-row-1">
-            <span class="header-title-text">RobinCall</span>
-            <span class="header-shield">🏹</span>
-            <span style="flex:1;"></span>
-            <span class="connection-dot checking" id="connection-dot"></span>
-            <span style="font-size:0.6em;color:var(--text-dim);" id="connection-label">Проверка...</span>
-            <span class="header-version">v3.2</span>
-        </div>
-        <div class="header-row-2">
-            <div class="header-btn" title="Аватар">
-                <img src="assets/avatars/001-.png" class="header-avatar" alt="avatar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span style="display:none;font-size:20px;">🏹</span>
-            </div>
-            <div class="header-btn" id="btn-arrow-create" title="Создать стрелу">
-                <img src="assets/3.png" alt="arrow" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span style="display:none;font-size:20px;">🏹</span>
-            </div>
-            <div class="header-btn" id="btn-call-main" title="Позвонить">
-                <img src="assets/phone-go.png" alt="call" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span style="display:none;font-size:20px;">📞</span>
-            </div>
-            <div class="header-btn" id="btn-hangup-main" title="Завершить">
-                <img src="assets/phone-stop.png" alt="hangup" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span style="display:none;font-size:20px;">📞</span>
-            </div>
-            <div class="header-btn" id="btn-clear-reset" title="Новая сессия">
-                <img src="assets/6.png" alt="clear" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span style="display:none;font-size:20px;">🔄</span>
-            </div>
-        </div>
-        <div style="display:flex;justify-content:space-around;">
-            <span class="header-label">Аватар</span>
-            <span class="header-label">Стрела</span>
-            <span class="header-label">Звонок</span>
-            <span class="header-label">Сброс</span>
-            <span class="header-label">Новая</span>
-        </div>
+<div class="header">
+    <div class="header-row-1">
+        <span class="header-title">RobinCall</span><span style="flex:1;"></span>
+        <span class="connection-dot checking" id="connection-dot"></span>
+        <span style="font-size:0.6em;color:var(--text-dim);" id="connection-label">Проверка...</span>
     </div>
-
-    <div class="main-area" id="main-area">
-        <div class="robin-row">
-            <img src="assets/avatars/231-icon-11433690.png" class="robin-avatar" alt="Robin" onerror="this.src='assets/avatars/001-.png';">
-            <div>
-                <div style="font-weight:900;color:var(--text-bright);font-size:0.85em;">Robin Hood</div>
-                <div class="robin-text" id="robin-message">Колчан готов!</div>
-            </div>
-        </div>
-
-        <div class="status-text" id="call-status">🏹 Создайте стрелу</div>
-        <div class="call-timer hidden" id="call-timer">00:00</div>
-        <div class="session-id hidden" id="session-id-display"></div>
-
-        <div class="server-row">
-            <span>Сервер:</span>
-            <button class="server-btn active" id="btn-server-render">🌐 Render</button>
-            <button class="server-btn" id="btn-server-workers">⚡ Workers</button>
-        </div>
-
-        <button class="btn-main hidden" id="btn-main-action" title="Создать стрелу">
-            <img src="assets/3.png" alt="arrow" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-            <span style="display:none;font-size:30px;">🏹</span>
-        </button>
-
-        <div class="controls-row hidden" id="incoming-row">
-            <button class="btn-round btn-call" id="btn-answer">
-                <img src="assets/phone-go.png" alt="accept" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span style="display:none;font-size:28px;">📞</span>
-            </button>
-            <button class="btn-round btn-hangup" id="btn-reject">
-                <img src="assets/phone-stop.png" alt="reject" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span style="display:none;font-size:28px;">✕</span>
-            </button>
-        </div>
-
-        <div class="controls-row hidden" id="active-row">
-            <button class="btn-round btn-hangup" id="btn-end-call">
-                <img src="assets/phone-stop.png" alt="end" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span style="display:none;font-size:28px;">📞</span>
-            </button>
-        </div>
-
-        <div class="controls-row hidden" id="audio-controls" style="gap:12px;">
-            <button class="bottom-btn" id="btn-mic" style="width:44px;height:44px;font-size:20px;">🎤</button>
-            <button class="bottom-btn" id="btn-speaker" style="width:44px;height:44px;font-size:20px;">🔊</button>
-        </div>
-
-        <div class="input-row" id="join-row">
-            <input type="text" id="join-input" placeholder="ID колчана..." autocomplete="off">
-            <button id="btn-join">🔗 Принять</button>
-        </div>
+    <div class="header-row-2">
+        <div class="header-btn"><img src="assets/avatars/001-.png" class="header-avatar" alt="avatar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">🏹</span></div>
+        <div class="header-btn" id="btn-arrow-create"><img src="assets/3.png" alt="arrow" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">🏹</span></div>
+        <div class="header-btn" id="btn-call-main"><img src="assets/phone-go.png" alt="call" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">📞</span></div>
+        <div class="header-btn" id="btn-hangup-main"><img src="assets/phone-stop.png" alt="hangup" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">📞</span></div>
+        <div class="header-btn" id="btn-clear-reset"><img src="assets/6.png" alt="clear" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">🔄</span></div>
     </div>
-
-    <div class="modal-overlay" id="ref-modal">
-        <div class="modal-dialog">
-            <h3>🏹 Стрела готова!</h3>
-            <div class="code-display" id="ref-link-display"></div>
-            <button class="btn-primary" id="btn-copy-link-modal">📋 Копировать</button>
-            <button class="btn-primary" id="btn-share-link">📤 Поделиться</button>
-            <button class="btn-dark" id="btn-close-modal">Закрыть</button>
-        </div>
+    <div style="display:flex;justify-content:space-around;"><span class="header-label">Аватар</span><span class="header-label">Стрела</span><span class="header-label">Звонок</span><span class="header-label">Сброс</span><span class="header-label">Новая</span></div>
+</div>
+<div class="main-area">
+    <div class="robin-row">
+        <img src="assets/avatars/231-icon-11433690.png" class="robin-avatar" alt="Robin" onerror="this.src='assets/avatars/001-.png';">
+        <div><div style="font-weight:900;font-size:0.85em;">Robin Hood</div><div class="robin-text" id="robin-message">Колчан готов!</div></div>
     </div>
-
-    <div class="bottom-bar">
-        <button class="bottom-btn" id="btn-copy-link">
-            <img src="assets/1.png" alt="copy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-            <span style="display:none;">📋</span>
-        </button>
-        <button class="bottom-btn" id="btn-share">📤</button>
-        <button class="bottom-btn" id="btn-check-server">🔄</button>
-        <span style="flex:1;"></span>
-        <span class="debug-text" id="debug-text"></span>
+    <div class="status-text" id="call-status">🏹 Создайте стрелу</div>
+    <div class="call-timer hidden" id="call-timer">00:00</div>
+    <div class="server-row"><span>Сервер:</span><button class="server-btn active" id="btn-server-render">🌐 Render</button><button class="server-btn" id="btn-server-workers">⚡ Workers</button></div>
+    <button class="btn-main hidden" id="btn-main-action"><img src="assets/3.png" alt="arrow" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">🏹</span></button>
+    <div class="controls-row hidden" id="incoming-row">
+        <button class="btn-round btn-call" id="btn-answer"><img src="assets/phone-go.png" alt="accept" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">📞</span></button>
+        <button class="btn-round btn-hangup" id="btn-reject"><img src="assets/phone-stop.png" alt="reject" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">✕</span></button>
     </div>
+    <div class="controls-row hidden" id="active-row"><button class="btn-round btn-hangup" id="btn-end-call"><img src="assets/phone-stop.png" alt="end" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">📞</span></button></div>
+    <div class="controls-row hidden" id="audio-controls" style="gap:12px;"><button class="bottom-btn" id="btn-mic" style="width:44px;height:44px;font-size:20px;">🎤</button><button class="bottom-btn" id="btn-speaker" style="width:44px;height:44px;font-size:20px;">🔊</button></div>
+    <div class="input-row" id="join-row"><input type="text" id="join-input" placeholder="ID колчана..." autocomplete="off"><button id="btn-join">🔗 Принять</button></div>
+</div>
+<div class="modal-overlay" id="ref-modal"><div class="modal-dialog"><h3>🏹 Стрела готова!</h3><div class="code-display" id="ref-link-display"></div><button class="btn-primary" id="btn-copy-link-modal">📋 Копировать</button><button class="btn-primary" id="btn-share-link">📤 Поделиться</button><button class="btn-dark" id="btn-close-modal">Закрыть</button></div></div>
+<div class="bottom-bar">
+    <button class="bottom-btn" id="btn-copy-link"><img src="assets/1.png" alt="copy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">📋</span></button>
+    <button class="bottom-btn" id="btn-share">📤</button>
+    <button class="bottom-btn" id="btn-check-server">🔄</button>
+    <span style="flex:1;"></span><span class="debug-text" id="debug-text"></span>
+</div>
+<iframe id="pong-frame" src="about:blank" style="display:none;" title="p2p"></iframe>
 
-    <iframe id="pong-frame" src="about:blank" style="display:none;" title="p2p"></iframe>
+<script>
+(function(){'use strict';
+const P2PPONG_URL='https://stepweather-prog.github.io/P2PPong/';
+const RENDER_SERVER='https://p2ppong.onrender.com';
+const WORKERS_URL='https://robincall.stephanclaps-491.workers.dev';
+const $=s=>document.getElementById(s);
+const pongFrame=$('pong-frame'),robinMessage=$('robin-message'),callStatus=$('call-status'),callTimer=$('call-timer');
+const connectionDot=$('connection-dot'),connectionLabel=$('connection-label'),debugText=$('debug-text');
+const btnMainAction=$('btn-main-action'),btnAnswer=$('btn-answer'),btnReject=$('btn-reject'),btnEndCall=$('btn-end-call');
+const btnMic=$('btn-mic'),btnSpeaker=$('btn-speaker'),btnArrowCreate=$('btn-arrow-create'),btnCallMain=$('btn-call-main');
+const btnHangupMain=$('btn-hangup-main'),btnClearReset=$('btn-clear-reset'),btnCopyLink=$('btn-copy-link'),btnShare=$('btn-share');
+const btnJoin=$('btn-join'),joinInput=$('join-input'),btnServerRender=$('btn-server-render'),btnServerWorkers=$('btn-server-workers');
+const incomingRow=$('incoming-row'),activeRow=$('active-row'),audioControls=$('audio-controls'),joinRow=$('join-row');
+const refModal=$('ref-modal'),refLinkDisplay=$('ref-link-display');
 
-    <script>
-        (function(){'use strict';
-        const P2PPONG_URL='https://stepweather-prog.github.io/P2PPong/';
-        const RENDER_SERVER='https://p2ppong.onrender.com';
-        const WORKERS_URL='https://robincall.stephanclaps-491.workers.dev';
-        const $=s=>document.getElementById(s);
-        const pongFrame=$('pong-frame'),robinMessage=$('robin-message'),callStatus=$('call-status');
-        const callTimer=$('call-timer'),sessionIdDisplay=$('session-id-display');
-        const connectionDot=$('connection-dot'),connectionLabel=$('connection-label'),debugText=$('debug-text');
-        const btnMainAction=$('btn-main-action'),btnAnswer=$('btn-answer'),btnReject=$('btn-reject');
-        const btnEndCall=$('btn-end-call'),btnMic=$('btn-mic'),btnSpeaker=$('btn-speaker');
-        const btnArrowCreate=$('btn-arrow-create'),btnCallMain=$('btn-call-main');
-        const btnHangupMain=$('btn-hangup-main'),btnClearReset=$('btn-clear-reset');
-        const btnCopyLink=$('btn-copy-link'),btnShare=$('btn-share'),btnJoin=$('btn-join');
-        const joinInput=$('join-input'),btnServerRender=$('btn-server-render'),btnServerWorkers=$('btn-server-workers');
-        const incomingRow=$('incoming-row'),activeRow=$('active-row'),audioControls=$('audio-controls');
-        const joinRow=$('join-row'),refModal=$('ref-modal'),refLinkDisplay=$('ref-link-display');
+const ICE=[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:["turn:openrelay.metered.ca:80?transport=tcp","turn:openrelay.metered.ca:443?transport=tcp"],username:"openrelayproject",credential:"openrelayproject"}];
 
-        const ICE=[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:["turn:openrelay.metered.ca:80?transport=tcp","turn:openrelay.metered.ca:443?transport=tcp"],username:"openrelayproject",credential:"openrelayproject"}];
+let pc=null,stream=null,handshake=null,chId=null,sec=null,srv='render',active=!1,tStart=null,tInt=null,mic=!0,spk=!0,offer=null,link=null,ready=!1,online=!1;
+try{srv=localStorage.getItem('robinhood_server')||'render'}catch(e){}
 
-        let pc=null,stream=null,handshake=null,chId=null,sec=null,srv='render';
-        let active=false,tStart=null,tInt=null,mic=!0,spk=!0,offer=null,link=null,ready=false,online=false;
-        try{srv=localStorage.getItem('robinhood_server')||'render'}catch(e){}
+function log(m){console.log('[RC]',m);if(debugText)debugText.textContent=m}
+function rMsg(m){if(robinMessage)robinMessage.textContent=m;log(m)}
+function conn(s){if(connectionDot)connectionDot.className='connection-dot '+s;if(connectionLabel)connectionLabel.textContent=s==='online'?'Готов':s==='offline'?'Нет связи':'Проверка...'}
 
-        function log(m){console.log('[RC]',m);if(debugText)debugText.textContent=m}
-        function rMsg(m){if(robinMessage)robinMessage.textContent=m;log(m)}
-        function conn(s){if(connectionDot)connectionDot.className='connection-dot '+s;if(connectionLabel)connectionLabel.textContent=s==='online'?'Готов':s==='offline'?'Нет связи':'Проверка...'}
+async function api(m,p,b){const url=srv==='workers'?WORKERS_URL:RENDER_SERVER;const c=new AbortController(),t=setTimeout(()=>c.abort(),srv==='workers'?5000:10000);try{const o={method:m,headers:{'Content-Type':'application/json'},signal:c.signal};if(b)o.body=JSON.stringify(b);const r=await fetch(url+p,o);clearTimeout(t);return r.ok?await r.json():null}catch(e){clearTimeout(t);return null}}
+async function chkSrv(){conn('checking');online=(await api('GET','/ping'))!==null;conn(online?'online':'offline');return online}
+function swSrv(s){if(s===srv)return;srv=s;try{localStorage.setItem('robinhood_server',srv)}catch(e){}btnServerRender.classList.toggle('active',srv==='render');btnServerWorkers.classList.toggle('active',srv==='workers');pongFrame.src=P2PPONG_URL+'?v='+Date.now();handshake=null;ready=!1;ui('idle');rMsg('🔄 '+(s==='workers'?'Workers':'Render'));conn('checking')}
 
-        async function api(m,p,b){
-            const url=srv==='workers'?WORKERS_URL:RENDER_SERVER;
-            const c=new AbortController(),t=setTimeout(()=>c.abort(),srv==='workers'?5000:10000);
-            try{const o={method:m,headers:{'Content-Type':'application/json'},signal:c.signal};if(b)o.body=JSON.stringify(b);const r=await fetch(url+p,o);clearTimeout(t);return r.ok?await r.json():null}catch(e){clearTimeout(t);return null}
-        }
+function send(m){if(!m)return;if(chId&&sec){m.secret=sec;m.channelId=chId}if(handshake&&m.action==='handshake')m.handshake=handshake;pongFrame.contentWindow?.postMessage(m,'*')}
+async function getStream(){try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:!0,noiseSuppression:!0,autoGainControl:!0},video:!1});return!0}catch(e){rMsg('❌ Нет микрофона');return!1}}
+function mkPC(){if(pc){pc.close();pc=null}pc=new RTCPeerConnection({iceServers:ICE,iceTransportPolicy:'all'});if(stream)stream.getTracks().forEach(t=>pc.addTrack(t,stream));pc.ontrack=e=>{if(e.streams[0]){const a=new Audio();a.srcObject=e.streams[0];a.play().catch(()=>{})}};pc.onicecandidate=e=>{if(e.candidate)send({action:'send',text:'__ICE__'+JSON.stringify(e.candidate),channelId:chId})};pc.onconnectionstatechange=()=>{if(pc.connectionState==='connected'){active=!0;tStart=Date.now();timer();ui('active');if(callStatus)callStatus.textContent='✅ Разговор'}else if(pc.connectionState==='disconnected'||pc.connectionState==='failed')hang(!1)};return pc}
 
-        async function chkSrv(){conn('checking');online=(await api('GET','/ping'))!==null;conn(online?'online':'offline');return online}
-        function swSrv(s){if(s===srv)return;srv=s;try{localStorage.setItem('robinhood_server',srv)}catch(e){}btnServerRender.classList.toggle('active',srv==='render');btnServerWorkers.classList.toggle('active',srv==='workers');pongFrame.src=P2PPONG_URL+'?v='+Date.now();handshake=null;ready=!1;ui('idle');rMsg('🔄 '+(s==='workers'?'Workers':'Render'));conn('checking')}
+function mkQ(){if(!online){rMsg('⚠ Сервер офлайн');return}rMsg('⚒ Куём стрелу...');btnMainAction.disabled=!0;send({action:'create'})}
+async function call(){if(!ready||!chId){rMsg('⚠ Создайте стрелу');return}if(callStatus)callStatus.textContent='📞 Вызов...';ui('calling');if(!await getStream()){ui('ready');return}mkPC();try{const o=await pc.createOffer();await pc.setLocalDescription(o);send({action:'send',text:'__OFFER__'+JSON.stringify(o),channelId:chId})}catch(e){hang(!0)}}
+async function accept(){if(!offer)return;ui('active');if(!await getStream()){ui('ready');return}mkPC();try{await pc.setRemoteDescription(new RTCSessionDescription(offer));const a=await pc.createAnswer();await pc.setLocalDescription(a);send({action:'send',text:'__ANSWER__'+JSON.stringify(a),channelId:chId});offer=null}catch(e){hang(!0)}}
+function hang(sig=!0){active=!1;if(tInt){clearInterval(tInt);tInt=null}if(callTimer){callTimer.classList.add('hidden');callTimer.textContent='00:00'}if(sig&&chId)send({action:'send',text:'__HANGUP__',channelId:chId});if(pc){pc.close();pc=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}offer=null;if(callStatus)callStatus.textContent='📞 Завершён';ui('ready')}
+function timer(){if(callTimer)callTimer.classList.remove('hidden');tInt=setInterval(()=>{const e=Math.floor((Date.now()-tStart)/1000);if(callTimer)callTimer.textContent=Math.floor(e/60).toString().padStart(2,'0')+':'+(e%60).toString().padStart(2,'0')},1000)}
+function accArrow(id){if(!id){rMsg('⚠ ID колчана');return}rMsg('🔍 Поиск...');send({action:'accept',id:id,key:''})}
+function reset(){if(active)hang(!0);chId=null;sec=null;link=null;ready=!1;offer=null;ui('idle');if(joinInput)joinInput.value='';rMsg('🏹 Сброшен')}
+function cp(){if(link){navigator.clipboard.writeText(link).then(()=>rMsg('📋 Скопировано')).catch(()=>{});refModal.classList.add('active')}else rMsg('⚠ Создайте стрелу')}
+async function shr(){if(link&&navigator.share)try{await navigator.share({title:'RobinCall',text:'Звонок!',url:link})}catch(e){}else cp()}
 
-        function send(m){if(!m)return;if(chId&&sec){m.secret=sec;m.channelId=chId}if(handshake&&m.action==='handshake')m.handshake=handshake;pongFrame.contentWindow?.postMessage(m,'*')}
-        async function getStream(){try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:!0,noiseSuppression:!0,autoGainControl:!0},video:!1});return!0}catch(e){rMsg('❌ Нет микрофона');return!1}}
-        function mkPC(){if(pc){pc.close();pc=null}pc=new RTCPeerConnection({iceServers:ICE,iceTransportPolicy:'all'});if(stream)stream.getTracks().forEach(t=>pc.addTrack(t,stream));pc.ontrack=e=>{if(e.streams[0]){const a=new Audio();a.srcObject=e.streams[0];a.play().catch(()=>{})}};pc.onicecandidate=e=>{if(e.candidate)send({action:'send',text:'__ICE__'+JSON.stringify(e.candidate),channelId:chId})};pc.onconnectionstatechange=()=>{if(pc.connectionState==='connected'){active=!0;tStart=Date.now();timer();ui('active');if(callStatus)callStatus.textContent='✅ Разговор'}else if(pc.connectionState==='disconnected'||pc.connectionState==='failed')hang(!1)};return pc}
+function ui(s){
+    btnMainAction.classList.add('hidden');incomingRow.classList.add('hidden');activeRow.classList.add('hidden');audioControls.classList.add('hidden');btnMainAction.disabled=!1;
+    if(s==='idle'){btnMainAction.classList.remove('hidden');joinRow.classList.remove('hidden');if(callStatus)callStatus.textContent='🏹 Создайте стрелу'}
+    else if(s==='ready'){btnMainAction.classList.remove('hidden');joinRow.classList.remove('hidden');if(callStatus)callStatus.textContent='📞 Готово!'}
+    else if(s==='calling'){activeRow.classList.remove('hidden');audioControls.classList.remove('hidden')}
+    else if(s==='incoming'){incomingRow.classList.remove('hidden');if(callStatus)callStatus.textContent='📞 Входящий!'}
+    else if(s==='active'){activeRow.classList.remove('hidden');audioControls.classList.remove('hidden')}
+}
 
-        function mkQ(){if(!online){rMsg('⚠ Сервер офлайн');return}rMsg('⚒ Куём стрелу...');btnMainAction.disabled=!0;send({action:'create'})}
-        async function call(){if(!ready||!chId){rMsg('⚠ Создайте стрелу');return}if(callStatus)callStatus.textContent='📞 Вызов...';ui('calling');if(!await getStream()){ui('ready');return}mkPC();try{const o=await pc.createOffer();await pc.setLocalDescription(o);send({action:'send',text:'__OFFER__'+JSON.stringify(o),channelId:chId})}catch(e){hang(!0)}}
-        async function accept(){if(!offer)return;ui('active');if(!await getStream()){ui('ready');return}mkPC();try{await pc.setRemoteDescription(new RTCSessionDescription(offer));const a=await pc.createAnswer();await pc.setLocalDescription(a);send({action:'send',text:'__ANSWER__'+JSON.stringify(a),channelId:chId});offer=null}catch(e){hang(!0)}}
-        function hang(sig=!0){active=!1;if(tInt){clearInterval(tInt);tInt=null}if(callTimer){callTimer.classList.add('hidden');callTimer.textContent='00:00'}if(sig&&chId)send({action:'send',text:'__HANGUP__',channelId:chId});if(pc){pc.close();pc=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}offer=null;if(callStatus)callStatus.textContent='📞 Завершён';ui('ready')}
-        function timer(){if(callTimer)callTimer.classList.remove('hidden');tInt=setInterval(()=>{const e=Math.floor((Date.now()-tStart)/1000);if(callTimer)callTimer.textContent=Math.floor(e/60).toString().padStart(2,'0')+':'+(e%60).toString().padStart(2,'0')},1000)}
-        function accArrow(id){if(!id){rMsg('⚠ ID колчана');return}rMsg('🔍 Поиск...');send({action:'accept',id:id,key:''})}
-        function reset(){if(active)hang(!0);chId=null;sec=null;link=null;ready=!1;offer=null;ui('idle');if(joinInput)joinInput.value='';rMsg('🏹 Сброшен')}
-        function cp(){if(link){navigator.clipboard.writeText(link).then(()=>rMsg('📋 Скопировано')).catch(()=>{});refModal.classList.add('active')}else rMsg('⚠ Создайте стрелу')}
-        async function shr(){if(link&&navigator.share)try{await navigator.share({title:'RobinCall',text:'Звонок!',url:link})}catch(e){}else cp()}
+btnMainAction.addEventListener('click',()=>{if(!ready)mkQ();else call()});
+btnArrowCreate.addEventListener('click',mkQ);btnCallMain.addEventListener('click',call);
+btnHangupMain.addEventListener('click',()=>hang(!0));btnClearReset.addEventListener('click',reset);
+btnAnswer.addEventListener('click',accept);
+btnReject.addEventListener('click',()=>{send({action:'send',text:'__HANGUP__',channelId:chId});offer=null;ui('ready')});
+btnEndCall.addEventListener('click',()=>hang(!0));
+btnMic.addEventListener('click',()=>{if(stream){mic=!mic;stream.getAudioTracks().forEach(t=>t.enabled=mic);btnMic.textContent=mic?'🎤':'🔇'}});
+btnSpeaker.addEventListener('click',()=>{spk=!spk;btnSpeaker.textContent=spk?'🔊':'🔈'});
+btnCopyLink.addEventListener('click',cp);btnShare.addEventListener('click',shr);
+btnJoin.addEventListener('click',()=>{const v=joinInput.value.trim();if(v)accArrow(v)});
+joinInput.addEventListener('keypress',e=>{if(e.key==='Enter'){const v=joinInput.value.trim();if(v)accArrow(v)}});
+$('btn-copy-link-modal')?.addEventListener('click',()=>{if(link)navigator.clipboard.writeText(link).catch(()=>{})});
+$('btn-share-link')?.addEventListener('click',shr);
+$('btn-close-modal')?.addEventListener('click',()=>refModal.classList.remove('active'));
+btnServerRender.addEventListener('click',()=>swSrv('render'));
+btnServerWorkers.addEventListener('click',()=>swSrv('workers'));
+$('btn-check-server').addEventListener('click',()=>chkSrv().then(o=>rMsg(o?'✅ Доступен':'❌ Офлайн')));
 
-        function ui(s){
-            btnMainAction.classList.add('hidden');incomingRow.classList.add('hidden');
-            activeRow.classList.add('hidden');audioControls.classList.add('hidden');btnMainAction.disabled=!1;
-            if(s==='idle'){btnMainAction.classList.remove('hidden');joinRow.classList.remove('hidden');if(callStatus)callStatus.textContent='🏹 Создайте стрелу'}
-            else if(s==='ready'){btnMainAction.classList.remove('hidden');joinRow.classList.remove('hidden');if(callStatus)callStatus.textContent='📞 Готово!'}
-            else if(s==='calling'){activeRow.classList.remove('hidden');audioControls.classList.remove('hidden')}
-            else if(s==='incoming'){incomingRow.classList.remove('hidden');if(callStatus)callStatus.textContent='📞 Входящий!'}
-            else if(s==='active'){activeRow.classList.remove('hidden');audioControls.classList.remove('hidden')}
-        }
+window.addEventListener('message',async e=>{
+    if(e.source!==pongFrame.contentWindow)return;const d=e.data;
+    if(d.type==='pong-ready'){handshake=d.handshake;send({action:'handshake'});conn('online');ui('idle');rMsg('🏹 Готов!')}
+    else if(d.type==='handshake-ok'){const s=new URLSearchParams(location.search).get('id');if(s)accArrow(s)}
+    else if(d.type==='session-created'){chId=d.sessionId;sec=d.secret;link=d.fullLink;ready=!0;rMsg('✅ Стрела!');conn('online');if(refLinkDisplay)refLinkDisplay.textContent=d.fullLink;refModal.classList.add('active');if(joinInput)joinInput.value=d.sessionId;ui('ready');navigator.clipboard.writeText(link).catch(()=>{})}
+    else if(d.type==='channel-open'){chId=d.channelId;sec=d.secret;ready=!0;rMsg('✅ Подключено');conn('online');ui('ready')}
+    else if(d.type==='message'&&d.text){
+        if(d.text.startsWith('__OFFER__')){if(active||pc){send({action:'send',text:'__HANGUP__',channelId:chId});return}try{offer=JSON.parse(d.text.replace('__OFFER__',''));ui('incoming')}catch(e){}}
+        else if(d.text.startsWith('__ANSWER__')&&pc){try{await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(d.text.replace('__ANSWER__',''))));active=!0;tStart=Date.now();timer();ui('active')}catch(e){}}
+        else if(d.text.startsWith('__ICE__')&&pc){try{await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(d.text.replace('__ICE__',''))))}catch(e){}}
+        else if(d.text==='__HANGUP__'){if(active||pc){rMsg('📞 Собеседник завершил');hang(!1)}}
+    }else if(d.type==='error'){rMsg('⚠ '+d.text);btnMainAction.disabled=!1;ui('idle')}
+});
 
-        btnMainAction.addEventListener('click',()=>{if(!ready)mkQ();else call()});
-        btnArrowCreate.addEventListener('click',mkQ);btnCallMain.addEventListener('click',call);
-        btnHangupMain.addEventListener('click',()=>hang(!0));btnClearReset.addEventListener('click',reset);
-        btnAnswer.addEventListener('click',accept);
-        btnReject.addEventListener('click',()=>{send({action:'send',text:'__HANGUP__',channelId:chId});offer=null;ui('ready')});
-        btnEndCall.addEventListener('click',()=>hang(!0));
-        btnMic.addEventListener('click',()=>{if(stream){mic=!mic;stream.getAudioTracks().forEach(t=>t.enabled=mic);btnMic.textContent=mic?'🎤':'🔇'}});
-        btnSpeaker.addEventListener('click',()=>{spk=!spk;btnSpeaker.textContent=spk?'🔊':'🔈'});
-        btnCopyLink.addEventListener('click',cp);btnShare.addEventListener('click',shr);
-        btnJoin.addEventListener('click',()=>{const v=joinInput.value.trim();if(v)accArrow(v)});
-        joinInput.addEventListener('keypress',e=>{if(e.key==='Enter'){const v=joinInput.value.trim();if(v)accArrow(v)}});
-        $('btn-copy-link-modal')?.addEventListener('click',()=>{if(link)navigator.clipboard.writeText(link).catch(()=>{})});
-        $('btn-share-link')?.addEventListener('click',shr);
-        $('btn-close-modal')?.addEventListener('click',()=>refModal.classList.remove('active'));
-        btnServerRender.addEventListener('click',()=>swSrv('render'));
-        btnServerWorkers.addEventListener('click',()=>swSrv('workers'));
-        $('btn-check-server').addEventListener('click',()=>chkSrv().then(o=>rMsg(o?'✅ Доступен':'❌ Офлайн')));
-
-        window.addEventListener('message',async e=>{
-            if(e.source!==pongFrame.contentWindow)return;const d=e.data;
-            if(d.type==='pong-ready'){handshake=d.handshake;send({action:'handshake'});conn('online');ui('idle');rMsg('🏹 Готов!')}
-            else if(d.type==='handshake-ok'){const s=new URLSearchParams(location.search).get('id');if(s)accArrow(s)}
-            else if(d.type==='session-created'){chId=d.sessionId;sec=d.secret;link=d.fullLink;ready=!0;rMsg('✅ Стрела!');conn('online');if(refLinkDisplay)refLinkDisplay.textContent=d.fullLink;refModal.classList.add('active');if(joinInput)joinInput.value=d.sessionId;if(sessionIdDisplay){sessionIdDisplay.classList.remove('hidden');sessionIdDisplay.textContent='ID: '+d.sessionId}ui('ready');navigator.clipboard.writeText(link).catch(()=>{})}
-            else if(d.type==='channel-open'){chId=d.channelId;sec=d.secret;ready=!0;rMsg('✅ Подключено');conn('online');ui('ready')}
-            else if(d.type==='message'&&d.text){
-                if(d.text.startsWith('__OFFER__')){if(active||pc){send({action:'send',text:'__HANGUP__',channelId:chId});return}try{offer=JSON.parse(d.text.replace('__OFFER__',''));ui('incoming')}catch(e){}}
-                else if(d.text.startsWith('__ANSWER__')&&pc){try{await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(d.text.replace('__ANSWER__',''))));active=!0;tStart=Date.now();timer();ui('active')}catch(e){}}
-                else if(d.text.startsWith('__ICE__')&&pc){try{await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(d.text.replace('__ICE__',''))))}catch(e){}}
-                else if(d.text==='__HANGUP__'){if(active||pc){rMsg('📞 Собеседник завершил');hang(!1)}}
-            }else if(d.type==='error'){rMsg('⚠ '+d.text);btnMainAction.disabled=!1;ui('idle')}
-        });
-
-        async function init(){
-            log('RobinCall v3.2');
-            conn('checking');
-            if(srv==='workers'){btnServerWorkers.classList.add('active');btnServerRender.classList.remove('active')}
-            await chkSrv();
-            pongFrame.src=P2PPONG_URL+'?v='+Date.now();
-            ui('idle');rMsg('🏹 Ждём...')
-        }
-
-        window.addEventListener('beforeunload',()=>{if(active)send({action:'send',text:'__HANGUP__',channelId:chId});if(pc)pc.close();if(stream)stream.getTracks().forEach(t=>t.stop())});
-        window.swSrv=swSrv;window.chkSrv=()=>chkSrv().then(o=>rMsg(o?'✅ Доступен':'❌ Офлайн'));
-        document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
-        })();
-    </script>
+async function init(){
+    log('RobinCall v3.2-sec');conn('checking');
+    if(srv==='workers'){btnServerWorkers.classList.add('active');btnServerRender.classList.remove('active')}
+    await chkSrv();pongFrame.src=P2PPONG_URL+'?v='+Date.now();ui('idle');rMsg('🏹 Ждём...')
+}
+window.addEventListener('beforeunload',()=>{if(active)send({action:'send',text:'__HANGUP__',channelId:chId});if(pc)pc.close();if(stream)stream.getTracks().forEach(t=>t.stop())});
+window.swSrv=swSrv;window.chkSrv=()=>chkSrv().then(o=>rMsg(o?'✅ Доступен':'❌ Офлайн'));
+document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
+})();
+</script>
 </body>
 </html>
