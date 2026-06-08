@@ -5,10 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>RobinCall 🏹</title>
     <link rel="manifest" href="manifest.json">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; media-src 'self' blob:; connect-src * blob:;">
+    <link rel="icon" type="image/png" sizes="192x192" href="../assets/avatars/001-.png">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; media-src 'self' blob:; connect-src * blob:; img-src 'self' data: blob:;">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', 'Inter', 'Georgia', serif; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', 'Inter', 'Georgia', serif;
+        }
         body {
             background: linear-gradient(135deg, #1a2a1f 0%, #0d1a0c 100%);
             color: #e8e2c7;
@@ -19,11 +29,14 @@
             height: 100dvh;
             position: relative;
         }
+        /* Фоновое изображение - с fallback если файл не загрузится */
         body::before {
             content: "";
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background-image: url('../assets/background.webp');
             background-size: cover;
             background-position: center;
@@ -34,8 +47,10 @@
         body::after {
             content: "";
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: radial-gradient(circle at 50% 50%, rgba(30,40,25,0.6), rgba(10,20,8,0.9));
             z-index: 0;
         }
@@ -74,31 +89,64 @@
             background: rgba(196, 162, 75, 0.15);
             color: #e8e2c7;
         }
-        .btn:hover { background: rgba(196, 162, 75, 0.35); box-shadow: 0 0 30px rgba(196, 162, 75, 0.4); transform: scale(1.1); }
+        .btn:hover {
+            background: rgba(196, 162, 75, 0.35);
+            box-shadow: 0 0 30px rgba(196, 162, 75, 0.4);
+            transform: scale(1.1);
+        }
         .btn-call { border-color: #4caf50; color: #4caf50; }
         .btn-hangup { border-color: #f44336; color: #f44336; }
         .btn-answer { border-color: #4caf50; color: #4caf50; }
         .btn-reject { border-color: #f44336; color: #f44336; }
-        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-        .btn:disabled:hover { background: rgba(196, 162, 75, 0.15); box-shadow: none; transform: none; }
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn:disabled:hover {
+            background: rgba(196, 162, 75, 0.15);
+            box-shadow: none;
+            transform: none;
+        }
         .hidden { display: none !important; }
-        .controls { display: flex; gap: 20px; justify-content: center; margin-top: 20px; }
-        .debug { color: #666; font-size: 0.7em; margin-top: 30px; word-break: break-all; max-height: 100px; overflow-y: auto; }
-        .ripple { animation: ripple 1.5s infinite; }
+        .controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .debug {
+            color: #666;
+            font-size: 0.7em;
+            margin-top: 30px;
+            word-break: break-all;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+        .ripple {
+            animation: ripple 1.5s infinite;
+        }
         @keyframes ripple {
             0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5); }
             70% { box-shadow: 0 0 0 30px rgba(76, 175, 80, 0); }
             100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
         }
-        .fingerprint-display {
+        .fingerprint-info {
             font-family: monospace;
-            font-size: 0.7em;
+            font-size: 0.65em;
             background: rgba(0,0,0,0.3);
-            padding: 8px;
+            padding: 6px 12px;
             border-radius: 8px;
             margin: 8px 0;
             word-break: break-all;
             color: #81c784;
+            max-width: 90%;
+        }
+        .error-message {
+            color: #f44336;
+            font-size: 0.8em;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -106,28 +154,43 @@
     <div class="container">
         <h1>🏹 RobinCall</h1>
         <div class="status" id="status">Ожидание...</div>
-        <div class="fingerprint-display hidden" id="fingerprint-info"></div>
+        <div class="fingerprint-info hidden" id="fingerprint-info"></div>
 
+        <!-- Кнопка вызова (исходящий) -->
         <button class="btn btn-call hidden" id="btn-call" title="Позвонить">📞</button>
 
+        <!-- Входящий звонок -->
         <div class="controls hidden" id="incoming-controls">
             <button class="btn btn-answer" id="btn-answer" title="Принять">📞</button>
             <button class="btn btn-reject" id="btn-reject" title="Отклонить">❌</button>
         </div>
 
+        <!-- Активный звонок -->
         <div class="controls hidden" id="active-controls">
             <button class="btn btn-hangup ripple" id="btn-hangup" title="Завершить">📞</button>
         </div>
 
+        <div class="error-message hidden" id="error-message"></div>
         <div class="debug" id="debug"></div>
     </div>
 
     <script>
+        /**
+         * RobinCall v2.0 - Легковесный WebRTC клиент для RobinHood P2P
+         * Исправления:
+         * - Убран жесткий 404 на background.webp (graceful fallback)
+         * - Добавлена обработка отсутствия родительского окна
+         * - Улучшена обработка ошибок WebRTC
+         * - Добавлен таймаут для неактивных звонков
+         */
         (function() {
-            // ==================== DOM ====================
+            'use strict';
+
+            // ==================== DOM ЭЛЕМЕНТЫ ====================
             const statusDiv = document.getElementById('status');
             const debugDiv = document.getElementById('debug');
             const fingerprintInfo = document.getElementById('fingerprint-info');
+            const errorMessage = document.getElementById('error-message');
             const btnCall = document.getElementById('btn-call');
             const btnHangup = document.getElementById('btn-hangup');
             const btnAnswer = document.getElementById('btn-answer');
@@ -135,16 +198,22 @@
             const incomingControls = document.getElementById('incoming-controls');
             const activeControls = document.getElementById('active-controls');
 
-            // ==================== ICE СЕРВЕРЫ ====================
-            const iceServers = [
+            // ==================== КОНФИГУРАЦИЯ ====================
+            const ICE_SERVERS = [
                 { urls: "stun:stun.l.google.com:19302" },
                 { urls: "stun:stun1.l.google.com:19302" },
                 {
-                    urls: ["turn:openrelay.metered.ca:80?transport=tcp", "turn:openrelay.metered.ca:443?transport=tcp"],
+                    urls: [
+                        "turn:openrelay.metered.ca:80?transport=tcp",
+                        "turn:openrelay.metered.ca:443?transport=tcp"
+                    ],
                     username: "openrelayproject",
                     credential: "openrelayproject"
                 }
             ];
+
+            const CALL_TIMEOUT = 60000; // 60 секунд на установку звонка
+            const HANGUP_DELAY = 2000;  // Задержка перед закрытием окна
 
             // ==================== СОСТОЯНИЕ ====================
             let peerConnection = null;
@@ -154,284 +223,581 @@
             let ecdhPubKey = null;
             let peerFingerprint = null;
             let callActive = false;
-            let parentWindow = null;
+            let callTimer = null;
+            let initReceived = false;
+            let urlParams = new URLSearchParams(window.location.search);
 
-            // ==================== АУДИО ====================
+            // ==================== УТИЛИТЫ ====================
+            function setStatus(text, isError = false) {
+                if (statusDiv) {
+                    statusDiv.textContent = text;
+                    statusDiv.style.color = isError ? '#f44336' : '#b8a87a';
+                }
+            }
+
+            function showError(text) {
+                if (errorMessage) {
+                    errorMessage.textContent = text;
+                    errorMessage.classList.remove('hidden');
+                }
+                setStatus('❌ ' + text, true);
+                console.error('[RobinCall]', text);
+            }
+
+            function hideError() {
+                if (errorMessage) errorMessage.classList.add('hidden');
+            }
+
+            function log(msg) {
+                console.log('[RobinCall]', msg);
+                if (debugDiv) {
+                    debugDiv.textContent += msg + '\n';
+                    debugDiv.scrollTop = debugDiv.scrollHeight;
+                    // Ограничиваем количество строк
+                    const lines = debugDiv.textContent.split('\n');
+                    if (lines.length > 20) {
+                        debugDiv.textContent = lines.slice(-20).join('\n');
+                    }
+                }
+            }
+
+            // ==================== КОММУНИКАЦИЯ С РОДИТЕЛЕМ ====================
+            function notifyParent(type, data = {}) {
+                const msg = { type, ...data };
+                
+                // Пробуем через window.opener (отдельное окно)
+                if (window.opener && !window.opener.closed) {
+                    try {
+                        window.opener.postMessage(msg, '*');
+                    } catch (e) {
+                        log('Ошибка отправки в opener: ' + e.message);
+                    }
+                }
+                
+                // Пробуем через parent (iframe)
+                if (window.parent && window.parent !== window) {
+                    try {
+                        window.parent.postMessage(msg, '*');
+                    } catch (e) {
+                        log('Ошибка отправки в parent: ' + e.message);
+                    }
+                }
+            }
+
+            function sendSignal(text) {
+                notifyParent('robinhood-call-signal', { text, channelId });
+            }
+
+            // ==================== ПОЛУЧЕНИЕ МЕДИА ====================
             async function getLocalStream(enableVideo = false) {
                 try {
-                    localStream = await navigator.mediaDevices.getUserMedia({
+                    const constraints = {
                         audio: {
                             echoCancellation: true,
                             noiseSuppression: true,
                             autoGainControl: true
                         },
-                        video: enableVideo
-                    });
+                        video: enableVideo ? {
+                            width: { ideal: 640 },
+                            height: { ideal: 480 },
+                            facingMode: 'user'
+                        } : false
+                    };
+                    
+                    localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    log('Медиа-поток получен');
                     return true;
                 } catch (e) {
-                    log('Ошибка микрофона: ' + e.message);
-                    statusDiv.textContent = '❌ Нет доступа к микрофону';
-                    notifyParent('robinhood-call-error', { error: 'microphone-denied' });
+                    log('Ошибка доступа к медиа: ' + e.message);
+                    
+                    if (e.name === 'NotAllowedError') {
+                        showError('Доступ к микрофону запрещен. Разрешите в настройках браузера.');
+                    } else if (e.name === 'NotFoundError') {
+                        showError('Микрофон или камера не найдены.');
+                    } else {
+                        showError('Ошибка доступа: ' + e.message);
+                    }
+                    
+                    notifyParent('robinhood-call-error', { 
+                        error: 'media-denied',
+                        message: e.message 
+                    });
+                    
                     return false;
                 }
             }
 
             // ==================== WEBRTC ====================
             function createPeerConnection() {
+                // Закрываем предыдущее соединение если есть
                 if (peerConnection) {
                     peerConnection.close();
+                    peerConnection = null;
                 }
-                peerConnection = new RTCPeerConnection({ iceServers });
+                
+                const config = {
+                    iceServers: ICE_SERVERS,
+                    iceTransportPolicy: 'all',
+                    iceCandidatePoolSize: 2
+                };
+                
+                peerConnection = new RTCPeerConnection(config);
+                log('PeerConnection создан');
 
+                // Добавляем локальные треки
                 if (localStream) {
                     localStream.getTracks().forEach(track => {
                         peerConnection.addTrack(track, localStream);
+                        log('Добавлен трек: ' + track.kind);
                     });
                 }
 
+                // Обработка удаленных треков
                 peerConnection.ontrack = (event) => {
-                    log('Получен удалённый аудио/видео');
+                    log('Получен удаленный поток');
                     const audio = new Audio();
                     audio.srcObject = event.streams[0];
-                    audio.play().catch(e => log('Автовоспроизведение заблокировано'));
+                    audio.play().catch(e => {
+                        log('Автовоспроизведение: ' + e.message);
+                        // Показываем подсказку пользователю
+                        setStatus('🔊 Нажмите для звука');
+                    });
                 };
 
+                // ICE кандидаты
                 peerConnection.onicecandidate = (event) => {
                     if (event.candidate) {
+                        log('ICE кандидат: ' + event.candidate.type);
                         sendSignal('__ICE__' + JSON.stringify(event.candidate));
                     }
                 };
 
+                // Ошибки ICE
+                peerConnection.onicecandidateerror = (event) => {
+                    log('ICE ошибка: ' + (event.errorText || 'неизвестно'));
+                };
+
+                // Состояние соединения
                 peerConnection.onconnectionstatechange = () => {
-                    log('Состояние: ' + peerConnection.connectionState);
-                    if (peerConnection.connectionState === 'connected') {
-                        statusDiv.textContent = '✅ Связь установлена';
-                        callActive = true;
-                        notifyParent('robinhood-call-connected', {});
-                    } else if (peerConnection.connectionState === 'disconnected' ||
-                        peerConnection.connectionState === 'failed') {
-                        statusDiv.textContent = '❌ Связь потеряна';
+                    const state = peerConnection.connectionState;
+                    log('Состояние соединения: ' + state);
+                    
+                    switch (state) {
+                        case 'connected':
+                            setStatus('✅ Связь установлена');
+                            callActive = true;
+                            clearTimeout(callTimer);
+                            hideError();
+                            notifyParent('robinhood-call-connected', {});
+                            break;
+                            
+                        case 'disconnected':
+                            setStatus('⚠ Связь прервана...');
+                            break;
+                            
+                        case 'failed':
+                            showError('Соединение не удалось');
+                            hangup();
+                            break;
+                            
+                        case 'closed':
+                            log('Соединение закрыто');
+                            break;
+                    }
+                };
+
+                // Состояние ICE
+                peerConnection.oniceconnectionstatechange = () => {
+                    log('ICE состояние: ' + peerConnection.iceConnectionState);
+                    
+                    if (peerConnection.iceConnectionState === 'failed') {
+                        showError('Не удалось установить P2P соединение. Попробуйте еще раз.');
                         hangup();
                     }
                 };
 
-                peerConnection.oniceconnectionstatechange = () => {
-                    log('ICE: ' + peerConnection.iceConnectionState);
-                };
-
-                // Обработка ошибок
-                peerConnection.onicecandidateerror = (event) => {
-                    log('ICE ошибка: ' + (event.errorText || 'неизвестно'));
-                };
+                return peerConnection;
             }
 
-            // ==================== ЗВОНОК ====================
+            // ==================== УПРАВЛЕНИЕ ЗВОНКОМ ====================
             async function startCall() {
-                if (callActive || !channelId) {
-                    statusDiv.textContent = '❌ Нет канала для звонка';
+                if (callActive) return;
+                if (!channelId) {
+                    showError('Нет активного канала для звонка');
                     return;
                 }
                 
-                statusDiv.textContent = '📞 Вызов...';
+                hideError();
+                setStatus('📞 Вызов...');
                 btnCall.classList.add('hidden');
                 activeControls.classList.remove('hidden');
 
-                if (!await getLocalStream(urlParams.get('mode') === 'video')) {
-                    hangup();
+                // Получаем медиа
+                const mode = urlParams.get('mode') === 'video';
+                if (!await getLocalStream(mode)) {
+                    resetUI();
                     return;
                 }
                 
+                // Создаем соединение
                 createPeerConnection();
-
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-                sendSignal('__OFFER__' + JSON.stringify(offer));
-                log('Offer отправлен');
+                
+                try {
+                    const offer = await peerConnection.createOffer();
+                    await peerConnection.setLocalDescription(offer);
+                    log('Offer создан и установлен');
+                    
+                    sendSignal('__OFFER__' + JSON.stringify(offer));
+                    
+                    // Таймаут на установку соединения
+                    callTimer = setTimeout(() => {
+                        if (!callActive) {
+                            showError('Таймаут вызова. Собеседник не ответил.');
+                            hangup();
+                        }
+                    }, CALL_TIMEOUT);
+                    
+                } catch (e) {
+                    log('Ошибка создания offer: ' + e.message);
+                    showError('Ошибка установки звонка');
+                    hangup();
+                }
             }
 
             async function acceptCall() {
                 if (callActive) return;
-                statusDiv.textContent = '📞 Соединение...';
+                
+                setStatus('📞 Соединение...');
                 incomingControls.classList.add('hidden');
                 activeControls.classList.remove('hidden');
+                hideError();
 
                 if (!await getLocalStream()) {
                     hangup();
                     return;
                 }
+                
                 createPeerConnection();
             }
 
-            function hangup() {
+            function hangup(sendSignal = true) {
                 callActive = false;
-                statusDiv.textContent = '📞 Звонок завершён';
+                clearTimeout(callTimer);
+                
+                setStatus('📞 Звонок завершён');
                 activeControls.classList.add('hidden');
                 incomingControls.classList.add('hidden');
                 btnCall.classList.remove('hidden');
                 
-                sendSignal('__HANGUP__');
-                notifyParent('robinhood-call-ended', {});
-
+                if (sendSignal && channelId) {
+                    sendSignal('__HANGUP__');
+                }
+                
+                notifyParent('robinhood-call-ended', { channelId });
+                
+                // Очистка ресурсов
                 if (peerConnection) {
                     peerConnection.close();
                     peerConnection = null;
                 }
+                
                 if (localStream) {
-                    localStream.getTracks().forEach(track => track.stop());
+                    localStream.getTracks().forEach(track => {
+                        track.stop();
+                        log('Трек остановлен: ' + track.kind);
+                    });
                     localStream = null;
                 }
                 
-                // Закрываем окно через 3 секунды
+                log('Звонок завершен, ресурсы освобождены');
+                
+                // Закрываем окно с задержкой
                 setTimeout(() => {
-                    if (window.opener || window.parent !== window) {
+                    try {
                         window.close();
+                    } catch (e) {
+                        log('Не удалось закрыть окно: ' + e.message);
+                        setStatus('Окно можно закрыть');
                     }
-                }, 3000);
+                }, HANGUP_DELAY);
             }
 
-            // ==================== КОММУНИКАЦИЯ ====================
-            function sendSignal(text) {
-                // Отправляем в родительское окно (RobinHood)
-                notifyParent('robinhood-call-signal', { text, channelId });
+            function resetUI() {
+                activeControls.classList.add('hidden');
+                incomingControls.classList.add('hidden');
+                btnCall.classList.remove('hidden');
+                setStatus('🏹 Готов к вызову');
             }
 
-            function notifyParent(type, data) {
-                const msg = { type, ...data };
+            // ==================== ОБРАБОТКА СИГНАЛОВ ====================
+            async function handleSignal(text) {
+                if (!text) return;
                 
-                // Пробуем через window.opener
-                if (window.opener && !window.opener.closed) {
-                    window.opener.postMessage(msg, '*');
+                // Входящий вызов
+                if (text.startsWith('__OFFER__')) {
+                    if (callActive || peerConnection) {
+                        log('Звонок уже активен, игнорируем');
+                        sendSignal('__HANGUP__');
+                        return;
+                    }
+                    
+                    try {
+                        const offerStr = text.replace('__OFFER__', '');
+                        const offer = JSON.parse(offerStr);
+                        
+                        setStatus('📞 Входящий вызов...');
+                        btnCall.classList.add('hidden');
+                        incomingControls.classList.remove('hidden');
+                        hideError();
+                        
+                        // Сохраняем offer для использования после accept
+                        window._pendingOffer = offer;
+                        
+                    } catch (e) {
+                        log('Ошибка парсинга offer: ' + e.message);
+                    }
+                    return;
                 }
                 
-                // Пробуем через parent (для iframe)
-                if (window.parent && window.parent !== window) {
-                    window.parent.postMessage(msg, '*');
+                // Ответ на вызов
+                if (text.startsWith('__ANSWER__')) {
+                    if (!peerConnection) {
+                        log('Нет PeerConnection для answer');
+                        return;
+                    }
+                    
+                    try {
+                        const answerStr = text.replace('__ANSWER__', '');
+                        const answer = JSON.parse(answerStr);
+                        
+                        await peerConnection.setRemoteDescription(
+                            new RTCSessionDescription(answer)
+                        );
+                        log('Answer получен и установлен');
+                        
+                    } catch (e) {
+                        log('Ошибка установки answer: ' + e.message);
+                    }
+                    return;
+                }
+                
+                // ICE кандидат
+                if (text.startsWith('__ICE__')) {
+                    if (!peerConnection) return;
+                    
+                    try {
+                        const iceStr = text.replace('__ICE__', '');
+                        const candidate = JSON.parse(iceStr);
+                        
+                        await peerConnection.addIceCandidate(
+                            new RTCIceCandidate(candidate)
+                        );
+                        log('ICE кандидат добавлен');
+                        
+                    } catch (e) {
+                        log('Ошибка ICE кандидата: ' + e.message);
+                    }
+                    return;
+                }
+                
+                // Завершение звонка
+                if (text === '__HANGUP__') {
+                    if (callActive || peerConnection) {
+                        setStatus('📞 Собеседник завершил звонок');
+                        hangup(false); // Не отправляем HANGUP обратно
+                    }
+                    return;
                 }
             }
 
-            // Получение параметров от RobinHood
+            // ==================== ОБРАБОТЧИК СООБЩЕНИЙ ОТ РОДИТЕЛЯ ====================
             window.addEventListener('message', (event) => {
                 const data = event.data;
+                if (!data || !data.type) return;
                 
-                // Принимаем параметры инициализации
+                // Инициализация от RobinHood
                 if (data.type === 'robinhood-call-init') {
                     channelId = data.channelId;
                     sessionSecret = data.sessionSecret;
                     ecdhPubKey = data.ecdhPubKey;
                     peerFingerprint = data.fingerprint;
+                    initReceived = true;
                     
-                    log('Канал инициализирован: ' + channelId);
+                    log('Канал инициализирован: ' + (channelId || 'неизвестно'));
+                    log('Сервер: ' + (data.server || 'render'));
+                    
                     if (peerFingerprint) {
                         fingerprintInfo.classList.remove('hidden');
                         fingerprintInfo.textContent = '🔐 Отпечаток: ' + 
-                            peerFingerprint.substring(0, 16) + '...';
+                            peerFingerprint.substring(0, 16) + '...' + 
+                            peerFingerprint.substring(peerFingerprint.length - 8);
                     }
                     
-                    statusDiv.textContent = '🏹 Готов к вызову';
+                    setStatus('🏹 Готов к вызову');
                     btnCall.classList.remove('hidden');
+                    hideError();
+                    
                     notifyParent('robinhood-call-ready', { channelId });
+                    return;
                 }
                 
-                // Обработка сигналов звонка (проброшенных из основного приложения)
+                // Сигналы звонка (проброшенные из основного приложения)
                 if (data.type === 'robinhood-call-signal' && data.text) {
+                    if (!initReceived && !channelId) {
+                        channelId = data.channelId;
+                    }
                     handleSignal(data.text);
+                    return;
+                }
+                
+                // Сигнал завершения от родителя
+                if (data.type === 'robinhood-call-hangup') {
+                    if (callActive) {
+                        hangup(false);
+                    }
+                    return;
                 }
             });
-
-            // Обработка сигналов звонка
-            async function handleSignal(text) {
-                if (text.startsWith('__OFFER__')) {
-                    if (callActive) return;
-                    const offer = JSON.parse(text.replace('__OFFER__', ''));
-                    statusDiv.textContent = '📞 Входящий вызов...';
-                    btnCall.classList.add('hidden');
-                    incomingControls.classList.remove('hidden');
-
-                    await acceptCall();
-                    await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-                    
-                    const answer = await peerConnection.createAnswer();
-                    await peerConnection.setLocalDescription(answer);
-                    sendSignal('__ANSWER__' + JSON.stringify(answer));
-                    log('Answer отправлен');
-                }
-                else if (text.startsWith('__ANSWER__')) {
-                    if (!peerConnection) return;
-                    const answer = JSON.parse(text.replace('__ANSWER__', ''));
-                    await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-                    log('Answer получен');
-                }
-                else if (text.startsWith('__ICE__')) {
-                    if (!peerConnection) return;
-                    try {
-                        const candidate = JSON.parse(text.replace('__ICE__', ''));
-                        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-                    } catch(e) {
-                        log('Ошибка ICE: ' + e.message);
-                    }
-                }
-                else if (text === '__HANGUP__') {
-                    if (callActive) {
-                        statusDiv.textContent = '📞 Собеседник завершил звонок';
-                        hangup();
-                    }
-                }
-            }
 
             // ==================== КНОПКИ ====================
             btnCall.addEventListener('click', startCall);
-            btnHangup.addEventListener('click', hangup);
+            
+            btnHangup.addEventListener('click', () => hangup(true));
+            
             btnAnswer.addEventListener('click', async () => {
-                await startCall();
-            });
-            btnReject.addEventListener('click', () => {
-                sendSignal('__HANGUP__');
-                hangup();
-            });
-
-            // ==================== ДЕБАГ ====================
-            function log(msg) {
-                console.log('[RobinCall]', msg);
-                debugDiv.textContent += msg + '\n';
-                debugDiv.scrollTop = debugDiv.scrollHeight;
-            }
-
-            // ==================== ПАРАМЕТРЫ ИЗ URL ====================
-            const urlParams = new URLSearchParams(window.location.search);
-
-            // ==================== ИНИЦИАЛИЗАЦИЯ ====================
-            async function init() {
-                channelId = urlParams.get('channel');
-                
-                // Сообщаем родительскому окну о готовности
-                if (channelId) {
-                    statusDiv.textContent = '🏹 Ожидание параметров...';
-                    notifyParent('robinhood-call-ready', { channelId });
-                } else {
-                    statusDiv.textContent = '🏹 Ожидание канала...';
-                    // Ждем инициализации от родителя
+                if (!window._pendingOffer || !peerConnection) {
+                    // Если offer еще не сохранен, создаем новое соединение
+                    await acceptCall();
+                    
+                    if (window._pendingOffer && peerConnection) {
+                        try {
+                            await peerConnection.setRemoteDescription(
+                                new RTCSessionDescription(window._pendingOffer)
+                            );
+                            
+                            const answer = await peerConnection.createAnswer();
+                            await peerConnection.setLocalDescription(answer);
+                            sendSignal('__ANSWER__' + JSON.stringify(answer));
+                            log('Answer отправлен');
+                            
+                            delete window._pendingOffer;
+                        } catch (e) {
+                            log('Ошибка при ответе: ' + e.message);
+                            showError('Ошибка установки звонка');
+                            hangup();
+                        }
+                    }
+                    return;
                 }
                 
-                log('RobinCall v2.0 загружен');
-                log('Канал: ' + (channelId || 'ожидание инициализации'));
-            }
-
-            // Закрытие окна при потере связи с родителем
-            window.addEventListener('beforeunload', () => {
-                if (callActive) {
+                // Используем сохраненный offer
+                try {
+                    await acceptCall();
+                    
+                    if (peerConnection && window._pendingOffer) {
+                        await peerConnection.setRemoteDescription(
+                            new RTCSessionDescription(window._pendingOffer)
+                        );
+                        
+                        const answer = await peerConnection.createAnswer();
+                        await peerConnection.setLocalDescription(answer);
+                        sendSignal('__ANSWER__' + JSON.stringify(answer));
+                        log('Answer отправлен (из сохраненного offer)');
+                        
+                        delete window._pendingOffer;
+                    }
+                } catch (e) {
+                    log('Ошибка при ответе: ' + e.message);
+                    showError('Ошибка установки звонка');
                     hangup();
                 }
             });
+            
+            btnReject.addEventListener('click', () => {
+                sendSignal('__HANGUP__');
+                setStatus('📞 Вызов отклонён');
+                delete window._pendingOffer;
+                resetUI();
+                
+                setTimeout(() => {
+                    try { window.close(); } catch (e) {}
+                }, HANGUP_DELAY);
+            });
 
-            // Периодическая проверка родительского окна
-            setInterval(() => {
-                if (window.opener && window.opener.closed) {
-                    if (callActive) hangup();
-                    window.close();
+            // ==================== ЗАКРЫТИЕ ОКНА ====================
+            window.addEventListener('beforeunload', () => {
+                if (callActive) {
+                    sendSignal('__HANGUP__');
+                    notifyParent('robinhood-call-ended', { channelId });
                 }
-            }, 5000);
+                
+                // Очистка
+                if (localStream) {
+                    localStream.getTracks().forEach(t => t.stop());
+                }
+                if (peerConnection) {
+                    peerConnection.close();
+                }
+            });
 
-            window.addEventListener('load', init);
+            // ==================== ПРОВЕРКА РОДИТЕЛЬСКОГО ОКНА ====================
+            // Если окно открыто как попап, проверяем что родитель жив
+            const parentCheckInterval = setInterval(() => {
+                if (window.opener && window.opener.closed) {
+                    log('Родительское окно закрыто');
+                    if (callActive) {
+                        hangup(false);
+                    }
+                    clearInterval(parentCheckInterval);
+                    try { window.close(); } catch (e) {}
+                }
+            }, 3000);
+
+            // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+            function init() {
+                log('RobinCall v2.0 загружен');
+                
+                // Проверяем параметры URL
+                const urlChannel = urlParams.get('channel');
+                const urlMode = urlParams.get('mode');
+                
+                if (urlChannel) {
+                    channelId = urlChannel;
+                    log('Канал из URL: ' + urlChannel);
+                    log('Режим: ' + (urlMode || 'audio'));
+                    
+                    setStatus('🏹 Ожидание параметров от RobinHood...');
+                    
+                    // Сообщаем родителю что мы здесь
+                    notifyParent('robinhood-call-ready', { channelId: urlChannel });
+                } else {
+                    setStatus('🏹 Ожидание инициализации...');
+                    log('Канал: ожидание инициализации от родителя');
+                    
+                    // Ждем инициализации через postMessage
+                    // Если через 10 секунд нет инициализации, показываем ошибку
+                    setTimeout(() => {
+                        if (!initReceived && !channelId) {
+                            setStatus('⚠ Не получены параметры звонка');
+                            log('Таймаут ожидания инициализации');
+                            // Все равно показываем кнопку для тестирования
+                            btnCall.classList.remove('hidden');
+                        }
+                    }, 10000);
+                }
+                
+                // Показываем кнопку если есть канал
+                if (channelId) {
+                    btnCall.classList.remove('hidden');
+                }
+            }
+
+            // Запуск
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
         })();
     </script>
 </body>
