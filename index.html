@@ -161,6 +161,8 @@
 
     <script>
         (function() {
+            const PONGPONG_ORIGIN = 'https://stepweather-prog.github.io';
+
             const statusDiv = document.getElementById('status');
             const debugDiv = document.getElementById('debug');
             const btnCall = document.getElementById('btn-call');
@@ -192,6 +194,8 @@
             let channelId = null;
             let sessionSecret = null;
             let callActive = false;
+            let pendingIceCandidates = {};
+            let currentServer = 'render'; // будет обновляться из параметров URL
 
             async function getLocalStream() {
                 try {
@@ -254,6 +258,18 @@
                 };
             }
 
+            // Очередь ICE-кандидатов (как в основном RobinHood)
+            function flushIceCandidates() {
+                if (!peerConnection || !peerConnection.remoteDescription || !peerConnection.remoteDescription.type) return;
+                const candidates = pendingIceCandidates[channelId] || [];
+                for (const c of candidates) {
+                    try {
+                        peerConnection.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
+                    } catch(e) {}
+                }
+                delete pendingIceCandidates[channelId];
+            }
+
             async function startCall() {
                 if (callActive) return;
                 statusDiv.textContent = '📞 Вызов...';
@@ -305,18 +321,21 @@
                     localStream.getTracks().forEach(track => track.stop());
                     localStream = null;
                 }
+                pendingIceCandidates = {};
             }
 
             function sendToPong(msg) {
                 if (sessionSecret) msg.secret = sessionSecret;
                 if (channelId) msg.channelId = channelId;
                 if (handshakeSecret && msg.action === 'handshake') msg.handshake = handshakeSecret;
+                msg.server = currentServer;
                 if (pongFrame.contentWindow) {
-                    pongFrame.contentWindow.postMessage(msg, '*');
+                    pongFrame.contentWindow.postMessage(msg, PONGPONG_ORIGIN);
                 }
             }
 
             window.addEventListener('message', async (event) => {
+                if (event.origin !== PONGPONG_ORIGIN) return;
                 if (event.source !== pongFrame.contentWindow) return;
                 const data = event.data;
 
@@ -331,6 +350,11 @@
                     case 'channel-open':
                         channelId = data.channelId;
                         sessionSecret = data.secret;
+                        // Сохраняем канал для восстановления
+                        try {
+                            sessionStorage.setItem('robincall_channel', channelId);
+                            sessionStorage.setItem('robincall_secret', sessionSecret);
+                        } catch(e) {}
                         log('Канал открыт: ' + channelId);
                         break;
 
@@ -356,6 +380,7 @@
                                 channelId: channelId
                             });
                             log('Answer отправлен');
+                            flushIceCandidates(); // обработаем все накопившиеся ICE
                             return;
                         }
 
@@ -364,13 +389,18 @@
                             const answer = JSON.parse(data.text.replace('__ANSWER__', ''));
                             await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
                             log('Answer получен');
+                            flushIceCandidates(); // теперь можно добавлять ICE
                             return;
                         }
 
                         if (data.text.startsWith('__ICE__')) {
                             if (!peerConnection) return;
-                            const candidate = JSON.parse(data.text.replace('__ICE__', ''));
-                            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                            try {
+                                const candidate = JSON.parse(data.text.replace('__ICE__', ''));
+                                if (!pendingIceCandidates[channelId]) pendingIceCandidates[channelId] = [];
+                                pendingIceCandidates[channelId].push(candidate);
+                                flushIceCandidates(); // попробуем добавить сразу
+                            } catch(e) {}
                             return;
                         }
 
@@ -397,21 +427,26 @@
                 debugDiv.scrollTop = debugDiv.scrollHeight;
             }
 
-            function getParams() {
-                const urlParams = new URLSearchParams(window.location.search);
-                return {
-                    channel: urlParams.get('channel'),
-                    secret: urlParams.get('secret')
-                };
-            }
-
             async function init() {
-                const params = getParams();
-                channelId = params.channel;
-                sessionSecret = params.secret;
+                const urlParams = new URLSearchParams(window.location.search);
+                channelId = urlParams.get('channel');
+                sessionSecret = urlParams.get('secret');
+                currentServer = urlParams.get('server') || 'render';
+
+                // Восстановление канала из sessionStorage, если в URL нет
+                if (!channelId || !sessionSecret) {
+                    try {
+                        channelId = sessionStorage.getItem('robincall_channel');
+                        sessionSecret = sessionStorage.getItem('robincall_secret');
+                    } catch(e) {}
+                }
 
                 const pongUrl = new URL('https://stepweather-prog.github.io/P2PPong/');
                 pongUrl.searchParams.set('v', Date.now());
+                if (urlParams.get('id')) {
+                    pongUrl.searchParams.set('id', urlParams.get('id'));
+                    pongUrl.searchParams.set('key', urlParams.get('key'));
+                }
                 pongFrame.src = pongUrl.toString();
 
                 statusDiv.textContent = '🏹 Пробуждение...';
