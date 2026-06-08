@@ -3,802 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>RobinCall 🏹</title>
+    <title>RobinCall</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="../assets/avatars/001-.png">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; media-src 'self' blob:; connect-src * blob:; img-src 'self' data: blob:;">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        html, body {
-            height: 100%;
-            overflow: hidden;
-            font-family: 'Segoe UI', 'Inter', 'Georgia', serif;
-        }
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        html,body { height:100%; overflow:hidden; font-family:'Segoe UI','Inter','Georgia',serif; }
         body {
             background: linear-gradient(135deg, #1a2a1f 0%, #0d1a0c 100%);
-            color: #e8e2c7;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100dvh;
-            position: relative;
+            color:#e8e2c7;
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            height:100dvh; position:relative;
         }
-        /* Фоновое изображение - с fallback если файл не загрузится */
         body::before {
-            content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('../assets/background.webp');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            z-index: 0;
-            opacity: 0.3;
+            content:""; position:fixed; top:0; left:0; width:100%; height:100%;
+            background-image:url('../assets/background.webp');
+            background-size:cover; background-position:center; background-repeat:no-repeat;
+            z-index:0; opacity:0.3;
         }
         body::after {
-            content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 50% 50%, rgba(30,40,25,0.6), rgba(10,20,8,0.9));
-            z-index: 0;
+            content:""; position:fixed; top:0; left:0; width:100%; height:100%;
+            background:radial-gradient(circle at 50% 50%, rgba(30,40,25,0.6), rgba(10,20,8,0.9));
+            z-index:0;
         }
-        .container {
-            position: relative;
-            z-index: 1;
-            text-align: center;
-            padding: 20px;
-        }
-        h1 {
-            font-size: 2em;
-            background: linear-gradient(135deg, #e8d5a3, #c4a24b);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            margin-bottom: 10px;
-        }
-        .status {
-            color: #b8a87a;
-            font-size: 1em;
-            margin: 15px 0;
-            min-height: 30px;
-        }
+        .container { position:relative; z-index:1; text-align:center; padding:20px; }
+        h1 { font-size:2em; background:linear-gradient(135deg,#e8d5a3,#c4a24b); -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:10px; }
+        .status { color:#b8a87a; font-size:1em; margin:15px 0; min-height:30px; }
         .btn {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            border: 3px solid #c4a24b;
-            cursor: pointer;
-            font-size: 35px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 20px auto;
-            transition: all 0.3s;
-            background: rgba(196, 162, 75, 0.15);
-            color: #e8e2c7;
+            width:80px; height:80px; border-radius:50%; border:3px solid #c4a24b;
+            cursor:pointer; font-size:35px; display:flex; align-items:center; justify-content:center;
+            margin:20px auto; transition:all 0.3s; background:rgba(196,162,75,0.15); color:#e8e2c7;
         }
-        .btn:hover {
-            background: rgba(196, 162, 75, 0.35);
-            box-shadow: 0 0 30px rgba(196, 162, 75, 0.4);
-            transform: scale(1.1);
-        }
-        .btn-call { border-color: #4caf50; color: #4caf50; }
-        .btn-hangup { border-color: #f44336; color: #f44336; }
-        .btn-answer { border-color: #4caf50; color: #4caf50; }
-        .btn-reject { border-color: #f44336; color: #f44336; }
-        .btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .btn:disabled:hover {
-            background: rgba(196, 162, 75, 0.15);
-            box-shadow: none;
-            transform: none;
-        }
-        .hidden { display: none !important; }
-        .controls {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        .debug {
-            color: #666;
-            font-size: 0.7em;
-            margin-top: 30px;
-            word-break: break-all;
-            max-height: 80px;
-            overflow-y: auto;
-        }
-        .ripple {
-            animation: ripple 1.5s infinite;
-        }
-        @keyframes ripple {
-            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5); }
-            70% { box-shadow: 0 0 0 30px rgba(76, 175, 80, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
-        }
-        .fingerprint-info {
-            font-family: monospace;
-            font-size: 0.65em;
-            background: rgba(0,0,0,0.3);
-            padding: 6px 12px;
-            border-radius: 8px;
-            margin: 8px 0;
-            word-break: break-all;
-            color: #81c784;
-            max-width: 90%;
-        }
-        .error-message {
-            color: #f44336;
-            font-size: 0.8em;
-            margin-top: 10px;
-        }
+        .btn:hover { background:rgba(196,162,75,0.35); box-shadow:0 0 30px rgba(196,162,75,0.4); transform:scale(1.1); }
+        .btn-call { border-color:#4caf50; color:#4caf50; }
+        .btn-hangup { border-color:#f44336; color:#f44336; }
+        .btn-answer { border-color:#4caf50; color:#4caf50; }
+        .btn-reject { border-color:#f44336; color:#f44336; }
+        .btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+        .btn:disabled:hover { background:rgba(196,162,75,0.15); box-shadow:none; transform:none; }
+        .hidden { display:none !important; }
+        .controls { display:flex; gap:20px; justify-content:center; margin-top:20px; }
+        .debug { color:#666; font-size:0.7em; margin-top:30px; word-break:break-all; max-height:80px; overflow-y:auto; }
+        .ripple { animation:ripple 1.5s infinite; }
+        @keyframes ripple { 0%{box-shadow:0 0 0 0 rgba(76,175,80,0.5)} 70%{box-shadow:0 0 0 30px rgba(76,175,80,0)} 100%{box-shadow:0 0 0 0 rgba(76,175,80,0)} }
+        .fingerprint-info { font-family:monospace; font-size:0.65em; background:rgba(0,0,0,0.3); padding:6px 12px; border-radius:8px; margin:8px 0; word-break:break-all; color:#81c784; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🏹 RobinCall</h1>
-        <div class="status" id="status">Ожидание...</div>
-        <div class="fingerprint-info hidden" id="fingerprint-info"></div>
-
-        <!-- Кнопка вызова (исходящий) -->
-        <button class="btn btn-call hidden" id="btn-call" title="Позвонить">📞</button>
-
-        <!-- Входящий звонок -->
-        <div class="controls hidden" id="incoming-controls">
-            <button class="btn btn-answer" id="btn-answer" title="Принять">📞</button>
-            <button class="btn btn-reject" id="btn-reject" title="Отклонить">❌</button>
-        </div>
-
-        <!-- Активный звонок -->
-        <div class="controls hidden" id="active-controls">
-            <button class="btn btn-hangup ripple" id="btn-hangup" title="Завершить">📞</button>
-        </div>
-
-        <div class="error-message hidden" id="error-message"></div>
-        <div class="debug" id="debug"></div>
+<div class="container">
+    <h1>RobinCall</h1>
+    <div class="status" id="status">Загрузка...</div>
+    <div class="fingerprint-info hidden" id="fingerprint-info"></div>
+    <button class="btn btn-call hidden" id="btn-call"></button>
+    <div class="controls hidden" id="incoming-controls">
+        <button class="btn btn-answer" id="btn-answer"></button>
+        <button class="btn btn-reject" id="btn-reject">✕</button>
     </div>
+    <div class="controls hidden" id="active-controls">
+        <button class="btn btn-hangup ripple" id="btn-hangup"></button>
+    </div>
+    <div class="debug" id="debug"></div>
+</div>
 
-    <script>
-        /**
-         * RobinCall v2.0 - Легковесный WebRTC клиент для RobinHood P2P
-         * Исправления:
-         * - Убран жесткий 404 на background.webp (graceful fallback)
-         * - Добавлена обработка отсутствия родительского окна
-         * - Улучшена обработка ошибок WebRTC
-         * - Добавлен таймаут для неактивных звонков
-         */
-        (function() {
-            'use strict';
+<script>
+(function(){
+const $=(s)=>document.getElementById(s);
+const statusDiv=$('status'),debugDiv=$('debug'),fingerprintInfo=$('fingerprint-info');
+const btnCall=$('btn-call'),btnHangup=$('btn-hangup'),btnAnswer=$('btn-answer'),btnReject=$('btn-reject');
+const incomingControls=$('incoming-controls'),activeControls=$('active-controls');
 
-            // ==================== DOM ЭЛЕМЕНТЫ ====================
-            const statusDiv = document.getElementById('status');
-            const debugDiv = document.getElementById('debug');
-            const fingerprintInfo = document.getElementById('fingerprint-info');
-            const errorMessage = document.getElementById('error-message');
-            const btnCall = document.getElementById('btn-call');
-            const btnHangup = document.getElementById('btn-hangup');
-            const btnAnswer = document.getElementById('btn-answer');
-            const btnReject = document.getElementById('btn-reject');
-            const incomingControls = document.getElementById('incoming-controls');
-            const activeControls = document.getElementById('active-controls');
+const ICE=[
+  {urls:"stun:stun.l.google.com:19302"},
+  {urls:"stun:stun1.l.google.com:19302"},
+  {urls:["turn:openrelay.metered.ca:80?transport=tcp","turn:openrelay.metered.ca:443?transport=tcp"],username:"openrelayproject",credential:"openrelayproject"}
+];
 
-            // ==================== КОНФИГУРАЦИЯ ====================
-            const ICE_SERVERS = [
-                { urls: "stun:stun.l.google.com:19302" },
-                { urls: "stun:stun1.l.google.com:19302" },
-                {
-                    urls: [
-                        "turn:openrelay.metered.ca:80?transport=tcp",
-                        "turn:openrelay.metered.ca:443?transport=tcp"
-                    ],
-                    username: "openrelayproject",
-                    credential: "openrelayproject"
-                }
-            ];
+let pc=null,stream=null,channelId=null,callActive=false,callTimer=null,initReceived=false;
+const urlParams=new URLSearchParams(location.search);
 
-            const CALL_TIMEOUT = 60000; // 60 секунд на установку звонка
-            const HANGUP_DELAY = 2000;  // Задержка перед закрытием окна
+function log(m){console.log('[RobinCall]',m);if(debugDiv){debugDiv.textContent+=m+'\n';debugDiv.scrollTop=debugDiv.scrollHeight}}
 
-            // ==================== СОСТОЯНИЕ ====================
-            let peerConnection = null;
-            let localStream = null;
-            let channelId = null;
-            let sessionSecret = null;
-            let ecdhPubKey = null;
-            let peerFingerprint = null;
-            let callActive = false;
-            let callTimer = null;
-            let initReceived = false;
-            let urlParams = new URLSearchParams(window.location.search);
+function notify(t,d={}){
+  const m={type:t,...d};
+  if(window.opener&&!window.opener.closed)try{window.opener.postMessage(m,'*')}catch(e){}
+  if(window.parent&&window.parent!==window)try{window.parent.postMessage(m,'*')}catch(e){}
+}
 
-            // ==================== УТИЛИТЫ ====================
-            function setStatus(text, isError = false) {
-                if (statusDiv) {
-                    statusDiv.textContent = text;
-                    statusDiv.style.color = isError ? '#f44336' : '#b8a87a';
-                }
-            }
+function sendSignal(t){notify('robinhood-call-signal',{text:t,channelId})}
 
-            function showError(text) {
-                if (errorMessage) {
-                    errorMessage.textContent = text;
-                    errorMessage.classList.remove('hidden');
-                }
-                setStatus('❌ ' + text, true);
-                console.error('[RobinCall]', text);
-            }
+async function getMedia(video=false){
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:!0,noiseSuppression:!0,autoGainControl:!0},video:video?{width:{ideal:640},height:{ideal:480},facingMode:'user'}:!1});
+    log('Медиа получен');return!0
+  }catch(e){log('Ошибка медиа: '+e.message);statusDiv.textContent='Нет доступа к микрофону';return!1}
+}
 
-            function hideError() {
-                if (errorMessage) errorMessage.classList.add('hidden');
-            }
+function createPC(){
+  if(pc)pc.close();
+  pc=new RTCPeerConnection({iceServers:ICE,iceTransportPolicy:'all',iceCandidatePoolSize:2});
+  if(stream)stream.getTracks().forEach(t=>pc.addTrack(t,stream));
+  pc.ontrack=e=>{if(e.streams[0]){const a=new Audio();a.srcObject=e.streams[0];a.play().catch(()=>{})}};
+  pc.onicecandidate=e=>{if(e.candidate)sendSignal('__ICE__'+JSON.stringify(e.candidate))};
+  pc.onconnectionstatechange=()=>{
+    log('Состояние: '+pc.connectionState);
+    if(pc.connectionState==='connected'){statusDiv.textContent='Связь установлена';callActive=!0;clearTimeout(callTimer);notify('robinhood-call-connected',{})}
+    if(pc.connectionState==='failed'){statusDiv.textContent='Соединение не удалось';hangup()}
+  };
+  pc.oniceconnectionstatechange=()=>{log('ICE: '+pc.iceConnectionState);if(pc.iceConnectionState==='failed'){statusDiv.textContent='P2P не удался';hangup()}};
+  return pc
+}
 
-            function log(msg) {
-                console.log('[RobinCall]', msg);
-                if (debugDiv) {
-                    debugDiv.textContent += msg + '\n';
-                    debugDiv.scrollTop = debugDiv.scrollHeight;
-                    // Ограничиваем количество строк
-                    const lines = debugDiv.textContent.split('\n');
-                    if (lines.length > 20) {
-                        debugDiv.textContent = lines.slice(-20).join('\n');
-                    }
-                }
-            }
+async function startCall(){
+  if(callActive||!channelId)return;
+  statusDiv.textContent='Вызов...';btnCall.classList.add('hidden');activeControls.classList.remove('hidden');
+  if(!await getMedia(urlParams.get('mode')==='video')){resetUI();return}
+  createPC();
+  try{
+    const offer=await pc.createOffer();await pc.setLocalDescription(offer);
+    sendSignal('__OFFER__'+JSON.stringify(offer));log('Offer отправлен');
+    callTimer=setTimeout(()=>{if(!callActive){statusDiv.textContent='Таймаут вызова';hangup()}},60000)
+  }catch(e){log('Ошибка offer: '+e.message);hangup()}
+}
 
-            // ==================== КОММУНИКАЦИЯ С РОДИТЕЛЕМ ====================
-            function notifyParent(type, data = {}) {
-                const msg = { type, ...data };
-                
-                // Пробуем через window.opener (отдельное окно)
-                if (window.opener && !window.opener.closed) {
-                    try {
-                        window.opener.postMessage(msg, '*');
-                    } catch (e) {
-                        log('Ошибка отправки в opener: ' + e.message);
-                    }
-                }
-                
-                // Пробуем через parent (iframe)
-                if (window.parent && window.parent !== window) {
-                    try {
-                        window.parent.postMessage(msg, '*');
-                    } catch (e) {
-                        log('Ошибка отправки в parent: ' + e.message);
-                    }
-                }
-            }
+async function acceptCall(){
+  statusDiv.textContent='Соединение...';incomingControls.classList.add('hidden');activeControls.classList.remove('hidden');
+  if(!await getMedia()){hangup();return}
+  createPC()
+}
 
-            function sendSignal(text) {
-                notifyParent('robinhood-call-signal', { text, channelId });
-            }
+function hangup(send=!0){
+  callActive=!1;clearTimeout(callTimer);
+  statusDiv.textContent='Звонок завершён';activeControls.classList.add('hidden');incomingControls.classList.add('hidden');btnCall.classList.remove('hidden');
+  if(send&&channelId)sendSignal('__HANGUP__');
+  notify('robinhood-call-ended',{channelId});
+  if(pc){pc.close();pc=null}
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+  log('Ресурсы освобождены');
+  setTimeout(()=>{try{window.close()}catch(e){statusDiv.textContent='Окно можно закрыть'}},2000)
+}
 
-            // ==================== ПОЛУЧЕНИЕ МЕДИА ====================
-            async function getLocalStream(enableVideo = false) {
-                try {
-                    const constraints = {
-                        audio: {
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true
-                        },
-                        video: enableVideo ? {
-                            width: { ideal: 640 },
-                            height: { ideal: 480 },
-                            facingMode: 'user'
-                        } : false
-                    };
-                    
-                    localStream = await navigator.mediaDevices.getUserMedia(constraints);
-                    log('Медиа-поток получен');
-                    return true;
-                } catch (e) {
-                    log('Ошибка доступа к медиа: ' + e.message);
-                    
-                    if (e.name === 'NotAllowedError') {
-                        showError('Доступ к микрофону запрещен. Разрешите в настройках браузера.');
-                    } else if (e.name === 'NotFoundError') {
-                        showError('Микрофон или камера не найдены.');
-                    } else {
-                        showError('Ошибка доступа: ' + e.message);
-                    }
-                    
-                    notifyParent('robinhood-call-error', { 
-                        error: 'media-denied',
-                        message: e.message 
-                    });
-                    
-                    return false;
-                }
-            }
+function resetUI(){activeControls.classList.add('hidden');incomingControls.classList.add('hidden');btnCall.classList.remove('hidden');statusDiv.textContent='Готов к вызову'}
 
-            // ==================== WEBRTC ====================
-            function createPeerConnection() {
-                // Закрываем предыдущее соединение если есть
-                if (peerConnection) {
-                    peerConnection.close();
-                    peerConnection = null;
-                }
-                
-                const config = {
-                    iceServers: ICE_SERVERS,
-                    iceTransportPolicy: 'all',
-                    iceCandidatePoolSize: 2
-                };
-                
-                peerConnection = new RTCPeerConnection(config);
-                log('PeerConnection создан');
+async function handleSignal(text){
+  if(!text)return;
+  if(text.startsWith('__OFFER__')){
+    if(callActive||pc)return sendSignal('__HANGUP__');
+    try{
+      const offer=JSON.parse(text.replace('__OFFER__',''));
+      statusDiv.textContent='Входящий вызов...';btnCall.classList.add('hidden');incomingControls.classList.remove('hidden');
+      window._pendingOffer=offer
+    }catch(e){log('Ошибка парсинга offer')}
+    return
+  }
+  if(text.startsWith('__ANSWER__')){
+    if(!pc)return;
+    try{await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(text.replace('__ANSWER__',''))));log('Answer установлен')}catch(e){log('Ошибка answer')}
+    return
+  }
+  if(text.startsWith('__ICE__')){
+    if(!pc)return;
+    try{await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(text.replace('__ICE__',''))))}catch(e){}
+    return
+  }
+  if(text==='__HANGUP__'){statusDiv.textContent='Собеседник завершил звонок';hangup(!1)}
+}
 
-                // Добавляем локальные треки
-                if (localStream) {
-                    localStream.getTracks().forEach(track => {
-                        peerConnection.addTrack(track, localStream);
-                        log('Добавлен трек: ' + track.kind);
-                    });
-                }
+window.addEventListener('message',e=>{
+  const d=e.data;if(!d||!d.type)return;
+  if(d.type==='robinhood-call-init'){
+    channelId=d.channelId;initReceived=!0;
+    log('Канал: '+channelId);
+    if(d.fingerprint){fingerprintInfo.classList.remove('hidden');fingerprintInfo.textContent='Отпечаток: '+d.fingerprint.substring(0,16)+'...'}
+    statusDiv.textContent='Готов к вызову';btnCall.classList.remove('hidden');
+    notify('robinhood-call-ready',{channelId});
+    return
+  }
+  if(d.type==='robinhood-call-signal'&&d.text){if(!initReceived&&!channelId)channelId=d.channelId;handleSignal(d.text);return}
+  if(d.type==='robinhood-call-hangup'){if(callActive)hangup(!1)}
+});
 
-                // Обработка удаленных треков
-                peerConnection.ontrack = (event) => {
-                    log('Получен удаленный поток');
-                    const audio = new Audio();
-                    audio.srcObject = event.streams[0];
-                    audio.play().catch(e => {
-                        log('Автовоспроизведение: ' + e.message);
-                        // Показываем подсказку пользователю
-                        setStatus('🔊 Нажмите для звука');
-                    });
-                };
+btnCall.addEventListener('click',startCall);
+btnHangup.addEventListener('click',()=>hangup(!0));
+btnAnswer.addEventListener('click',async()=>{
+  await acceptCall();
+  if(pc&&window._pendingOffer){
+    try{
+      await pc.setRemoteDescription(new RTCSessionDescription(window._pendingOffer));
+      const answer=await pc.createAnswer();await pc.setLocalDescription(answer);
+      sendSignal('__ANSWER__'+JSON.stringify(answer));log('Answer отправлен');
+      delete window._pendingOffer
+    }catch(e){log('Ошибка ответа: '+e.message);hangup()}
+  }
+});
+btnReject.addEventListener('click',()=>{sendSignal('__HANGUP__');delete window._pendingOffer;resetUI();setTimeout(()=>{try{window.close()}catch(e){}},2000)});
 
-                // ICE кандидаты
-                peerConnection.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        log('ICE кандидат: ' + event.candidate.type);
-                        sendSignal('__ICE__' + JSON.stringify(event.candidate));
-                    }
-                };
+window.addEventListener('beforeunload',()=>{if(callActive){sendSignal('__HANGUP__');notify('robinhood-call-ended',{channelId})}if(stream)stream.getTracks().forEach(t=>t.stop());if(pc)pc.close()});
 
-                // Ошибки ICE
-                peerConnection.onicecandidateerror = (event) => {
-                    log('ICE ошибка: ' + (event.errorText || 'неизвестно'));
-                };
+setInterval(()=>{if(window.opener&&window.opener.closed){if(callActive)hangup(!1);try{window.close()}catch(e){}}},3000);
 
-                // Состояние соединения
-                peerConnection.onconnectionstatechange = () => {
-                    const state = peerConnection.connectionState;
-                    log('Состояние соединения: ' + state);
-                    
-                    switch (state) {
-                        case 'connected':
-                            setStatus('✅ Связь установлена');
-                            callActive = true;
-                            clearTimeout(callTimer);
-                            hideError();
-                            notifyParent('robinhood-call-connected', {});
-                            break;
-                            
-                        case 'disconnected':
-                            setStatus('⚠ Связь прервана...');
-                            break;
-                            
-                        case 'failed':
-                            showError('Соединение не удалось');
-                            hangup();
-                            break;
-                            
-                        case 'closed':
-                            log('Соединение закрыто');
-                            break;
-                    }
-                };
-
-                // Состояние ICE
-                peerConnection.oniceconnectionstatechange = () => {
-                    log('ICE состояние: ' + peerConnection.iceConnectionState);
-                    
-                    if (peerConnection.iceConnectionState === 'failed') {
-                        showError('Не удалось установить P2P соединение. Попробуйте еще раз.');
-                        hangup();
-                    }
-                };
-
-                return peerConnection;
-            }
-
-            // ==================== УПРАВЛЕНИЕ ЗВОНКОМ ====================
-            async function startCall() {
-                if (callActive) return;
-                if (!channelId) {
-                    showError('Нет активного канала для звонка');
-                    return;
-                }
-                
-                hideError();
-                setStatus('📞 Вызов...');
-                btnCall.classList.add('hidden');
-                activeControls.classList.remove('hidden');
-
-                // Получаем медиа
-                const mode = urlParams.get('mode') === 'video';
-                if (!await getLocalStream(mode)) {
-                    resetUI();
-                    return;
-                }
-                
-                // Создаем соединение
-                createPeerConnection();
-                
-                try {
-                    const offer = await peerConnection.createOffer();
-                    await peerConnection.setLocalDescription(offer);
-                    log('Offer создан и установлен');
-                    
-                    sendSignal('__OFFER__' + JSON.stringify(offer));
-                    
-                    // Таймаут на установку соединения
-                    callTimer = setTimeout(() => {
-                        if (!callActive) {
-                            showError('Таймаут вызова. Собеседник не ответил.');
-                            hangup();
-                        }
-                    }, CALL_TIMEOUT);
-                    
-                } catch (e) {
-                    log('Ошибка создания offer: ' + e.message);
-                    showError('Ошибка установки звонка');
-                    hangup();
-                }
-            }
-
-            async function acceptCall() {
-                if (callActive) return;
-                
-                setStatus('📞 Соединение...');
-                incomingControls.classList.add('hidden');
-                activeControls.classList.remove('hidden');
-                hideError();
-
-                if (!await getLocalStream()) {
-                    hangup();
-                    return;
-                }
-                
-                createPeerConnection();
-            }
-
-            function hangup(sendSignal = true) {
-                callActive = false;
-                clearTimeout(callTimer);
-                
-                setStatus('📞 Звонок завершён');
-                activeControls.classList.add('hidden');
-                incomingControls.classList.add('hidden');
-                btnCall.classList.remove('hidden');
-                
-                if (sendSignal && channelId) {
-                    sendSignal('__HANGUP__');
-                }
-                
-                notifyParent('robinhood-call-ended', { channelId });
-                
-                // Очистка ресурсов
-                if (peerConnection) {
-                    peerConnection.close();
-                    peerConnection = null;
-                }
-                
-                if (localStream) {
-                    localStream.getTracks().forEach(track => {
-                        track.stop();
-                        log('Трек остановлен: ' + track.kind);
-                    });
-                    localStream = null;
-                }
-                
-                log('Звонок завершен, ресурсы освобождены');
-                
-                // Закрываем окно с задержкой
-                setTimeout(() => {
-                    try {
-                        window.close();
-                    } catch (e) {
-                        log('Не удалось закрыть окно: ' + e.message);
-                        setStatus('Окно можно закрыть');
-                    }
-                }, HANGUP_DELAY);
-            }
-
-            function resetUI() {
-                activeControls.classList.add('hidden');
-                incomingControls.classList.add('hidden');
-                btnCall.classList.remove('hidden');
-                setStatus('🏹 Готов к вызову');
-            }
-
-            // ==================== ОБРАБОТКА СИГНАЛОВ ====================
-            async function handleSignal(text) {
-                if (!text) return;
-                
-                // Входящий вызов
-                if (text.startsWith('__OFFER__')) {
-                    if (callActive || peerConnection) {
-                        log('Звонок уже активен, игнорируем');
-                        sendSignal('__HANGUP__');
-                        return;
-                    }
-                    
-                    try {
-                        const offerStr = text.replace('__OFFER__', '');
-                        const offer = JSON.parse(offerStr);
-                        
-                        setStatus('📞 Входящий вызов...');
-                        btnCall.classList.add('hidden');
-                        incomingControls.classList.remove('hidden');
-                        hideError();
-                        
-                        // Сохраняем offer для использования после accept
-                        window._pendingOffer = offer;
-                        
-                    } catch (e) {
-                        log('Ошибка парсинга offer: ' + e.message);
-                    }
-                    return;
-                }
-                
-                // Ответ на вызов
-                if (text.startsWith('__ANSWER__')) {
-                    if (!peerConnection) {
-                        log('Нет PeerConnection для answer');
-                        return;
-                    }
-                    
-                    try {
-                        const answerStr = text.replace('__ANSWER__', '');
-                        const answer = JSON.parse(answerStr);
-                        
-                        await peerConnection.setRemoteDescription(
-                            new RTCSessionDescription(answer)
-                        );
-                        log('Answer получен и установлен');
-                        
-                    } catch (e) {
-                        log('Ошибка установки answer: ' + e.message);
-                    }
-                    return;
-                }
-                
-                // ICE кандидат
-                if (text.startsWith('__ICE__')) {
-                    if (!peerConnection) return;
-                    
-                    try {
-                        const iceStr = text.replace('__ICE__', '');
-                        const candidate = JSON.parse(iceStr);
-                        
-                        await peerConnection.addIceCandidate(
-                            new RTCIceCandidate(candidate)
-                        );
-                        log('ICE кандидат добавлен');
-                        
-                    } catch (e) {
-                        log('Ошибка ICE кандидата: ' + e.message);
-                    }
-                    return;
-                }
-                
-                // Завершение звонка
-                if (text === '__HANGUP__') {
-                    if (callActive || peerConnection) {
-                        setStatus('📞 Собеседник завершил звонок');
-                        hangup(false); // Не отправляем HANGUP обратно
-                    }
-                    return;
-                }
-            }
-
-            // ==================== ОБРАБОТЧИК СООБЩЕНИЙ ОТ РОДИТЕЛЯ ====================
-            window.addEventListener('message', (event) => {
-                const data = event.data;
-                if (!data || !data.type) return;
-                
-                // Инициализация от RobinHood
-                if (data.type === 'robinhood-call-init') {
-                    channelId = data.channelId;
-                    sessionSecret = data.sessionSecret;
-                    ecdhPubKey = data.ecdhPubKey;
-                    peerFingerprint = data.fingerprint;
-                    initReceived = true;
-                    
-                    log('Канал инициализирован: ' + (channelId || 'неизвестно'));
-                    log('Сервер: ' + (data.server || 'render'));
-                    
-                    if (peerFingerprint) {
-                        fingerprintInfo.classList.remove('hidden');
-                        fingerprintInfo.textContent = '🔐 Отпечаток: ' + 
-                            peerFingerprint.substring(0, 16) + '...' + 
-                            peerFingerprint.substring(peerFingerprint.length - 8);
-                    }
-                    
-                    setStatus('🏹 Готов к вызову');
-                    btnCall.classList.remove('hidden');
-                    hideError();
-                    
-                    notifyParent('robinhood-call-ready', { channelId });
-                    return;
-                }
-                
-                // Сигналы звонка (проброшенные из основного приложения)
-                if (data.type === 'robinhood-call-signal' && data.text) {
-                    if (!initReceived && !channelId) {
-                        channelId = data.channelId;
-                    }
-                    handleSignal(data.text);
-                    return;
-                }
-                
-                // Сигнал завершения от родителя
-                if (data.type === 'robinhood-call-hangup') {
-                    if (callActive) {
-                        hangup(false);
-                    }
-                    return;
-                }
-            });
-
-            // ==================== КНОПКИ ====================
-            btnCall.addEventListener('click', startCall);
-            
-            btnHangup.addEventListener('click', () => hangup(true));
-            
-            btnAnswer.addEventListener('click', async () => {
-                if (!window._pendingOffer || !peerConnection) {
-                    // Если offer еще не сохранен, создаем новое соединение
-                    await acceptCall();
-                    
-                    if (window._pendingOffer && peerConnection) {
-                        try {
-                            await peerConnection.setRemoteDescription(
-                                new RTCSessionDescription(window._pendingOffer)
-                            );
-                            
-                            const answer = await peerConnection.createAnswer();
-                            await peerConnection.setLocalDescription(answer);
-                            sendSignal('__ANSWER__' + JSON.stringify(answer));
-                            log('Answer отправлен');
-                            
-                            delete window._pendingOffer;
-                        } catch (e) {
-                            log('Ошибка при ответе: ' + e.message);
-                            showError('Ошибка установки звонка');
-                            hangup();
-                        }
-                    }
-                    return;
-                }
-                
-                // Используем сохраненный offer
-                try {
-                    await acceptCall();
-                    
-                    if (peerConnection && window._pendingOffer) {
-                        await peerConnection.setRemoteDescription(
-                            new RTCSessionDescription(window._pendingOffer)
-                        );
-                        
-                        const answer = await peerConnection.createAnswer();
-                        await peerConnection.setLocalDescription(answer);
-                        sendSignal('__ANSWER__' + JSON.stringify(answer));
-                        log('Answer отправлен (из сохраненного offer)');
-                        
-                        delete window._pendingOffer;
-                    }
-                } catch (e) {
-                    log('Ошибка при ответе: ' + e.message);
-                    showError('Ошибка установки звонка');
-                    hangup();
-                }
-            });
-            
-            btnReject.addEventListener('click', () => {
-                sendSignal('__HANGUP__');
-                setStatus('📞 Вызов отклонён');
-                delete window._pendingOffer;
-                resetUI();
-                
-                setTimeout(() => {
-                    try { window.close(); } catch (e) {}
-                }, HANGUP_DELAY);
-            });
-
-            // ==================== ЗАКРЫТИЕ ОКНА ====================
-            window.addEventListener('beforeunload', () => {
-                if (callActive) {
-                    sendSignal('__HANGUP__');
-                    notifyParent('robinhood-call-ended', { channelId });
-                }
-                
-                // Очистка
-                if (localStream) {
-                    localStream.getTracks().forEach(t => t.stop());
-                }
-                if (peerConnection) {
-                    peerConnection.close();
-                }
-            });
-
-            // ==================== ПРОВЕРКА РОДИТЕЛЬСКОГО ОКНА ====================
-            // Если окно открыто как попап, проверяем что родитель жив
-            const parentCheckInterval = setInterval(() => {
-                if (window.opener && window.opener.closed) {
-                    log('Родительское окно закрыто');
-                    if (callActive) {
-                        hangup(false);
-                    }
-                    clearInterval(parentCheckInterval);
-                    try { window.close(); } catch (e) {}
-                }
-            }, 3000);
-
-            // ==================== ИНИЦИАЛИЗАЦИЯ ====================
-            function init() {
-                log('RobinCall v2.0 загружен');
-                
-                // Проверяем параметры URL
-                const urlChannel = urlParams.get('channel');
-                const urlMode = urlParams.get('mode');
-                
-                if (urlChannel) {
-                    channelId = urlChannel;
-                    log('Канал из URL: ' + urlChannel);
-                    log('Режим: ' + (urlMode || 'audio'));
-                    
-                    setStatus('🏹 Ожидание параметров от RobinHood...');
-                    
-                    // Сообщаем родителю что мы здесь
-                    notifyParent('robinhood-call-ready', { channelId: urlChannel });
-                } else {
-                    setStatus('🏹 Ожидание инициализации...');
-                    log('Канал: ожидание инициализации от родителя');
-                    
-                    // Ждем инициализации через postMessage
-                    // Если через 10 секунд нет инициализации, показываем ошибку
-                    setTimeout(() => {
-                        if (!initReceived && !channelId) {
-                            setStatus('⚠ Не получены параметры звонка');
-                            log('Таймаут ожидания инициализации');
-                            // Все равно показываем кнопку для тестирования
-                            btnCall.classList.remove('hidden');
-                        }
-                    }, 10000);
-                }
-                
-                // Показываем кнопку если есть канал
-                if (channelId) {
-                    btnCall.classList.remove('hidden');
-                }
-            }
-
-            // Запуск
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', init);
-            } else {
-                init();
-            }
-        })();
-    </script>
+(function init(){
+  log('RobinCall v2.0 загружен');
+  const urlChannel=urlParams.get('channel');
+  if(urlChannel){channelId=urlChannel;log('Канал из URL: '+urlChannel);statusDiv.textContent='Ожидание параметров...';notify('robinhood-call-ready',{channelId:urlChannel})}
+  else{statusDiv.textContent='Ожидание инициализации...';log('Канал: ожидание инициализации');setTimeout(()=>{if(!initReceived&&!channelId){statusDiv.textContent='Нет параметров звонка';btnCall.classList.remove('hidden')}},10000)}
+  if(channelId)btnCall.classList.remove('hidden')
+})();
+})();
+</script>
 </body>
 </html>
