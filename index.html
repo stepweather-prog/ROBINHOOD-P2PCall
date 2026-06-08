@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>RobinCall</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="../assets/avatars/001-.png">
+    <!-- ПРАВИЛЬНЫЕ ПУТИ: из ROBINHOOD-P2PCall/ поднимаемся в корень, затем в ROBINHOOD-P2P/assets/ -->
+    <link rel="icon" type="image/png" sizes="192x192" href="../ROBINHOOD-P2P/assets/avatars/001-.png">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; media-src 'self' blob:; connect-src * blob:; img-src 'self' data: blob:;">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -16,9 +17,10 @@
             display:flex; flex-direction:column; align-items:center; justify-content:center;
             height:100dvh; position:relative;
         }
+        /* Фон с правильным путем: ../ROBINHOOD-P2P/assets/background.webp */
         body::before {
             content:""; position:fixed; top:0; left:0; width:100%; height:100%;
-            background-image:url('../assets/background.webp');
+            background-image:url('../ROBINHOOD-P2P/assets/background.webp');
             background-size:cover; background-position:center; background-repeat:no-repeat;
             z-index:0; opacity:0.3;
         }
@@ -68,7 +70,7 @@
 
 <script>
 (function(){
-const $=(s)=>document.getElementById(s);
+const $=s=>document.getElementById(s);
 const statusDiv=$('status'),debugDiv=$('debug'),fingerprintInfo=$('fingerprint-info');
 const btnCall=$('btn-call'),btnHangup=$('btn-hangup'),btnAnswer=$('btn-answer'),btnReject=$('btn-reject');
 const incomingControls=$('incoming-controls'),activeControls=$('active-controls');
