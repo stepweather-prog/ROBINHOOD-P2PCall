@@ -128,6 +128,30 @@
             word-break: break-all;
             max-width: 300px;
         }
+        .link-box {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #c4a24b;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin: 10px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.8em;
+            color: #e8d5a3;
+            display: none;
+        }
+        .link-box.active {
+            display: block;
+        }
+        .btn-small {
+            width: auto;
+            height: auto;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1em;
+            margin: 5px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -135,6 +159,18 @@
         <h1>🏹 RobinCall</h1>
         <div class="status" id="status">Ожидание...</div>
 
+        <!-- Кнопка создания стрелы (канала) -->
+        <button class="btn-small hidden" id="btn-create-arrow" title="Создать канал">
+            🏹 Создать стрелу
+        </button>
+
+        <!-- Ссылка-приглашение (появляется после создания) -->
+        <div class="link-box" id="link-box">
+            <div id="invite-link"></div>
+            <button class="btn-small" id="btn-copy-link">📋 Копировать</button>
+        </div>
+
+        <!-- Кнопка вызова (появляется после открытия канала) -->
         <button class="btn hidden" id="btn-call" title="Позвонить">
             <img src="assets/phone-go.png" alt="Вызов">
         </button>
@@ -166,6 +202,10 @@
             const statusDiv = document.getElementById('status');
             const debugDiv = document.getElementById('debug');
             const btnCall = document.getElementById('btn-call');
+            const btnCreateArrow = document.getElementById('btn-create-arrow');
+            const linkBox = document.getElementById('link-box');
+            const inviteLink = document.getElementById('invite-link');
+            const btnCopyLink = document.getElementById('btn-copy-link');
             const btnHangup = document.getElementById('btn-hangup');
             const btnAnswer = document.getElementById('btn-answer');
             const btnReject = document.getElementById('btn-reject');
@@ -195,16 +235,12 @@
             let sessionSecret = null;
             let callActive = false;
             let pendingIceCandidates = {};
-            let currentServer = 'render'; // будет обновляться из параметров URL
+            let currentServer = 'render';
 
             async function getLocalStream() {
                 try {
                     localStream = await navigator.mediaDevices.getUserMedia({
-                        audio: {
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true
-                        },
+                        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
                         video: false
                     });
                     return true;
@@ -217,55 +253,37 @@
 
             function createPeerConnection() {
                 peerConnection = new RTCPeerConnection({ iceServers });
-
                 if (localStream) {
-                    localStream.getTracks().forEach(track => {
-                        peerConnection.addTrack(track, localStream);
-                    });
+                    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
                 }
-
                 peerConnection.ontrack = (event) => {
                     log('Получен удалённый аудио');
                     const audio = new Audio();
                     audio.srcObject = event.streams[0];
                     audio.play().catch(e => log('Автовоспроизведение заблокировано'));
                 };
-
                 peerConnection.onicecandidate = (event) => {
                     if (event.candidate) {
-                        sendToPong({
-                            action: 'send',
-                            text: '__ICE__' + JSON.stringify(event.candidate),
-                            channelId: channelId
-                        });
+                        sendToPong({ action: 'send', text: '__ICE__' + JSON.stringify(event.candidate), channelId: channelId });
                     }
                 };
-
                 peerConnection.onconnectionstatechange = () => {
                     log('Состояние: ' + peerConnection.connectionState);
                     if (peerConnection.connectionState === 'connected') {
                         statusDiv.textContent = '✅ Связь установлена';
                         callActive = true;
-                    } else if (peerConnection.connectionState === 'disconnected' ||
-                        peerConnection.connectionState === 'failed') {
+                    } else if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
                         statusDiv.textContent = '❌ Связь потеряна';
                         hangup();
                     }
                 };
-
-                peerConnection.oniceconnectionstatechange = () => {
-                    log('ICE: ' + peerConnection.iceConnectionState);
-                };
             }
 
-            // Очередь ICE-кандидатов (как в основном RobinHood)
             function flushIceCandidates() {
                 if (!peerConnection || !peerConnection.remoteDescription || !peerConnection.remoteDescription.type) return;
                 const candidates = pendingIceCandidates[channelId] || [];
                 for (const c of candidates) {
-                    try {
-                        peerConnection.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
-                    } catch(e) {}
+                    try { peerConnection.addIceCandidate(new RTCIceCandidate(c)).catch(() => {}); } catch(e) {}
                 }
                 delete pendingIceCandidates[channelId];
             }
@@ -275,18 +293,11 @@
                 statusDiv.textContent = '📞 Вызов...';
                 btnCall.classList.add('hidden');
                 activeControls.classList.remove('hidden');
-
                 if (!await getLocalStream()) return;
                 createPeerConnection();
-
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
-
-                sendToPong({
-                    action: 'send',
-                    text: '__OFFER__' + JSON.stringify(offer),
-                    channelId: channelId
-                });
+                sendToPong({ action: 'send', text: '__OFFER__' + JSON.stringify(offer), channelId: channelId });
                 log('Offer отправлен');
             }
 
@@ -295,7 +306,6 @@
                 statusDiv.textContent = '📞 Соединение...';
                 incomingControls.classList.add('hidden');
                 activeControls.classList.remove('hidden');
-
                 if (!await getLocalStream()) return;
                 createPeerConnection();
             }
@@ -306,21 +316,9 @@
                 activeControls.classList.add('hidden');
                 incomingControls.classList.add('hidden');
                 btnCall.classList.remove('hidden');
-
-                sendToPong({
-                    action: 'send',
-                    text: '__HANGUP__',
-                    channelId: channelId
-                });
-
-                if (peerConnection) {
-                    peerConnection.close();
-                    peerConnection = null;
-                }
-                if (localStream) {
-                    localStream.getTracks().forEach(track => track.stop());
-                    localStream = null;
-                }
+                sendToPong({ action: 'send', text: '__HANGUP__', channelId: channelId });
+                if (peerConnection) { peerConnection.close(); peerConnection = null; }
+                if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
                 pendingIceCandidates = {};
             }
 
@@ -334,6 +332,7 @@
                 }
             }
 
+            // === Обработка сообщений от P2PPong ===
             window.addEventListener('message', async (event) => {
                 if (event.origin !== PONGPONG_ORIGIN) return;
                 if (event.source !== pongFrame.contentWindow) return;
@@ -343,19 +342,35 @@
                     case 'pong-ready':
                         handshakeSecret = data.handshake;
                         sendToPong({ action: 'handshake' });
-                        statusDiv.textContent = '🏹 Готов к вызову';
-                        btnCall.classList.remove('hidden');
+                        statusDiv.textContent = '🏹 Готов';
+                        btnCreateArrow.classList.remove('hidden');  // теперь можно создать канал
+                        // Если канал уже есть (восстановлен), покажем кнопку звонка
+                        if (channelId && sessionSecret) {
+                            btnCall.classList.remove('hidden');
+                        }
+                        break;
+
+                    case 'session-created':
+                        // Показываем ссылку для приглашения
+                        inviteLink.textContent = data.fullLink;
+                        linkBox.classList.add('active');
+                        statusDiv.textContent = '🏹 Стрела готова! Ожидаю подключения...';
+                        // Копируем ссылку автоматически
+                        navigator.clipboard.writeText(data.fullLink).catch(() => {});
                         break;
 
                     case 'channel-open':
                         channelId = data.channelId;
                         sessionSecret = data.secret;
-                        // Сохраняем канал для восстановления
                         try {
                             sessionStorage.setItem('robincall_channel', channelId);
                             sessionStorage.setItem('robincall_secret', sessionSecret);
                         } catch(e) {}
                         log('Канал открыт: ' + channelId);
+                        statusDiv.textContent = '✅ Канал открыт! Можно звонить.';
+                        btnCreateArrow.classList.add('hidden');
+                        linkBox.classList.remove('active');
+                        btnCall.classList.remove('hidden');
                         break;
 
                     case 'message':
@@ -367,20 +382,13 @@
                             statusDiv.textContent = '📞 Входящий вызов...';
                             btnCall.classList.add('hidden');
                             incomingControls.classList.remove('hidden');
-
                             await acceptCall();
                             await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-
                             const answer = await peerConnection.createAnswer();
                             await peerConnection.setLocalDescription(answer);
-
-                            sendToPong({
-                                action: 'send',
-                                text: '__ANSWER__' + JSON.stringify(answer),
-                                channelId: channelId
-                            });
+                            sendToPong({ action: 'send', text: '__ANSWER__' + JSON.stringify(answer), channelId: channelId });
                             log('Answer отправлен');
-                            flushIceCandidates(); // обработаем все накопившиеся ICE
+                            flushIceCandidates();
                             return;
                         }
 
@@ -389,7 +397,7 @@
                             const answer = JSON.parse(data.text.replace('__ANSWER__', ''));
                             await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
                             log('Answer получен');
-                            flushIceCandidates(); // теперь можно добавлять ICE
+                            flushIceCandidates();
                             return;
                         }
 
@@ -399,7 +407,7 @@
                                 const candidate = JSON.parse(data.text.replace('__ICE__', ''));
                                 if (!pendingIceCandidates[channelId]) pendingIceCandidates[channelId] = [];
                                 pendingIceCandidates[channelId].push(candidate);
-                                flushIceCandidates(); // попробуем добавить сразу
+                                flushIceCandidates();
                             } catch(e) {}
                             return;
                         }
@@ -410,9 +418,14 @@
                             return;
                         }
                         break;
+
+                    case 'error':
+                        statusDiv.textContent = '⚠ ' + data.text;
+                        break;
                 }
             });
 
+            // === Обработчики кнопок ===
             btnCall.addEventListener('click', startCall);
             btnHangup.addEventListener('click', hangup);
             btnAnswer.addEventListener('click', async () => { await startCall(); });
@@ -421,19 +434,36 @@
                 hangup();
             });
 
+            // Создание стрелы
+            btnCreateArrow.addEventListener('click', () => {
+                statusDiv.textContent = '⚒ Создание стрелы...';
+                sendToPong({ action: 'create' });
+            });
+
+            // Копирование ссылки вручную
+            btnCopyLink.addEventListener('click', () => {
+                const link = inviteLink.textContent;
+                if (link) {
+                    navigator.clipboard.writeText(link).then(() => {
+                        statusDiv.textContent = '📋 Ссылка скопирована!';
+                    }).catch(() => {});
+                }
+            });
+
             function log(msg) {
                 console.log('[RobinCall]', msg);
                 debugDiv.textContent += msg + '\n';
                 debugDiv.scrollTop = debugDiv.scrollHeight;
             }
 
+            // === Инициализация ===
             async function init() {
                 const urlParams = new URLSearchParams(window.location.search);
                 channelId = urlParams.get('channel');
                 sessionSecret = urlParams.get('secret');
                 currentServer = urlParams.get('server') || 'render';
 
-                // Восстановление канала из sessionStorage, если в URL нет
+                // Восстановление из sessionStorage
                 if (!channelId || !sessionSecret) {
                     try {
                         channelId = sessionStorage.getItem('robincall_channel');
