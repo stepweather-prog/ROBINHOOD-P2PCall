@@ -86,9 +86,8 @@
 
             let peerConnection = null, localStream = null, handshakeSecret = null, channelId = null, sessionSecret = null;
             let callActive = false, pendingIceCandidates = {};
-            // ВСЕГДА используем Render для звонков
-            const currentServer = 'render';
-            let pendingOffer = null;
+            const currentServer = 'render';   // Всегда Render для звонков
+            let pendingOffer = null;          // Ожидающий оффер до нажатия «Принять»
 
             async function getLocalStream() {
                 try {
@@ -207,22 +206,17 @@
                 sendToPong({ action: 'send', text: '__HANGUP__', channelId });
                 hangup();
             });
-
-            // Создание стрелы — всегда через Render
             btnCreateArrow.addEventListener('click', () => {
                 statusDiv.textContent = '⚒ Создание стрелы...';
-                sendToPong({ action: 'create', server: currentServer });
+                sendToPong({ action: 'create' });
             });
-
             btnCopyLink.addEventListener('click', () => { navigator.clipboard.writeText(inviteLink.textContent).then(() => statusDiv.textContent = '📋 Ссылка скопирована!').catch(() => {}); });
 
             async function init() {
                 const p = new URLSearchParams(location.search);
                 channelId = p.get('channel');
                 sessionSecret = p.get('secret');
-
                 if (!channelId || !sessionSecret) { try { channelId = sessionStorage.getItem('robincall_channel'); sessionSecret = sessionStorage.getItem('robincall_secret'); } catch(e) {} }
-
                 const url = new URL('https://stepweather-prog.github.io/P2PPong/');
                 url.searchParams.set('v', Date.now());
                 if (p.get('id')) { url.searchParams.set('id', p.get('id')); url.searchParams.set('key', p.get('key')); }
