@@ -151,6 +151,9 @@
             font-size: 1em;
             margin: 5px;
             cursor: pointer;
+            background: rgba(196, 162, 75, 0.2);
+            border: 1px solid #c4a24b;
+            color: #e8e2c7;
         }
     </style>
 </head>
@@ -343,19 +346,16 @@
                         handshakeSecret = data.handshake;
                         sendToPong({ action: 'handshake' });
                         statusDiv.textContent = '🏹 Готов';
-                        btnCreateArrow.classList.remove('hidden');  // теперь можно создать канал
-                        // Если канал уже есть (восстановлен), покажем кнопку звонка
+                        btnCreateArrow.classList.remove('hidden');
                         if (channelId && sessionSecret) {
                             btnCall.classList.remove('hidden');
                         }
                         break;
 
                     case 'session-created':
-                        // Показываем ссылку для приглашения
                         inviteLink.textContent = data.fullLink;
                         linkBox.classList.add('active');
                         statusDiv.textContent = '🏹 Стрела готова! Ожидаю подключения...';
-                        // Копируем ссылку автоматически
                         navigator.clipboard.writeText(data.fullLink).catch(() => {});
                         break;
 
@@ -434,13 +434,11 @@
                 hangup();
             });
 
-            // Создание стрелы
             btnCreateArrow.addEventListener('click', () => {
                 statusDiv.textContent = '⚒ Создание стрелы...';
                 sendToPong({ action: 'create' });
             });
 
-            // Копирование ссылки вручную
             btnCopyLink.addEventListener('click', () => {
                 const link = inviteLink.textContent;
                 if (link) {
@@ -463,7 +461,6 @@
                 sessionSecret = urlParams.get('secret');
                 currentServer = urlParams.get('server') || 'render';
 
-                // Восстановление из sessionStorage
                 if (!channelId || !sessionSecret) {
                     try {
                         channelId = sessionStorage.getItem('robincall_channel');
