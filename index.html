@@ -1,230 +1,927 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>RobinCall 🏹</title>
-    <link rel="manifest" href="manifest.json">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', 'Inter', 'Georgia', serif; }
-        body { background: linear-gradient(135deg, #1a2a1f 0%, #0d1a0c 100%); color: #e8e2c7; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100dvh; position: relative; }
-        body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url('../assets/background.webp'); background-size: cover; background-position: center; background-repeat: no-repeat; z-index: 0; opacity: 0.3; }
-        body::after { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 50%, rgba(30,40,25,0.6), rgba(10,20,8,0.9)); z-index: 0; }
-        .container { position: relative; z-index: 1; text-align: center; padding: 20px; }
-        h1 { font-size: 2em; background: linear-gradient(135deg, #e8d5a3, #c4a24b); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 10px; }
-        .status { color: #b8a87a; font-size: 1em; margin: 15px 0; min-height: 30px; }
-        .btn { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #c4a24b; cursor: pointer; font-size: 35px; display: flex; align-items: center; justify-content: center; margin: 20px auto; transition: all 0.3s; background: rgba(196, 162, 75, 0.15); color: #e8e2c7; }
-        .btn:hover { background: rgba(196, 162, 75, 0.35); box-shadow: 0 0 30px rgba(196, 162, 75, 0.4); transform: scale(1.1); }
-        .btn-call { border-color: #4caf50; color: #4caf50; }
-        .btn-hangup { border-color: #f44336; color: #f44336; }
-        .btn-answer { border-color: #4caf50; color: #4caf50; }
-        .btn-reject { border-color: #f44336; color: #f44336; }
-        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-        .btn:disabled:hover { background: rgba(196, 162, 75, 0.15); box-shadow: none; transform: none; }
-        .hidden { display: none !important; }
-        .controls { display: flex; gap: 20px; justify-content: center; margin-top: 20px; }
-        .debug { color: #666; font-size: 0.7em; margin-top: 30px; word-break: break-all; max-width: 300px; }
-        .ripple { animation: ripple 1.5s infinite; }
-        @keyframes ripple { 0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5); } 70% { box-shadow: 0 0 0 30px rgba(76, 175, 80, 0); } 100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); } }
-        .link-box { background: rgba(0,0,0,0.5); border: 1px solid #c4a24b; border-radius: 8px; padding: 8px 12px; margin: 10px 0; word-break: break-all; font-family: monospace; font-size: 0.8em; color: #e8d5a3; display: none; }
-        .link-box.active { display: block; }
-        .btn-small { width: auto; height: auto; padding: 10px 20px; border-radius: 8px; font-size: 1em; margin: 5px; cursor: pointer; background: rgba(196, 162, 75, 0.2); border: 1px solid #c4a24b; color: #e8e2c7; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🏹 RobinCall</h1>
-        <div class="status" id="status">Ожидание...</div>
+(function() {
+    var statusDiv = document.getElementById('status');
+    var debugDiv = document.getElementById('debug');
+    var btnArrow = document.getElementById('btn-arrow');
+    var btnCall = document.getElementById('btn-call');
+    var btnVideo = document.getElementById('btn-video');
+    var btnFileSend = document.getElementById('btn-file-send');
+    var btnSettings = document.getElementById('btn-settings');
+    var callLabelBtn = document.getElementById('call-label-btn');
+    var videoLabelBtn = document.getElementById('video-label-btn');
+    var fileLabelBtn = document.getElementById('file-label-btn');
+    var inviteModal = document.getElementById('invite-modal');
+    var inviteLink = document.getElementById('invite-link');
+    var qrCodeDiv = document.getElementById('qr-code');
+    var btnShare = document.getElementById('btn-share');
+    var btnCloseInvite = document.getElementById('btn-close-invite');
+    var btnCancelArrow = document.getElementById('btn-cancel-arrow');
+    var settingsModal = document.getElementById('settings-modal');
+    var callPanel = document.getElementById('call-panel');
+    var callStatus = document.getElementById('call-status');
+    var callAccept = document.getElementById('call-accept');
+    var callEnd = document.getElementById('call-end');
+    var callSpeaker = document.getElementById('call-speaker');
+    var callCamera = document.getElementById('call-camera');
+    var callMic = document.getElementById('call-mic');
+    var mainBtns = document.getElementById('main-btns');
+    var pongFrame = document.getElementById('pong-frame');
+    var serverToggle = document.getElementById('server-toggle');
+    var serverLabel = document.getElementById('server-label');
+    var toggleSound = document.getElementById('toggle-sound');
+    var toggleSrtp = document.getElementById('toggle-srtp');
+    var remoteVideo = document.getElementById('remote-video');
+    var localVideo = document.getElementById('local-video');
+    var remoteVideoContainer = document.getElementById('remote-video-container');
+    var localVideoContainer = document.getElementById('local-video-container');
+    var videoControls = document.getElementById('video-controls');
+    var vcFullscreen = document.getElementById('vc-fullscreen');
+    var fileInput = document.getElementById('file-input');
+    var customCssModal = document.getElementById('custom-css-modal');
+    var customCssInput = document.getElementById('custom-css-input');
+    var p2pQrModal = document.getElementById('p2p-qr-modal');
+    var p2pQrCode = document.getElementById('p2p-qr-code');
+    var p2pLinkDisplay = document.getElementById('p2p-link-display');
 
-        <button class="btn-small hidden" id="btn-create-arrow">🏹 Создать стрелу</button>
-        <div class="link-box" id="link-box">
-            <div id="invite-link"></div>
-            <button class="btn-small" id="btn-copy-link">📋 Копировать</button>
-        </div>
+    var WORKERS_URL = 'https://robincall.stephanclaps-491.workers.dev';
+    var currentServer = 'render';
+    try { currentServer = localStorage.getItem('robinhood_server') || 'render'; } catch(e) {}
+    var handshakeSecret = null, channelId = null, sessionSecret = null, inviteTimer = null;
+    var audioPool = {}, pendingIceCandidates = {};
+    var peerConnections = {}, localStreams = {}, callActive = false, videoCallActive = false;
+    var speakerOn = true, cameraOn = true, micOn = true, srtpEnabled = false;
+    var ringtoneAudio = null, ringbackAudio = null, customCssStyle = null;
+    var dataChannels = {};
+    var isIncomingCall = false; // Флаг для входящих звонков
 
-        <button class="btn btn-call hidden" id="btn-call" title="Позвонить">📞</button>
+    var savedCss = null;
+    try { savedCss = localStorage.getItem('robincall_custom_css'); } catch(e) {}
+    if (savedCss) { customCssStyle = document.createElement('style'); customCssStyle.textContent = savedCss; document.head.appendChild(customCssStyle); }
 
-        <div class="controls hidden" id="incoming-controls">
-            <button class="btn btn-answer" id="btn-answer" title="Принять">📞</button>
-            <button class="btn btn-reject" id="btn-reject" title="Отклонить">❌</button>
-        </div>
+    function getAudio(filename) { 
+        if (!audioPool[filename]) { 
+            audioPool[filename] = new Audio('assets/sounds/' + filename); 
+            audioPool[filename].volume = 0.5; 
+        } 
+        var a = audioPool[filename]; 
+        a.currentTime = 0; 
+        return a; 
+    }
+    
+    function playSound(filename) { 
+        if (toggleSound && toggleSound.checked) { 
+            getAudio(filename).play().catch(function() {}); 
+        } 
+    }
 
-        <div class="controls hidden" id="active-controls">
-            <button class="btn btn-hangup ripple" id="btn-hangup" title="Завершить">📞</button>
-        </div>
-
-        <div class="debug" id="debug"></div>
-    </div>
-
-    <iframe id="pong-frame" src="" style="display:none;" title="p2p engine"></iframe>
-
-    <script>
-        (function() {
-            const PONGPONG_ORIGIN = 'https://stepweather-prog.github.io';
-
-            const statusDiv = document.getElementById('status');
-            const debugDiv = document.getElementById('debug');
-            const btnCall = document.getElementById('btn-call');
-            const btnCreateArrow = document.getElementById('btn-create-arrow');
-            const linkBox = document.getElementById('link-box');
-            const inviteLink = document.getElementById('invite-link');
-            const btnCopyLink = document.getElementById('btn-copy-link');
-            const btnHangup = document.getElementById('btn-hangup');
-            const btnAnswer = document.getElementById('btn-answer');
-            const btnReject = document.getElementById('btn-reject');
-            const incomingControls = document.getElementById('incoming-controls');
-            const activeControls = document.getElementById('active-controls');
-            const pongFrame = document.getElementById('pong-frame');
-
-            const iceServers = [
-                { urls: "stun:stun.l.google.com:19302" },
-                { urls: "stun:stun1.l.google.com:19302" },
-                { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
-                { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" }
-            ];
-
-            let peerConnection = null, localStream = null, handshakeSecret = null, channelId = null, sessionSecret = null;
-            let callActive = false, pendingIceCandidates = {};
-            const currentServer = 'render';   // Всегда Render для звонков
-            let pendingOffer = null;          // Ожидающий оффер до нажатия «Принять»
-
-            async function getLocalStream() {
-                try {
-                    localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
-                    return true;
-                } catch (e) { statusDiv.textContent = '❌ Нет доступа к микрофону'; return false; }
+    function getIceServers() {
+        return [
+            { urls: "stun:stun.l.google.com:19302" }, 
+            { urls: "stun:stun1.l.google.com:19302" },
+            { 
+                urls: [
+                    "turn:openrelay.metered.ca:80?transport=tcp", 
+                    "turn:openrelay.metered.ca:443?transport=tcp"
+                ], 
+                username: "openrelayproject", 
+                credential: "openrelayproject" 
             }
+        ];
+    }
 
-            function createPeerConnection() {
-                peerConnection = new RTCPeerConnection({ iceServers });
-                if (localStream) localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
-                peerConnection.ontrack = e => {
-                    const a = new Audio(); a.srcObject = e.streams[0]; a.play().catch(() => {});
-                    statusDiv.textContent = '✅ Разговор';
-                };
-                peerConnection.onicecandidate = e => {
-                    if (e.candidate) sendToPong({ action: 'send', text: '__ICE__' + JSON.stringify(e.candidate), channelId });
-                };
-                peerConnection.onconnectionstatechange = () => {
-                    if (peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'disconnected') hangup();
-                };
-            }
+    function log(msg) { 
+        console.log('[RobinCall]', msg); 
+        if (debugDiv) {
+            debugDiv.textContent += msg + '\n'; 
+            debugDiv.scrollTop = debugDiv.scrollHeight; 
+        }
+    }
 
-            function flushIceCandidates() {
-                if (!peerConnection || !peerConnection.remoteDescription || !peerConnection.remoteDescription.type) return;
-                const candidates = pendingIceCandidates[channelId] || [];
-                for (const c of candidates) peerConnection.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
-                delete pendingIceCandidates[channelId];
-            }
+    async function getMediaStream(enableVideo) {
+        try {
+            var stream = await navigator.mediaDevices.getUserMedia({
+                audio: { 
+                    echoCancellation: true, 
+                    noiseSuppression: true, 
+                    autoGainControl: true 
+                },
+                video: enableVideo || false
+            });
+            return stream;
+        } catch (e) { 
+            statusDiv.textContent = '❌ Нет доступа к микрофону/камере'; 
+            return null; 
+        }
+    }
 
-            async function startCall() {
-                if (callActive) return;
-                statusDiv.textContent = '📞 Вызов...'; btnCall.classList.add('hidden'); activeControls.classList.remove('hidden');
-                if (!await getLocalStream()) return;
-                createPeerConnection();
-                const offer = await peerConnection.createOffer(); await peerConnection.setLocalDescription(offer);
-                sendToPong({ action: 'send', text: '__OFFER__' + JSON.stringify(offer), channelId });
-                callActive = true;
-            }
-
-            function hangup() {
-                callActive = false; statusDiv.textContent = '📞 Звонок завершён';
-                activeControls.classList.add('hidden'); incomingControls.classList.add('hidden'); btnCall.classList.remove('hidden');
-                sendToPong({ action: 'send', text: '__HANGUP__', channelId });
-                if (peerConnection) { peerConnection.close(); peerConnection = null; }
-                if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
-                pendingIceCandidates = {}; pendingOffer = null;
-            }
-
-            function sendToPong(msg) {
-                if (sessionSecret) msg.secret = sessionSecret;
-                if (channelId) msg.channelId = channelId;
-                if (handshakeSecret && msg.action === 'handshake') msg.handshake = handshakeSecret;
-                msg.server = currentServer;
-                if (pongFrame.contentWindow) pongFrame.contentWindow.postMessage(msg, PONGPONG_ORIGIN);
-            }
-
-            window.addEventListener('message', async e => {
-                if (e.origin !== PONGPONG_ORIGIN || e.source !== pongFrame.contentWindow) return;
-                const data = e.data;
-                switch (data.type) {
-                    case 'pong-ready': handshakeSecret = data.handshake; sendToPong({ action: 'handshake' }); statusDiv.textContent = '🏹 Готов'; btnCreateArrow.classList.remove('hidden'); if (channelId && sessionSecret) btnCall.classList.remove('hidden'); break;
-                    case 'session-created':
-                        inviteLink.textContent = data.fullLink; linkBox.classList.add('active'); statusDiv.textContent = '🏹 Стрела готова!'; navigator.clipboard.writeText(data.fullLink).catch(() => {}); break;
-                    case 'channel-open':
-                        channelId = data.channelId; sessionSecret = data.secret; try { sessionStorage.setItem('robincall_channel', channelId); sessionStorage.setItem('robincall_secret', sessionSecret); } catch(e) {}
-                        statusDiv.textContent = '✅ Канал открыт!'; btnCreateArrow.classList.add('hidden'); linkBox.classList.remove('active'); btnCall.classList.remove('hidden'); break;
-                    case 'message':
-                        if (!data.text || typeof data.text !== 'string') return;
-                        if (data.text.startsWith('__OFFER__')) {
-                            if (callActive) return;
-                            const offer = JSON.parse(data.text.replace('__OFFER__', ''));
-                            pendingOffer = { type: 'offer', sdp: offer.sdp || offer };
-                            statusDiv.textContent = '📞 Входящий вызов...';
-                            btnCall.classList.add('hidden');
-                            incomingControls.classList.remove('hidden');
-                            if (!await getLocalStream()) return;
-                            createPeerConnection();
-                            return;
-                        }
-                        if (data.text.startsWith('__ANSWER__')) {
-                            if (!peerConnection) return;
-                            const answer = JSON.parse(data.text.replace('__ANSWER__', ''));
-                            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-                            statusDiv.textContent = '✅ Разговор'; flushIceCandidates(); return;
-                        }
-                        if (data.text.startsWith('__ICE__')) {
-                            if (!peerConnection) return;
-                            try {
-                                const c = JSON.parse(data.text.replace('__ICE__', ''));
-                                if (!pendingIceCandidates[channelId]) pendingIceCandidates[channelId] = [];
-                                pendingIceCandidates[channelId].push(c); flushIceCandidates();
-                            } catch(e) {} return;
-                        }
-                        if (data.text === '__HANGUP__') { statusDiv.textContent = '📞 Собеседник завершил звонок'; hangup(); return; }
-                        break;
-                    case 'error': statusDiv.textContent = '⚠ ' + data.text; break;
+    function createPeerConn(stream, callId) {
+        var pc = new RTCPeerConnection({ 
+            iceServers: getIceServers(), 
+            iceTransportPolicy: 'all' 
+        });
+        
+        if (stream) {
+            stream.getTracks().forEach(function(t) { 
+                pc.addTrack(t, stream); 
+            });
+        }
+        
+        pc.ontrack = function(e) {
+            if (e.streams && e.streams[0]) {
+                if (videoCallActive && callId === 'main') { 
+                    remoteVideo.srcObject = e.streams[0]; 
+                    remoteVideoContainer.style.display = 'block'; 
+                    videoControls.classList.add('active'); 
+                } else { 
+                    var a = new Audio(); 
+                    a.srcObject = e.streams[0]; 
+                    a.play().catch(function() {}); 
                 }
-            });
-
-            btnCall.addEventListener('click', startCall);
-            btnHangup.addEventListener('click', hangup);
-            btnAnswer.addEventListener('click', async () => {
-                if (!pendingOffer || !peerConnection) return;
-                incomingControls.classList.add('hidden');
-                activeControls.classList.remove('hidden');
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(pendingOffer));
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                sendToPong({ action: 'send', text: '__ANSWER__' + JSON.stringify(answer), channelId });
-                callActive = true;
-                flushIceCandidates();
-                pendingOffer = null;
-            });
-            btnReject.addEventListener('click', () => {
-                sendToPong({ action: 'send', text: '__HANGUP__', channelId });
-                hangup();
-            });
-            btnCreateArrow.addEventListener('click', () => {
-                statusDiv.textContent = '⚒ Создание стрелы...';
-                sendToPong({ action: 'create' });
-            });
-            btnCopyLink.addEventListener('click', () => { navigator.clipboard.writeText(inviteLink.textContent).then(() => statusDiv.textContent = '📋 Ссылка скопирована!').catch(() => {}); });
-
-            async function init() {
-                const p = new URLSearchParams(location.search);
-                channelId = p.get('channel');
-                sessionSecret = p.get('secret');
-                if (!channelId || !sessionSecret) { try { channelId = sessionStorage.getItem('robincall_channel'); sessionSecret = sessionStorage.getItem('robincall_secret'); } catch(e) {} }
-                const url = new URL('https://stepweather-prog.github.io/P2PPong/');
-                url.searchParams.set('v', Date.now());
-                if (p.get('id')) { url.searchParams.set('id', p.get('id')); url.searchParams.set('key', p.get('key')); }
-                pongFrame.src = url.toString();
-                statusDiv.textContent = '🏹 Пробуждение...';
             }
-            window.addEventListener('load', init);
-        })();
-    </script>
-</body>
-</html>
+        };
+        
+        pc.onicecandidate = function(e) { 
+            if (e.candidate) { 
+                sendCallSignal('__ICE__' + JSON.stringify({ 
+                    candidate: e.candidate, 
+                    callId: callId 
+                })); 
+            } 
+        };
+        
+        pc.oniceconnectionstatechange = function() {
+            if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') { 
+                callStatus.textContent = '✅ Разговор'; 
+            }
+            if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') { 
+                cleanupPeer(callId); 
+                if (callId === 'main') hangup(); 
+            }
+        };
+        
+        if (callId === 'main') {
+            var dc = pc.createDataChannel('sherwood');
+            setupDataChannel(dc, callId);
+        }
+        
+        pc.ondatachannel = function(e) { 
+            setupDataChannel(e.channel, callId); 
+        };
+        
+        return pc;
+    }
+
+    function setupDataChannel(dc, callId) {
+        dataChannels[callId] = dc;
+        dc.onmessage = function(e) {
+            try {
+                var msg = JSON.parse(e.data);
+                if (msg.type === 'file') {
+                    statusDiv.textContent = '📎 Получен файл: ' + msg.name;
+                    var byteString = atob(msg.data);
+                    var ab = new ArrayBuffer(byteString.length);
+                    var ia = new Uint8Array(ab);
+                    for (var i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+                    var blob = new Blob([ab], { type: msg.mime });
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement('a'); 
+                    a.href = url; 
+                    a.download = msg.name; 
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }
+            } catch (err) {
+                log('Ошибка при получении файла: ' + err.message);
+            }
+        };
+    }
+
+    function cleanupPeer(callId) {
+        if (peerConnections[callId]) { 
+            try {
+                peerConnections[callId].close(); 
+            } catch(e) {}
+            delete peerConnections[callId]; 
+        }
+        if (localStreams[callId]) { 
+            localStreams[callId].getTracks().forEach(function(t) { 
+                t.stop(); 
+            }); 
+            delete localStreams[callId]; 
+        }
+        if (dataChannels[callId]) { 
+            try {
+                dataChannels[callId].close(); 
+            } catch(e) {}
+            delete dataChannels[callId]; 
+        }
+        delete pendingIceCandidates[callId];
+    }
+
+    function flushIceCandidates(callId) {
+        var pc = peerConnections[callId || 'main'];
+        if (!pc || !pc.remoteDescription || !pc.remoteDescription.type) return;
+        
+        var candidates = pendingIceCandidates[callId || 'main'] || [];
+        for (var i = 0; i < candidates.length; i++) {
+            try { 
+                pc.addIceCandidate(new RTCIceCandidate(candidates[i])).catch(function(err) {
+                    log('Ошибка добавления ICE кандидата: ' + err.message);
+                }); 
+            } catch(e) {
+                log('Ошибка обработки ICE кандидата: ' + e.message);
+            }
+        }
+        delete pendingIceCandidates[callId || 'main'];
+    }
+
+    function sendToPong(msg) {
+        if (sessionSecret) msg.secret = sessionSecret; 
+        if (channelId) msg.channelId = channelId;
+        if (handshakeSecret && msg.action === 'handshake') msg.handshake = handshakeSecret;
+        msg.server = currentServer;
+        if (pongFrame.contentWindow) { 
+            pongFrame.contentWindow.postMessage(msg, '*'); 
+        }
+    }
+    
+    function sendCallSignal(text) { 
+        sendToPong({ action: 'send', text: text, channelId: channelId }); 
+    }
+
+    function playRingtone() { 
+        stopRingtone(); 
+        ringtoneAudio = getAudio('melodi.mp3'); 
+        ringtoneAudio.loop = true; 
+        ringtoneAudio.volume = 0.7; 
+        ringtoneAudio.play().catch(function() {}); 
+    }
+    
+    function stopRingtone() { 
+        if (ringtoneAudio) { 
+            ringtoneAudio.pause(); 
+            ringtoneAudio.loop = false; 
+            ringtoneAudio = null; 
+        } 
+    }
+    
+    function playRingback() { 
+        stopRingback(); 
+        ringbackAudio = getAudio('Welk.mp3'); 
+        ringbackAudio.loop = true; 
+        ringbackAudio.volume = 0.5; 
+        ringbackAudio.play().catch(function() {}); 
+    }
+    
+    function stopRingback() { 
+        if (ringbackAudio) { 
+            ringbackAudio.pause(); 
+            ringbackAudio.loop = false; 
+            ringbackAudio = null; 
+        } 
+    }
+    
+    function playCallStart() { 
+        getAudio('open.mp3').volume = 0.7; 
+        getAudio('open.mp3').play().catch(function() {}); 
+    }
+    
+    function playCallEnd() { 
+        getAudio('exet.mp3').volume = 0.7; 
+        getAudio('exet.mp3').play().catch(function() {}); 
+    }
+
+    function saveSession() { 
+        if (channelId && sessionSecret) { 
+            try { 
+                localStorage.setItem('robincall_channel', channelId); 
+                localStorage.setItem('robincall_secret', sessionSecret); 
+            } catch(e) {} 
+        } 
+    }
+    
+    function restoreSession() {
+        var sc = null, ss = null;
+        try { 
+            sc = localStorage.getItem('robincall_channel'); 
+            ss = localStorage.getItem('robincall_secret'); 
+        } catch(e) {}
+        
+        if (sc && ss) {
+            channelId = sc; 
+            sessionSecret = ss;
+            btnCall.classList.remove('hidden'); 
+            callLabelBtn.classList.remove('hidden');
+            btnVideo.classList.remove('hidden'); 
+            videoLabelBtn.classList.remove('hidden');
+            btnFileSend.classList.remove('hidden'); 
+            fileLabelBtn.classList.remove('hidden');
+            statusDiv.textContent = '🔄 Канал восстановлен'; 
+            log('Канал: ' + channelId); 
+            return true;
+        }
+        return false;
+    }
+
+    async function startCall(enableVideo) {
+        if (callActive && !isIncomingCall) return;
+        if (!channelId || !sessionSecret) { 
+            statusDiv.textContent = '❌ Нет активного канала'; 
+            return; 
+        }
+        
+        videoCallActive = enableVideo;
+        var stream = await getMediaStream(enableVideo);
+        if (!stream) return;
+        
+        localStreams['main'] = stream;
+        if (enableVideo) { 
+            localVideo.srcObject = stream; 
+            localVideoContainer.style.display = 'block'; 
+            videoControls.classList.add('active'); 
+        }
+        
+        callPanel.classList.remove('hidden'); 
+        mainBtns.classList.add('hidden');
+        callStatus.textContent = enableVideo ? '📹 Видеовызов...' : '📞 Вызов...';
+        callAccept.classList.add('hidden'); 
+        callCamera.classList.add('hidden'); 
+        callMic.classList.add('hidden'); 
+        callSpeaker.classList.remove('hidden');
+        
+        if (enableVideo) { 
+            callCamera.classList.remove('hidden'); 
+            callMic.classList.remove('hidden'); 
+        }
+        
+        playRingback();
+        var pc = createPeerConn(stream, 'main'); 
+        peerConnections['main'] = pc;
+        
+        try {
+            var offer = await pc.createOffer(); 
+            await pc.setLocalDescription(offer);
+            sendCallSignal('__OFFER__' + JSON.stringify({ sdp: offer, video: enableVideo })); 
+            callActive = true;
+            isIncomingCall = false;
+        } catch(e) {
+            log('Ошибка создания звонка: ' + e.message);
+            hangup();
+        }
+    }
+
+    function hangup() {
+        callActive = false; 
+        videoCallActive = false;
+        isIncomingCall = false;
+        stopRingtone(); 
+        stopRingback(); 
+        playCallEnd(); 
+        sendCallSignal('__HANGUP__');
+        
+        Object.keys(peerConnections).forEach(function(k) { cleanupPeer(k); });
+        Object.keys(localStreams).forEach(function(k) { 
+            if (localStreams[k]) {
+                localStreams[k].getTracks().forEach(function(t) { t.stop(); });
+            }
+        });
+        
+        localStreams = {}; 
+        peerConnections = {}; 
+        pendingIceCandidates = {}; 
+        dataChannels = {};
+        
+        callPanel.classList.add('hidden'); 
+        mainBtns.classList.remove('hidden');
+        callAccept.classList.remove('hidden'); 
+        callCamera.classList.add('hidden'); 
+        callMic.classList.add('hidden'); 
+        callSpeaker.classList.remove('hidden');
+        
+        remoteVideo.srcObject = null; 
+        localVideo.srcObject = null;
+        remoteVideoContainer.style.display = 'none'; 
+        localVideoContainer.style.display = 'none'; 
+        videoControls.classList.remove('active');
+        
+        statusDiv.textContent = '📞 Звонок завершён';
+    }
+
+    function toggleSpeaker() { 
+        speakerOn = !speakerOn; 
+        callSpeaker.textContent = speakerOn ? '🔊' : '🔇'; 
+    }
+    
+    function toggleCamera() { 
+        if (localStreams['main']) { 
+            cameraOn = !cameraOn; 
+            localStreams['main'].getVideoTracks().forEach(function(t) { 
+                t.enabled = cameraOn; 
+            }); 
+            callCamera.textContent = cameraOn ? '📸' : '🚫'; 
+        } 
+    }
+    
+    function toggleMic() { 
+        if (localStreams['main']) { 
+            micOn = !micOn; 
+            localStreams['main'].getAudioTracks().forEach(function(t) { 
+                t.enabled = micOn; 
+            }); 
+            callMic.textContent = micOn ? '🎤' : '🔇'; 
+        } 
+    }
+    
+    function toggleFullscreen() { 
+        if (remoteVideoContainer.style.display === 'none') return; 
+        if (!document.fullscreenElement) { 
+            remoteVideoContainer.requestFullscreen().catch(function() {}); 
+        } else { 
+            document.exitFullscreen(); 
+        } 
+    }
+
+    function sendFileViaDataChannel(file) {
+        if (!dataChannels['main'] || dataChannels['main'].readyState !== 'open') { 
+            statusDiv.textContent = '❌ Нет активного Data Channel'; 
+            return; 
+        }
+        
+        var reader = new FileReader();
+        reader.onload = function() {
+            var base64 = reader.result.split(',')[1];
+            var msg = JSON.stringify({ 
+                type: 'file', 
+                name: file.name, 
+                size: file.size, 
+                mime: file.type, 
+                data: base64 
+            });
+            dataChannels['main'].send(msg);
+            statusDiv.textContent = '📎 Файл отправлен: ' + file.name;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Инициализация обработчиков событий
+    btnFileSend.addEventListener('click', function() { fileInput.click(); });
+    
+    fileInput.addEventListener('change', function() {
+        Array.from(fileInput.files).forEach(function(f) { 
+            sendFileViaDataChannel(f); 
+        });
+        fileInput.value = '';
+    });
+
+    function generateP2PQR() {
+        if (!channelId || !sessionSecret) { 
+            statusDiv.textContent = '❌ Нет активного канала'; 
+            return; 
+        }
+        
+        var data = JSON.stringify({ 
+            channelId: channelId, 
+            secret: sessionSecret, 
+            server: currentServer 
+        });
+        
+        p2pQrCode.innerHTML = '';
+        if (typeof QRCode !== 'undefined') { 
+            new QRCode(p2pQrCode, { 
+                text: data, 
+                width: 200, 
+                height: 200, 
+                colorDark: '#c4a24b', 
+                colorLight: '#0a1208' 
+            }); 
+        }
+        
+        p2pLinkDisplay.textContent = 'Отсканируйте QR на устройстве получателя';
+        p2pQrModal.classList.add('active');
+    }
+
+    // Установка начального состояния сервера
+    if (serverToggle) {
+        serverToggle.checked = currentServer === 'workers';
+    }
+    
+    if (serverLabel) {
+        serverLabel.textContent = currentServer === 'workers' ? 'Workers' : 'Render';
+    }
+    
+    if (serverToggle) {
+        serverToggle.addEventListener('change', function() { 
+            currentServer = this.checked ? 'workers' : 'render'; 
+            try { 
+                localStorage.setItem('robinhood_server', currentServer); 
+            } catch(e) {} 
+            if (serverLabel) {
+                serverLabel.textContent = currentServer === 'workers' ? 'Workers' : 'Render'; 
+            }
+            statusDiv.textContent = '🌐 Сервер: ' + (currentServer === 'workers' ? 'Workers' : 'Render'); 
+        });
+    }
+
+    if (toggleSrtp) {
+        toggleSrtp.addEventListener('change', function() { 
+            srtpEnabled = this.checked; 
+        });
+    }
+    
+    var savedSound = null;
+    try { 
+        savedSound = localStorage.getItem('robincall_sound'); 
+    } catch(e) {}
+    
+    if (toggleSound) {
+        toggleSound.checked = savedSound !== 'false';
+        toggleSound.addEventListener('change', function() { 
+            try { 
+                localStorage.setItem('robincall_sound', this.checked); 
+            } catch(e) {} 
+        });
+    }
+
+    btnSettings.addEventListener('click', function() { 
+        settingsModal.classList.add('active'); 
+    });
+    
+    document.getElementById('btn-close-settings').addEventListener('click', function() { 
+        settingsModal.classList.remove('active'); 
+    });
+
+    document.getElementById('btn-custom-css').addEventListener('click', function() {
+        var css = '';
+        try { 
+            css = localStorage.getItem('robincall_custom_css') || ''; 
+        } catch(e) {}
+        customCssInput.value = css;
+        customCssModal.classList.add('active');
+    });
+    
+    document.getElementById('btn-save-custom-css').addEventListener('click', function() {
+        var css = customCssInput.value.trim();
+        try { 
+            localStorage.setItem('robincall_custom_css', css); 
+        } catch(e) {}
+        if (customCssStyle) customCssStyle.remove();
+        if (css) { 
+            customCssStyle = document.createElement('style'); 
+            customCssStyle.textContent = css; 
+            document.head.appendChild(customCssStyle); 
+        }
+        customCssModal.classList.remove('active');
+    });
+    
+    document.getElementById('btn-reset-custom-css').addEventListener('click', function() {
+        try { 
+            localStorage.removeItem('robincall_custom_css'); 
+        } catch(e) {}
+        if (customCssStyle) customCssStyle.remove(); 
+        customCssStyle = null;
+        customCssInput.value = ''; 
+        customCssModal.classList.remove('active');
+    });
+    
+    document.getElementById('btn-cancel-custom-css').addEventListener('click', function() { 
+        customCssModal.classList.remove('active'); 
+    });
+    
+    document.getElementById('btn-close-p2p-qr').addEventListener('click', function() { 
+        p2pQrModal.classList.remove('active'); 
+    });
+
+    btnArrow.addEventListener('click', function() {
+        if (!handshakeSecret && !channelId) { 
+            statusDiv.textContent = '⏳ Ждите подключения...'; 
+            return; 
+        }
+        
+        statusDiv.textContent = '⚒ Крафт стрелы [' + (currentServer === 'workers' ? 'Warp' : 'Шервуд') + ']...';
+        inviteModal.classList.remove('active'); 
+        sendToPong({ action: 'create' }); 
+        clearTimeout(inviteTimer);
+        
+        inviteTimer = setTimeout(function() { 
+            if (!inviteModal.classList.contains('active') && statusDiv.textContent.indexOf('Крафт') !== -1) { 
+                statusDiv.textContent = '❌ Сервер не ответил.'; 
+            } 
+        }, 30000);
+    });
+
+    btnCancelArrow.addEventListener('click', function() {
+        sendToPong({ action: 'cancel-create' }); 
+        inviteModal.classList.remove('active');
+        mainBtns.classList.remove('hidden'); 
+        statusDiv.textContent = '⏹ Стрела отменена'; 
+        clearTimeout(inviteTimer);
+    });
+
+    btnCall.addEventListener('click', function() { 
+        if (callActive) { 
+            hangup(); 
+            return; 
+        } 
+        startCall(false); 
+    });
+    
+    btnVideo.addEventListener('click', function() { 
+        if (callActive) { 
+            hangup(); 
+            return; 
+        } 
+        startCall(true); 
+    });
+    
+    callEnd.addEventListener('click', hangup);
+    callSpeaker.addEventListener('click', toggleSpeaker);
+    callCamera.addEventListener('click', toggleCamera);
+    callMic.addEventListener('click', toggleMic);
+    vcFullscreen.addEventListener('click', toggleFullscreen);
+
+    btnShare.addEventListener('click', function() { 
+        var link = inviteLink.textContent; 
+        if (link && navigator.share) { 
+            navigator.share({ title: 'RobinCall', url: link }).catch(function() {}); 
+        } 
+    });
+    
+    btnCloseInvite.addEventListener('click', function() { 
+        inviteModal.classList.remove('active'); 
+        mainBtns.classList.remove('hidden'); 
+        statusDiv.textContent = '🏹 Готов'; 
+    });
+
+    window.addEventListener('message', async function(event) {
+        if (event.source !== pongFrame.contentWindow) return;
+        var data = event.data;
+        
+        switch (data.type) {
+            case 'pong-ready': 
+                handshakeSecret = data.handshake; 
+                sendToPong({ action: 'handshake' }); 
+                statusDiv.textContent = '🏹 Готов'; 
+                break;
+                
+            case 'handshake-ok':
+                statusDiv.textContent = '🏹 Тетива натянута!';
+                if (restoreSession()) { 
+                    sendToPong({ action: 'restore-channels' }); 
+                    break; 
+                }
+                
+                var urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('id') && urlParams.get('key')) {
+                    currentServer = urlParams.get('server') || 'render'; 
+                    if (serverToggle) {
+                        serverToggle.checked = currentServer === 'workers'; 
+                    }
+                    if (serverLabel) {
+                        serverLabel.textContent = currentServer === 'workers' ? 'Workers' : 'Render';
+                    }
+                    statusDiv.textContent = '📨 Принимаю стрелу...'; 
+                    sendToPong({ 
+                        action: 'accept', 
+                        id: urlParams.get('id'), 
+                        key: urlParams.get('key'), 
+                        server: currentServer 
+                    });
+                }
+                break;
+                
+            case 'session-created': 
+                clearTimeout(inviteTimer); 
+                inviteLink.textContent = data.fullLink;
+                qrCodeDiv.innerHTML = ''; 
+                if (typeof QRCode !== 'undefined') { 
+                    new QRCode(qrCodeDiv, { 
+                        text: data.fullLink, 
+                        width: 120, 
+                        height: 120, 
+                        colorDark: '#c4a24b', 
+                        colorLight: '#0a1208' 
+                    }); 
+                }
+                inviteModal.classList.add('active'); 
+                mainBtns.classList.add('hidden'); 
+                statusDiv.textContent = '🏹 Стрела готова!'; 
+                navigator.clipboard.writeText(data.fullLink).catch(function() {}); 
+                break;
+                
+            case 'channel-open':
+                channelId = data.channelId; 
+                sessionSecret = data.secret;
+                btnCall.classList.remove('hidden'); 
+                callLabelBtn.classList.remove('hidden'); 
+                btnVideo.classList.remove('hidden'); 
+                videoLabelBtn.classList.remove('hidden'); 
+                btnFileSend.classList.remove('hidden'); 
+                fileLabelBtn.classList.remove('hidden');
+                inviteModal.classList.remove('active'); 
+                mainBtns.classList.remove('hidden'); 
+                statusDiv.textContent = '✅ Канал открыт!'; 
+                saveSession(); 
+                log('Канал: ' + channelId);
+                break;
+                
+            case 'channel-restored':
+                channelId = data.channelId; 
+                sessionSecret = data.secret;
+                btnCall.classList.remove('hidden'); 
+                callLabelBtn.classList.remove('hidden'); 
+                btnVideo.classList.remove('hidden'); 
+                videoLabelBtn.classList.remove('hidden'); 
+                btnFileSend.classList.remove('hidden'); 
+                fileLabelBtn.classList.remove('hidden');
+                saveSession(); 
+                statusDiv.textContent = '🔄 Канал восстановлен'; 
+                log('Восстановлен: ' + channelId);
+                break;
+                
+            case 'restored-channels':
+                if (data.channels && data.channels.length > 0) {
+                    var ch = data.channels[0]; 
+                    channelId = ch.channelId; 
+                    sessionSecret = ch.secret;
+                    btnCall.classList.remove('hidden'); 
+                    callLabelBtn.classList.remove('hidden'); 
+                    btnVideo.classList.remove('hidden'); 
+                    videoLabelBtn.classList.remove('hidden'); 
+                    btnFileSend.classList.remove('hidden'); 
+                    fileLabelBtn.classList.remove('hidden');
+                    saveSession(); 
+                    statusDiv.textContent = '🔄 Канал восстановлен (' + data.channels.length + ')';
+                }
+                break;
+                
+            case 'message':
+                if (!data.text || typeof data.text !== 'string') return;
+                
+                if (data.text.indexOf('__OFFER__') === 0) {
+                    if (callActive) return;
+                    
+                    try {
+                        var parsed = JSON.parse(data.text.replace('__OFFER__', ''));
+                        var offer = parsed.sdp || parsed;
+                        videoCallActive = parsed.video || false;
+                        
+                        callPanel.classList.remove('hidden'); 
+                        mainBtns.classList.add('hidden');
+                        callStatus.textContent = videoCallActive ? '📹 Входящий видеовызов...' : '📞 Входящий вызов...';
+                        callAccept.classList.remove('hidden'); 
+                        callCamera.classList.add('hidden'); 
+                        callMic.classList.add('hidden'); 
+                        callSpeaker.classList.add('hidden');
+                        playRingtone();
+                        
+                        callAccept.onclick = async function() {
+                            stopRingtone(); 
+                            callStatus.textContent = '📞 Соединение...'; 
+                            callAccept.classList.add('hidden'); 
+                            playCallStart();
+                            
+                            var stream = await getMediaStream(videoCallActive);
+                            if (!stream) { 
+                                hangup(); 
+                                return; 
+                            }
+                            
+                            localStreams['main'] = stream;
+                            if (videoCallActive) { 
+                                localVideo.srcObject = stream; 
+                                localVideoContainer.style.display = 'block'; 
+                                videoControls.classList.add('active'); 
+                                callCamera.classList.remove('hidden'); 
+                                callMic.classList.remove('hidden'); 
+                            }
+                            
+                            callSpeaker.classList.remove('hidden');
+                            var pc = createPeerConn(stream, 'main'); 
+                            peerConnections['main'] = pc;
+                            
+                            try {
+                                await pc.setRemoteDescription(new RTCSessionDescription(offer));
+                                var answer = await pc.createAnswer(); 
+                                await pc.setLocalDescription(answer);
+                                sendCallSignal('__ANSWER__' + JSON.stringify(answer)); 
+                                callActive = true; 
+                                isIncomingCall = true;
+                                flushIceCandidates('main');
+                            } catch(e) {
+                                log('Ошибка при ответе на звонок: ' + e.message);
+                                hangup();
+                            }
+                        };
+                    } catch(e) {
+                        log('Ошибка обработки входящего звонка: ' + e.message);
+                    }
+                    return;
+                }
+                
+                if (data.text.indexOf('__ANSWER__') === 0) { 
+                    stopRingback(); 
+                    callStatus.textContent = '✅ Разговор'; 
+                    
+                    try {
+                        var answer = JSON.parse(data.text.replace('__ANSWER__', '')); 
+                        if (peerConnections['main']) { 
+                            peerConnections['main'].setRemoteDescription(new RTCSessionDescription(answer))
+                                .then(function() { 
+                                    flushIceCandidates('main'); 
+                                })
+                                .catch(function(err) {
+                                    log('Ошибка установки удаленного описания: ' + err.message);
+                                }); 
+                        }
+                    } catch(e) {
+                        log('Ошибка обработки ответа: ' + e.message);
+                    }
+                    return; 
+                }
+                
+                if (data.text.indexOf('__ICE__') === 0) { 
+                    try { 
+                        var iceData = JSON.parse(data.text.replace('__ICE__', '')); 
+                        var cId = iceData.callId || 'main'; 
+                        var c = iceData.candidate || iceData; 
+                        if (!pendingIceCandidates[cId]) pendingIceCandidates[cId] = []; 
+                        pendingIceCandidates[cId].push(c); 
+                        flushIceCandidates(cId); 
+                    } catch(e) {
+                        log('Ошибка обработки ICE кандидата: ' + e.message);
+                    } 
+                    return; 
+                }
+                
+                if (data.text === '__HANGUP__') { 
+                    if (callActive) { 
+                        hangup(); 
+                        statusDiv.textContent = '📞 Собеседник завершил звонок'; 
+                    } else { 
+                        stopRingtone(); 
+                        callPanel.classList.add('hidden'); 
+                        mainBtns.classList.remove('hidden'); 
+                        statusDiv.textContent = '📞 Вызов отменён'; 
+                    } 
+                    return; 
+                }
+                break;
+        }
+    });
+
+    window.addEventListener('beforeunload', function() {
+        if (callActive) { 
+            sendCallSignal('__HANGUP__'); 
+        }
+        stopRingtone(); 
+        stopRingback();
+        Object.keys(peerConnections).forEach(function(k) { cleanupPeer(k); });
+        Object.keys(localStreams).forEach(function(k) { 
+            if (localStreams[k]) {
+                localStreams[k].getTracks().forEach(function(t) { t.stop(); });
+            }
+        });
+    });
+
+    async function init() {
+        var params = new URLSearchParams(window.location.search);
+        channelId = params.get('channel'); 
+        sessionSecret = params.get('secret');
+        currentServer = params.get('server') || 'render';
+        
+        try { 
+            var savedServer = localStorage.getItem('robinhood_server'); 
+            if (savedServer) currentServer = savedServer; 
+        } catch(e) {}
+        
+        if (serverToggle) {
+            serverToggle.checked = currentServer === 'workers'; 
+        }
+        
+        if (serverLabel) {
+            serverLabel.textContent = currentServer === 'workers' ? 'Workers' : 'Render';
+        }
+        
+        if (!channelId || !sessionSecret) { 
+            var sc = null, ss = null; 
+            try { 
+                sc = localStorage.getItem('robincall_channel'); 
+                ss = localStorage.getItem('robincall_secret'); 
+            } catch(e) {} 
+            
+            if (sc && ss) { 
+                channelId = sc; 
+                sessionSecret = ss; 
+            } 
+        } else { 
+            saveSession(); 
+        }
+        
+        var pongUrl = 'https://stepweather-prog.github.io/P2PPong/?v=' + Date.now();
+        if (params.get('id')) pongUrl += '&id=' + params.get('id') + '&key=' + params.get('key');
+        
+        pongFrame.src = pongUrl; 
+        statusDiv.textContent = '🏹 Пробуждение...';
+    }
+    
+    window.addEventListener('load', init);
+})();
