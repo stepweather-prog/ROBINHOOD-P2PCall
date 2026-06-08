@@ -6,11 +6,10 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>RobinCall 🏹</title>
+    <title>RobinCall</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/avatars/001-.png">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://stepweather-prog.github.io; media-src 'self' blob:; connect-src * blob:; img-src 'self' data: blob: https://stepweather-prog.github.io;">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; media-src 'self' blob:; connect-src * blob:; img-src 'self' data: blob:;">
     <style>
         :root {
             --bg-primary: #1a2a1f;
@@ -29,7 +28,6 @@
             --input-bg: rgba(20,30,18,0.9);
             --robin-bg: rgba(50,70,40,0.9);
             --robin-accent: #e8c97a;
-            --overlay-bg: rgba(0,0,0,0.6);
         }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         html,body { margin:0; padding:0; height:100%; overflow:hidden; -webkit-text-size-adjust:100%; font-family:'Segoe UI','Inter','Georgia',serif; }
@@ -42,12 +40,12 @@
         body::before {
             content:""; position:fixed; top:0; left:0; width:100%; height:100%;
             background-image:url('assets/background.webp');
-            background-size:cover; background-position:center 30%; background-repeat:no-repeat;
-            z-index:0; opacity:0.4;
+            background-size:cover; background-position:center; background-repeat:no-repeat;
+            z-index:0; opacity:0.35;
         }
         body::after {
             content:""; position:fixed; top:0; left:0; width:100%; height:100%;
-            background:radial-gradient(circle at 20% 30%, rgba(30,40,25,0.65), rgba(10,20,8,0.85));
+            background:radial-gradient(circle at 50% 50%, rgba(30,40,25,0.6), rgba(10,20,8,0.9));
             z-index:0;
         }
 
@@ -57,98 +55,83 @@
             backdrop-filter:blur(8px);
             z-index:10;
             padding:8px 12px;
-            display:flex;
-            flex-direction:column;
-            gap:4px;
+            display:flex; flex-direction:column; gap:4px;
             box-shadow:0 4px 20px rgba(0,0,0,0.3);
         }
         .header-row-1 { display:flex; align-items:center; gap:8px; }
-        .header-title-text { font-size:1.2em; font-weight:bold; background:linear-gradient(135deg, var(--accent-light), var(--accent)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+        .header-title-text {
+            font-size:1.2em; font-weight:bold;
+            background:linear-gradient(135deg, var(--accent-light), var(--accent));
+            -webkit-background-clip:text; background-clip:text; color:transparent;
+        }
         .header-shield { font-size:1em; filter:drop-shadow(0 0 3px var(--accent-glow)); }
         .header-version { font-size:0.6em; color:var(--text-dim); margin-left:auto; }
-        .header-status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; }
-        .header-status-dot.online { background:#4caf50; box-shadow:0 0 6px #4caf50; }
-        .header-status-dot.offline { background:#f44336; }
-        .header-status-dot.checking { background:#ff9800; animation:pulse 1s infinite; }
+        .connection-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; }
+        .connection-dot.online { background:#4caf50; box-shadow:0 0 6px #4caf50; }
+        .connection-dot.offline { background:#f44336; }
+        .connection-dot.checking { background:#ff9800; animation:pulse 1s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         
         .header-row-2 { display:flex; justify-content:space-around; align-items:center; }
         .header-btn {
-            width:40px; height:40px;
+            width:42px; height:42px;
             display:flex; align-items:center; justify-content:center;
-            cursor:pointer;
-            border-radius:10px;
-            background:var(--btn-bg);
-            border:1px solid var(--btn-border);
+            cursor:pointer; border-radius:10px;
+            background:var(--btn-bg); border:1px solid var(--btn-border);
             transition:all 0.2s;
         }
         .header-btn:hover { background:var(--btn-hover); transform:scale(1.05); border-color:var(--accent); }
         .header-btn img { width:100%; height:100%; object-fit:contain; padding:5px; }
-        .header-label { font-size:0.5em; color:var(--text-dim); text-align:center; width:40px; cursor:pointer; font-weight:bold; white-space:nowrap; }
+        .header-label { font-size:0.5em; color:var(--text-dim); text-align:center; width:42px; cursor:pointer; font-weight:bold; }
         .header-avatar { width:30px; height:30px; border-radius:50%; object-fit:cover; border:2px solid var(--border); }
 
-        .main-area { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; z-index:1; padding:15px; gap:10px; overflow-y:auto; }
+        .main-area {
+            flex:1; display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            position:relative; z-index:1; padding:15px; gap:12px;
+        }
 
         .robin-row {
-            background:var(--robin-bg);
-            border-left:3px solid var(--robin-accent);
-            border-radius:16px;
-            padding:10px 14px;
-            display:flex;
-            align-items:center;
-            gap:10px;
-            max-width:90%;
-            box-shadow:0 2px 12px rgba(0,0,0,0.2);
+            background:var(--robin-bg); border-left:3px solid var(--robin-accent);
+            border-radius:14px; padding:10px 14px;
+            display:flex; align-items:center; gap:10px;
+            max-width:90%; box-shadow:0 2px 12px rgba(0,0,0,0.2);
             backdrop-filter:blur(8px);
         }
-        .robin-avatar { width:40px; height:40px; border-radius:50%; border:2px solid var(--robin-accent); flex-shrink:0; object-fit:cover; }
-        .robin-text { font-weight:700; font-size:0.8em; color:var(--text-bright); text-shadow:0 1px 3px rgba(0,0,0,0.6); }
+        .robin-avatar { width:42px; height:42px; border-radius:50%; border:2px solid var(--robin-accent); object-fit:cover; }
+        .robin-text { font-weight:700; font-size:0.8em; color:var(--text-bright); }
 
-        .status-text { font-size:0.9em; color:var(--accent-light); text-align:center; min-height:22px; max-width:90%; }
-        .call-timer { font-size:1.5em; font-weight:bold; color:#4caf50; font-family:monospace; }
-        .session-id-display { font-family:monospace; font-size:0.6em; color:var(--text-dim); background:rgba(0,0,0,0.3); padding:6px 10px; border-radius:8px; max-width:90%; word-break:break-all; user-select:all; }
+        .status-text { font-size:0.9em; color:var(--accent-light); text-align:center; min-height:22px; }
+        .call-timer { font-size:1.4em; font-weight:bold; color:#4caf50; font-family:monospace; }
+        .session-id { font-family:monospace; font-size:0.6em; color:var(--text-dim); background:rgba(0,0,0,0.3); padding:6px 10px; border-radius:8px; word-break:break-all; }
 
         .btn-round {
-            width:75px; height:75px;
-            border-radius:50%;
-            border:3px solid var(--border);
-            cursor:pointer;
-            font-size:30px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            transition:all 0.3s ease;
-            background:var(--btn-bg);
+            width:75px; height:75px; border-radius:50%;
+            border:3px solid var(--border); cursor:pointer;
+            display:flex; align-items:center; justify-content:center;
+            transition:all 0.3s; background:var(--btn-bg);
         }
         .btn-round:hover { background:var(--btn-hover); box-shadow:0 0 30px var(--accent-glow); transform:scale(1.08); }
         .btn-round:active { transform:scale(0.95); }
         .btn-round img { width:100%; height:100%; object-fit:contain; padding:12px; }
         .btn-call { border-color:#4caf50; }
-        .btn-call:hover { box-shadow:0 0 30px rgba(76,175,80,0.5); }
         .btn-hangup { border-color:#f44336; background:rgba(244,67,54,0.2); }
-        .btn-hangup:hover { box-shadow:0 0 30px rgba(244,67,54,0.5); }
 
         .btn-main {
-            width:85px; height:85px;
-            border-radius:50%;
-            border:3px solid var(--accent);
-            cursor:pointer;
-            background:var(--btn-bg);
-            transition:all 0.3s;
-            display:flex;
-            align-items:center;
-            justify-content:center;
+            width:85px; height:85px; border-radius:50%;
+            border:3px solid var(--accent); cursor:pointer;
+            background:var(--btn-bg); transition:all 0.3s;
+            display:flex; align-items:center; justify-content:center;
         }
         .btn-main:hover { background:var(--btn-hover); box-shadow:0 0 35px var(--accent-glow); transform:scale(1.1); }
         .btn-main img { width:100%; height:100%; object-fit:contain; padding:14px; }
 
         .hidden { display:none !important; }
-        .controls-row { display:flex; gap:20px; align-items:center; justify-content:center; flex-wrap:wrap; }
+        .controls-row { display:flex; gap:20px; align-items:center; justify-content:center; }
 
         .input-row {
             display:flex; gap:8px; align-items:center;
-            background:var(--input-bg);
-            border:1px solid var(--border);
+            background:var(--input-bg); border:1px solid var(--border);
             border-radius:12px; padding:5px; max-width:90%;
         }
         .input-row input {
@@ -156,22 +139,17 @@
             color:var(--text); font-size:13px; padding:10px; outline:none; font-family:monospace;
         }
         .input-row button {
-            padding:8px 12px; border-radius:8px;
-            border:1px solid var(--border);
-            background:var(--btn-bg); color:var(--text);
-            cursor:pointer; font-size:11px; white-space:nowrap; font-weight:bold;
+            padding:8px 12px; border-radius:8px; border:1px solid var(--border);
+            background:var(--btn-bg); color:var(--text); cursor:pointer;
+            font-size:11px; font-weight:bold; white-space:nowrap;
         }
-        .input-row button:hover { background:var(--btn-hover); border-color:var(--accent); }
 
-        .server-toggle-row { display:flex; gap:8px; align-items:center; justify-content:center; font-size:0.6em; color:var(--text-dim); }
-        .server-toggle-btn {
-            padding:4px 10px; border-radius:8px;
-            border:1px solid var(--btn-border);
-            background:var(--btn-bg); color:var(--text);
-            cursor:pointer; font-size:11px; transition:all 0.2s;
+        .server-row { display:flex; gap:8px; align-items:center; justify-content:center; font-size:0.6em; color:var(--text-dim); }
+        .server-btn {
+            padding:4px 10px; border-radius:8px; border:1px solid var(--btn-border);
+            background:var(--btn-bg); color:var(--text); cursor:pointer; font-size:11px;
         }
-        .server-toggle-btn.active { border-color:#4caf50; background:rgba(76,175,80,0.15); color:#4caf50; }
-        .server-toggle-btn:hover { background:var(--btn-hover); }
+        .server-btn.active { border-color:#4caf50; background:rgba(76,175,80,0.15); color:#4caf50; }
 
         .modal-overlay {
             display:none; position:fixed; top:0; left:0; width:100%; height:100%;
@@ -184,7 +162,7 @@
             width:85%; max-width:360px; text-align:center;
             border:2px solid var(--border); box-shadow:0 12px 40px rgba(0,0,0,0.5);
         }
-        .modal-dialog h3 { color:var(--accent-light); margin:0 0 12px; font-size:1.1em; }
+        .modal-dialog h3 { color:var(--accent-light); margin:0 0 12px; }
         .modal-dialog button { width:100%; padding:10px; margin-top:6px; border:none; border-radius:10px; font-size:13px; font-weight:bold; cursor:pointer; }
         .btn-primary { background:linear-gradient(135deg, var(--accent), #b8903a); color:#1a1f0f; }
         .btn-dark { background:#4a3a2a; color:#eee; }
@@ -196,41 +174,21 @@
 
         .bottom-bar {
             background:linear-gradient(135deg, rgba(25,35,20,0.96), rgba(15,25,12,0.98));
-            border-top:1px solid var(--border);
-            backdrop-filter:blur(8px);
-            z-index:10;
-            padding:8px 12px;
+            border-top:1px solid var(--border); backdrop-filter:blur(8px);
+            z-index:10; padding:8px 12px;
             padding-bottom:calc(8px + env(safe-area-inset-bottom, 0px));
             display:flex; gap:8px; align-items:center; justify-content:center;
         }
         .bottom-btn {
             width:38px; height:38px; border-radius:10px;
-            border:1px solid var(--btn-border);
-            background:var(--btn-bg); color:var(--text);
-            cursor:pointer; font-size:16px;
-            display:flex; align-items:center; justify-content:center;
-            transition:all 0.2s;
+            border:1px solid var(--btn-border); background:var(--btn-bg);
+            color:var(--text); cursor:pointer; font-size:16px;
+            display:flex; align-items:center; justify-content:center; transition:all 0.2s;
         }
         .bottom-btn:hover { background:var(--btn-hover); border-color:var(--accent); }
         .bottom-btn img { width:100%; height:100%; object-fit:contain; padding:5px; }
 
         .debug-text { color:#555; font-size:0.5em; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-
-        .ripple { animation:ripple 1.5s infinite; }
-        @keyframes ripple {
-            0%{box-shadow:0 0 0 0 rgba(76,175,80,0.5)}
-            70%{box-shadow:0 0 0 25px rgba(76,175,80,0)}
-            100%{box-shadow:0 0 0 0 rgba(76,175,80,0)}
-        }
-        
-        /* Заглушка если иконка не загрузилась */
-        .icon-fallback {
-            font-size:24px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            width:100%; height:100%;
-        }
     </style>
 </head>
 <body>
@@ -239,30 +197,30 @@
             <span class="header-title-text">RobinCall</span>
             <span class="header-shield">🏹</span>
             <span style="flex:1;"></span>
-            <span class="header-status-dot checking" id="connection-dot"></span>
+            <span class="connection-dot checking" id="connection-dot"></span>
             <span style="font-size:0.6em;color:var(--text-dim);" id="connection-label">Проверка...</span>
             <span class="header-version">v3.2</span>
         </div>
         <div class="header-row-2">
-            <div class="header-btn" id="btn-avatar-menu" title="Аватар">
+            <div class="header-btn" title="Аватар">
                 <img src="assets/avatars/001-.png" class="header-avatar" alt="avatar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span class="icon-fallback" style="display:none;">🏹</span>
+                <span style="display:none;font-size:20px;">🏹</span>
             </div>
             <div class="header-btn" id="btn-arrow-create" title="Создать стрелу">
                 <img src="assets/3.png" alt="arrow" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span class="icon-fallback" style="display:none;">🏹</span>
+                <span style="display:none;font-size:20px;">🏹</span>
             </div>
             <div class="header-btn" id="btn-call-main" title="Позвонить">
                 <img src="assets/phone-go.png" alt="call" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span class="icon-fallback" style="display:none;">📞</span>
+                <span style="display:none;font-size:20px;">📞</span>
             </div>
             <div class="header-btn" id="btn-hangup-main" title="Завершить">
                 <img src="assets/phone-stop.png" alt="hangup" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span class="icon-fallback" style="display:none;">📞</span>
+                <span style="display:none;font-size:20px;">📞</span>
             </div>
             <div class="header-btn" id="btn-clear-reset" title="Новая сессия">
                 <img src="assets/6.png" alt="clear" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span class="icon-fallback" style="display:none;">🔄</span>
+                <span style="display:none;font-size:20px;">🔄</span>
             </div>
         </div>
         <div style="display:flex;justify-content:space-around;">
@@ -279,50 +237,50 @@
             <img src="assets/avatars/231-icon-11433690.png" class="robin-avatar" alt="Robin" onerror="this.src='assets/avatars/001-.png';">
             <div>
                 <div style="font-weight:900;color:var(--text-bright);font-size:0.85em;">Robin Hood</div>
-                <div class="robin-text" id="robin-message">Колчан готов, лучник!</div>
+                <div class="robin-text" id="robin-message">Колчан готов!</div>
             </div>
         </div>
 
-        <div class="status-text" id="call-status">🏹 Создайте стрелу чтобы начать</div>
+        <div class="status-text" id="call-status">🏹 Создайте стрелу</div>
         <div class="call-timer hidden" id="call-timer">00:00</div>
-        <div class="session-id-display hidden" id="session-id-display"></div>
+        <div class="session-id hidden" id="session-id-display"></div>
 
-        <div class="server-toggle-row">
+        <div class="server-row">
             <span>Сервер:</span>
-            <button class="server-toggle-btn active" id="btn-server-render">🌐 Render</button>
-            <button class="server-toggle-btn" id="btn-server-workers">⚡ Workers</button>
+            <button class="server-btn active" id="btn-server-render">🌐 Render</button>
+            <button class="server-btn" id="btn-server-workers">⚡ Workers</button>
         </div>
 
-        <button class="btn-main ripple hidden" id="btn-main-action" title="Создать стрелу">
-            <img src="assets/3.png" alt="arrow" id="main-action-icon" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-            <span class="icon-fallback" style="display:none;">🏹</span>
+        <button class="btn-main hidden" id="btn-main-action" title="Создать стрелу">
+            <img src="assets/3.png" alt="arrow" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <span style="display:none;font-size:30px;">🏹</span>
         </button>
 
         <div class="controls-row hidden" id="incoming-row">
-            <button class="btn-round btn-call" id="btn-answer" title="Принять">
+            <button class="btn-round btn-call" id="btn-answer">
                 <img src="assets/phone-go.png" alt="accept" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span class="icon-fallback" style="display:none;">📞</span>
+                <span style="display:none;font-size:28px;">📞</span>
             </button>
-            <button class="btn-round btn-hangup" id="btn-reject" title="Отклонить">
+            <button class="btn-round btn-hangup" id="btn-reject">
                 <img src="assets/phone-stop.png" alt="reject" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span class="icon-fallback" style="display:none;">✕</span>
+                <span style="display:none;font-size:28px;">✕</span>
             </button>
         </div>
 
         <div class="controls-row hidden" id="active-row">
-            <button class="btn-round btn-hangup" id="btn-end-call" title="Завершить">
+            <button class="btn-round btn-hangup" id="btn-end-call">
                 <img src="assets/phone-stop.png" alt="end" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <span class="icon-fallback" style="display:none;">📞</span>
+                <span style="display:none;font-size:28px;">📞</span>
             </button>
         </div>
 
         <div class="controls-row hidden" id="audio-controls" style="gap:12px;">
-            <button class="bottom-btn" id="btn-mic" title="Микрофон" style="width:44px;height:44px;font-size:20px;">🎤</button>
-            <button class="bottom-btn" id="btn-speaker" title="Динамик" style="width:44px;height:44px;font-size:20px;">🔊</button>
+            <button class="bottom-btn" id="btn-mic" style="width:44px;height:44px;font-size:20px;">🎤</button>
+            <button class="bottom-btn" id="btn-speaker" style="width:44px;height:44px;font-size:20px;">🔊</button>
         </div>
 
         <div class="input-row" id="join-row">
-            <input type="text" id="join-input" placeholder="Вставьте ID колчана..." autocomplete="off">
+            <input type="text" id="join-input" placeholder="ID колчана..." autocomplete="off">
             <button id="btn-join">🔗 Принять</button>
         </div>
     </div>
@@ -332,360 +290,129 @@
             <h3>🏹 Стрела готова!</h3>
             <div class="code-display" id="ref-link-display"></div>
             <button class="btn-primary" id="btn-copy-link-modal">📋 Копировать</button>
-            <button class="btn-primary" id="btn-share-link" style="margin-top:4px;">📤 Поделиться</button>
+            <button class="btn-primary" id="btn-share-link">📤 Поделиться</button>
             <button class="btn-dark" id="btn-close-modal">Закрыть</button>
         </div>
     </div>
 
     <div class="bottom-bar">
-        <button class="bottom-btn" id="btn-copy-link" title="Копировать">
+        <button class="bottom-btn" id="btn-copy-link">
             <img src="assets/1.png" alt="copy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-            <span class="icon-fallback" style="display:none;">📋</span>
+            <span style="display:none;">📋</span>
         </button>
-        <button class="bottom-btn" id="btn-share" title="Поделиться">📤</button>
-        <button class="bottom-btn" id="btn-check-server" title="Проверить сервер">🔄</button>
+        <button class="bottom-btn" id="btn-share">📤</button>
+        <button class="bottom-btn" id="btn-check-server">🔄</button>
         <span style="flex:1;"></span>
         <span class="debug-text" id="debug-text"></span>
     </div>
 
-    <iframe id="pong-frame" src="about:blank" style="display:none;" title="p2p engine"></iframe>
+    <iframe id="pong-frame" src="about:blank" style="display:none;" title="p2p"></iframe>
 
     <script>
-        (function() {
-            'use strict';
+        (function(){'use strict';
+        const P2PPONG_URL='https://stepweather-prog.github.io/P2PPong/';
+        const RENDER_SERVER='https://p2ppong.onrender.com';
+        const WORKERS_URL='https://robincall.stephanclaps-491.workers.dev';
+        const $=s=>document.getElementById(s);
+        const pongFrame=$('pong-frame'),robinMessage=$('robin-message'),callStatus=$('call-status');
+        const callTimer=$('call-timer'),sessionIdDisplay=$('session-id-display');
+        const connectionDot=$('connection-dot'),connectionLabel=$('connection-label'),debugText=$('debug-text');
+        const btnMainAction=$('btn-main-action'),btnAnswer=$('btn-answer'),btnReject=$('btn-reject');
+        const btnEndCall=$('btn-end-call'),btnMic=$('btn-mic'),btnSpeaker=$('btn-speaker');
+        const btnArrowCreate=$('btn-arrow-create'),btnCallMain=$('btn-call-main');
+        const btnHangupMain=$('btn-hangup-main'),btnClearReset=$('btn-clear-reset');
+        const btnCopyLink=$('btn-copy-link'),btnShare=$('btn-share'),btnJoin=$('btn-join');
+        const joinInput=$('join-input'),btnServerRender=$('btn-server-render'),btnServerWorkers=$('btn-server-workers');
+        const incomingRow=$('incoming-row'),activeRow=$('active-row'),audioControls=$('audio-controls');
+        const joinRow=$('join-row'),refModal=$('ref-modal'),refLinkDisplay=$('ref-link-display');
 
-            const P2PPONG_URL = 'https://stepweather-prog.github.io/P2PPong/';
-            const RENDER_SERVER = 'https://p2ppong.onrender.com';
-            const WORKERS_URL = 'https://robincall.stephanclaps-491.workers.dev';
+        const ICE=[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:["turn:openrelay.metered.ca:80?transport=tcp","turn:openrelay.metered.ca:443?transport=tcp"],username:"openrelayproject",credential:"openrelayproject"}];
 
-            const $ = (s) => document.getElementById(s);
-            const pongFrame = $('pong-frame');
-            const robinMessage = $('robin-message');
-            const callStatus = $('call-status');
-            const callTimer = $('call-timer');
-            const sessionIdDisplay = $('session-id-display');
-            const connectionDot = $('connection-dot');
-            const connectionLabel = $('connection-label');
-            const debugText = $('debug-text');
-            
-            const btnMainAction = $('btn-main-action');
-            const btnAnswer = $('btn-answer');
-            const btnReject = $('btn-reject');
-            const btnEndCall = $('btn-end-call');
-            const btnMic = $('btn-mic');
-            const btnSpeaker = $('btn-speaker');
-            const btnArrowCreate = $('btn-arrow-create');
-            const btnCallMain = $('btn-call-main');
-            const btnHangupMain = $('btn-hangup-main');
-            const btnClearReset = $('btn-clear-reset');
-            const btnCopyLink = $('btn-copy-link');
-            const btnShare = $('btn-share');
-            const btnJoin = $('btn-join');
-            const joinInput = $('join-input');
-            const btnServerRender = $('btn-server-render');
-            const btnServerWorkers = $('btn-server-workers');
-            
-            const incomingRow = $('incoming-row');
-            const activeRow = $('active-row');
-            const audioControls = $('audio-controls');
-            const joinRow = $('join-row');
-            const refModal = $('ref-modal');
-            const refLinkDisplay = $('ref-link-display');
+        let pc=null,stream=null,handshake=null,chId=null,sec=null,srv='render';
+        let active=false,tStart=null,tInt=null,mic=!0,spk=!0,offer=null,link=null,ready=false,online=false;
+        try{srv=localStorage.getItem('robinhood_server')||'render'}catch(e){}
 
-            const ICE_SERVERS = [
-                { urls: "stun:stun.l.google.com:19302" },
-                { urls: "stun:stun1.l.google.com:19302" },
-                { urls: ["turn:openrelay.metered.ca:80?transport=tcp", "turn:openrelay.metered.ca:443?transport=tcp"], username:"openrelayproject", credential:"openrelayproject" }
-            ];
+        function log(m){console.log('[RC]',m);if(debugText)debugText.textContent=m}
+        function rMsg(m){if(robinMessage)robinMessage.textContent=m;log(m)}
+        function conn(s){if(connectionDot)connectionDot.className='connection-dot '+s;if(connectionLabel)connectionLabel.textContent=s==='online'?'Готов':s==='offline'?'Нет связи':'Проверка...'}
 
-            let pc = null, localStream = null, handshakeSecret = null;
-            let channelId = null, sessionSecret = null, currentServer = 'render';
-            let callActive = false, callStartTime = null, callTimerInterval = null;
-            let micOn = true, speakerOn = true, pendingOffer = null;
-            let currentLink = null, quiverReady = false, serverOnline = false;
+        async function api(m,p,b){
+            const url=srv==='workers'?WORKERS_URL:RENDER_SERVER;
+            const c=new AbortController(),t=setTimeout(()=>c.abort(),srv==='workers'?5000:10000);
+            try{const o={method:m,headers:{'Content-Type':'application/json'},signal:c.signal};if(b)o.body=JSON.stringify(b);const r=await fetch(url+p,o);clearTimeout(t);return r.ok?await r.json():null}catch(e){clearTimeout(t);return null}
+        }
 
-            try { currentServer = localStorage.getItem('robinhood_server') || 'render'; } catch(e) {}
+        async function chkSrv(){conn('checking');online=(await api('GET','/ping'))!==null;conn(online?'online':'offline');return online}
+        function swSrv(s){if(s===srv)return;srv=s;try{localStorage.setItem('robinhood_server',srv)}catch(e){}btnServerRender.classList.toggle('active',srv==='render');btnServerWorkers.classList.toggle('active',srv==='workers');pongFrame.src=P2PPONG_URL+'?v='+Date.now();handshake=null;ready=!1;ui('idle');rMsg('🔄 '+(s==='workers'?'Workers':'Render'));conn('checking')}
 
-            function log(msg) { console.log('[RobinCall]', msg); if (debugText) debugText.textContent = msg; }
-            function setRobinMsg(msg) { if (robinMessage) robinMessage.textContent = msg; log(msg); }
-            function setConnectionState(state) {
-                if (connectionDot) connectionDot.className = 'header-status-dot ' + state;
-                if (connectionLabel) {
-                    connectionLabel.textContent = state === 'online' ? 'Готов' : state === 'offline' ? 'Нет связи' : 'Проверка...';
-                }
-            }
+        function send(m){if(!m)return;if(chId&&sec){m.secret=sec;m.channelId=chId}if(handshake&&m.action==='handshake')m.handshake=handshake;pongFrame.contentWindow?.postMessage(m,'*')}
+        async function getStream(){try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:!0,noiseSuppression:!0,autoGainControl:!0},video:!1});return!0}catch(e){rMsg('❌ Нет микрофона');return!1}}
+        function mkPC(){if(pc){pc.close();pc=null}pc=new RTCPeerConnection({iceServers:ICE,iceTransportPolicy:'all'});if(stream)stream.getTracks().forEach(t=>pc.addTrack(t,stream));pc.ontrack=e=>{if(e.streams[0]){const a=new Audio();a.srcObject=e.streams[0];a.play().catch(()=>{})}};pc.onicecandidate=e=>{if(e.candidate)send({action:'send',text:'__ICE__'+JSON.stringify(e.candidate),channelId:chId})};pc.onconnectionstatechange=()=>{if(pc.connectionState==='connected'){active=!0;tStart=Date.now();timer();ui('active');if(callStatus)callStatus.textContent='✅ Разговор'}else if(pc.connectionState==='disconnected'||pc.connectionState==='failed')hang(!1)};return pc}
 
-            async function apiCall(method, path, body = null) {
-                const serverUrl = currentServer === 'workers' ? WORKERS_URL : RENDER_SERVER;
-                const ctrl = new AbortController();
-                const to = setTimeout(() => ctrl.abort(), currentServer === 'workers' ? 5000 : 10000);
-                try {
-                    const options = { method, headers: {'Content-Type':'application/json'}, signal: ctrl.signal };
-                    if (body) options.body = JSON.stringify(body);
-                    const res = await fetch(serverUrl + path, options);
-                    clearTimeout(to);
-                    return res.ok ? await res.json() : null;
-                } catch(e) { clearTimeout(to); return null; }
-            }
+        function mkQ(){if(!online){rMsg('⚠ Сервер офлайн');return}rMsg('⚒ Куём стрелу...');btnMainAction.disabled=!0;send({action:'create'})}
+        async function call(){if(!ready||!chId){rMsg('⚠ Создайте стрелу');return}if(callStatus)callStatus.textContent='📞 Вызов...';ui('calling');if(!await getStream()){ui('ready');return}mkPC();try{const o=await pc.createOffer();await pc.setLocalDescription(o);send({action:'send',text:'__OFFER__'+JSON.stringify(o),channelId:chId})}catch(e){hang(!0)}}
+        async function accept(){if(!offer)return;ui('active');if(!await getStream()){ui('ready');return}mkPC();try{await pc.setRemoteDescription(new RTCSessionDescription(offer));const a=await pc.createAnswer();await pc.setLocalDescription(a);send({action:'send',text:'__ANSWER__'+JSON.stringify(a),channelId:chId});offer=null}catch(e){hang(!0)}}
+        function hang(sig=!0){active=!1;if(tInt){clearInterval(tInt);tInt=null}if(callTimer){callTimer.classList.add('hidden');callTimer.textContent='00:00'}if(sig&&chId)send({action:'send',text:'__HANGUP__',channelId:chId});if(pc){pc.close();pc=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}offer=null;if(callStatus)callStatus.textContent='📞 Завершён';ui('ready')}
+        function timer(){if(callTimer)callTimer.classList.remove('hidden');tInt=setInterval(()=>{const e=Math.floor((Date.now()-tStart)/1000);if(callTimer)callTimer.textContent=Math.floor(e/60).toString().padStart(2,'0')+':'+(e%60).toString().padStart(2,'0')},1000)}
+        function accArrow(id){if(!id){rMsg('⚠ ID колчана');return}rMsg('🔍 Поиск...');send({action:'accept',id:id,key:''})}
+        function reset(){if(active)hang(!0);chId=null;sec=null;link=null;ready=!1;offer=null;ui('idle');if(joinInput)joinInput.value='';rMsg('🏹 Сброшен')}
+        function cp(){if(link){navigator.clipboard.writeText(link).then(()=>rMsg('📋 Скопировано')).catch(()=>{});refModal.classList.add('active')}else rMsg('⚠ Создайте стрелу')}
+        async function shr(){if(link&&navigator.share)try{await navigator.share({title:'RobinCall',text:'Звонок!',url:link})}catch(e){}else cp()}
 
-            async function checkServer() {
-                setConnectionState('checking');
-                serverOnline = (await apiCall('GET', '/ping')) !== null;
-                setConnectionState(serverOnline ? 'online' : 'offline');
-                return serverOnline;
-            }
+        function ui(s){
+            btnMainAction.classList.add('hidden');incomingRow.classList.add('hidden');
+            activeRow.classList.add('hidden');audioControls.classList.add('hidden');btnMainAction.disabled=!1;
+            if(s==='idle'){btnMainAction.classList.remove('hidden');joinRow.classList.remove('hidden');if(callStatus)callStatus.textContent='🏹 Создайте стрелу'}
+            else if(s==='ready'){btnMainAction.classList.remove('hidden');joinRow.classList.remove('hidden');if(callStatus)callStatus.textContent='📞 Готово!'}
+            else if(s==='calling'){activeRow.classList.remove('hidden');audioControls.classList.remove('hidden')}
+            else if(s==='incoming'){incomingRow.classList.remove('hidden');if(callStatus)callStatus.textContent='📞 Входящий!'}
+            else if(s==='active'){activeRow.classList.remove('hidden');audioControls.classList.remove('hidden')}
+        }
 
-            function switchServer(server) {
-                if (server === currentServer) return;
-                currentServer = server;
-                try { localStorage.setItem('robinhood_server', currentServer); } catch(e) {}
-                btnServerRender.classList.toggle('active', currentServer === 'render');
-                btnServerWorkers.classList.toggle('active', currentServer === 'workers');
-                if (pongFrame) pongFrame.src = P2PPONG_URL + '?v=' + Date.now();
-                handshakeSecret = null; quiverReady = false;
-                updateUIState('idle');
-                setRobinMsg('🔄 ' + (server === 'workers' ? 'Workers' : 'Render'));
-                setConnectionState('checking');
-            }
+        btnMainAction.addEventListener('click',()=>{if(!ready)mkQ();else call()});
+        btnArrowCreate.addEventListener('click',mkQ);btnCallMain.addEventListener('click',call);
+        btnHangupMain.addEventListener('click',()=>hang(!0));btnClearReset.addEventListener('click',reset);
+        btnAnswer.addEventListener('click',accept);
+        btnReject.addEventListener('click',()=>{send({action:'send',text:'__HANGUP__',channelId:chId});offer=null;ui('ready')});
+        btnEndCall.addEventListener('click',()=>hang(!0));
+        btnMic.addEventListener('click',()=>{if(stream){mic=!mic;stream.getAudioTracks().forEach(t=>t.enabled=mic);btnMic.textContent=mic?'🎤':'🔇'}});
+        btnSpeaker.addEventListener('click',()=>{spk=!spk;btnSpeaker.textContent=spk?'🔊':'🔈'});
+        btnCopyLink.addEventListener('click',cp);btnShare.addEventListener('click',shr);
+        btnJoin.addEventListener('click',()=>{const v=joinInput.value.trim();if(v)accArrow(v)});
+        joinInput.addEventListener('keypress',e=>{if(e.key==='Enter'){const v=joinInput.value.trim();if(v)accArrow(v)}});
+        $('btn-copy-link-modal')?.addEventListener('click',()=>{if(link)navigator.clipboard.writeText(link).catch(()=>{})});
+        $('btn-share-link')?.addEventListener('click',shr);
+        $('btn-close-modal')?.addEventListener('click',()=>refModal.classList.remove('active'));
+        btnServerRender.addEventListener('click',()=>swSrv('render'));
+        btnServerWorkers.addEventListener('click',()=>swSrv('workers'));
+        $('btn-check-server').addEventListener('click',()=>chkSrv().then(o=>rMsg(o?'✅ Доступен':'❌ Офлайн')));
 
-            function manualCheckServer() {
-                checkServer().then(ok => setRobinMsg(ok ? '✅ Сервер доступен' : '❌ Сервер не отвечает'));
-            }
+        window.addEventListener('message',async e=>{
+            if(e.source!==pongFrame.contentWindow)return;const d=e.data;
+            if(d.type==='pong-ready'){handshake=d.handshake;send({action:'handshake'});conn('online');ui('idle');rMsg('🏹 Готов!')}
+            else if(d.type==='handshake-ok'){const s=new URLSearchParams(location.search).get('id');if(s)accArrow(s)}
+            else if(d.type==='session-created'){chId=d.sessionId;sec=d.secret;link=d.fullLink;ready=!0;rMsg('✅ Стрела!');conn('online');if(refLinkDisplay)refLinkDisplay.textContent=d.fullLink;refModal.classList.add('active');if(joinInput)joinInput.value=d.sessionId;if(sessionIdDisplay){sessionIdDisplay.classList.remove('hidden');sessionIdDisplay.textContent='ID: '+d.sessionId}ui('ready');navigator.clipboard.writeText(link).catch(()=>{})}
+            else if(d.type==='channel-open'){chId=d.channelId;sec=d.secret;ready=!0;rMsg('✅ Подключено');conn('online');ui('ready')}
+            else if(d.type==='message'&&d.text){
+                if(d.text.startsWith('__OFFER__')){if(active||pc){send({action:'send',text:'__HANGUP__',channelId:chId});return}try{offer=JSON.parse(d.text.replace('__OFFER__',''));ui('incoming')}catch(e){}}
+                else if(d.text.startsWith('__ANSWER__')&&pc){try{await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(d.text.replace('__ANSWER__',''))));active=!0;tStart=Date.now();timer();ui('active')}catch(e){}}
+                else if(d.text.startsWith('__ICE__')&&pc){try{await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(d.text.replace('__ICE__',''))))}catch(e){}}
+                else if(d.text==='__HANGUP__'){if(active||pc){rMsg('📞 Собеседник завершил');hang(!1)}}
+            }else if(d.type==='error'){rMsg('⚠ '+d.text);btnMainAction.disabled=!1;ui('idle')}
+        });
 
-            function sendToPong(msg) {
-                if (!msg) return;
-                if (channelId && sessionSecret) { msg.secret = sessionSecret; msg.channelId = channelId; }
-                if (handshakeSecret && msg.action === 'handshake') msg.handshake = handshakeSecret;
-                if (pongFrame.contentWindow) pongFrame.contentWindow.postMessage(msg, '*');
-            }
+        async function init(){
+            log('RobinCall v3.2');
+            conn('checking');
+            if(srv==='workers'){btnServerWorkers.classList.add('active');btnServerRender.classList.remove('active')}
+            await chkSrv();
+            pongFrame.src=P2PPONG_URL+'?v='+Date.now();
+            ui('idle');rMsg('🏹 Ждём...')
+        }
 
-            async function getLocalStream() {
-                try {
-                    localStream = await navigator.mediaDevices.getUserMedia({
-                        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false
-                    });
-                    return true;
-                } catch (e) { setRobinMsg('❌ Нет доступа к микрофону'); return false; }
-            }
-
-            function createPeerConnection() {
-                if (pc) { pc.close(); pc = null; }
-                pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceTransportPolicy: 'all' });
-                if (localStream) localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-                pc.ontrack = (e) => { if (e.streams[0]) { const a = new Audio(); a.srcObject = e.streams[0]; a.play().catch(()=>{}); } };
-                pc.onicecandidate = (e) => { if (e.candidate) sendToPong({ action: 'send', text: '__ICE__'+JSON.stringify(e.candidate), channelId }); };
-                pc.onconnectionstatechange = () => {
-                    if (pc.connectionState === 'connected') { callActive = true; startCallTimer(); updateUIState('active'); if (callStatus) callStatus.textContent = '✅ Разговор'; }
-                    else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') { hangup(false); }
-                };
-                return pc;
-            }
-
-            function createQuiver() {
-                if (!serverOnline) { setRobinMsg('⚠ Сервер офлайн'); return; }
-                setRobinMsg('⚒ Куём стрелу...');
-                btnMainAction.disabled = true;
-                sendToPong({ action: 'create' });
-            }
-
-            async function startCall() {
-                if (!quiverReady || !channelId) { setRobinMsg('⚠ Сначала создайте стрелу!'); return; }
-                if (callStatus) callStatus.textContent = '📞 Вызов...';
-                updateUIState('calling');
-                if (!await getLocalStream()) { updateUIState('ready'); return; }
-                createPeerConnection();
-                try {
-                    const offer = await pc.createOffer();
-                    await pc.setLocalDescription(offer);
-                    sendToPong({ action: 'send', text: '__OFFER__'+JSON.stringify(offer), channelId });
-                } catch(e) { hangup(true); }
-            }
-
-            async function acceptCall() {
-                if (!pendingOffer) return;
-                updateUIState('active');
-                if (!await getLocalStream()) { updateUIState('ready'); return; }
-                createPeerConnection();
-                try {
-                    await pc.setRemoteDescription(new RTCSessionDescription(pendingOffer));
-                    const answer = await pc.createAnswer();
-                    await pc.setLocalDescription(answer);
-                    sendToPong({ action: 'send', text: '__ANSWER__'+JSON.stringify(answer), channelId });
-                    pendingOffer = null;
-                } catch(e) { hangup(true); }
-            }
-
-            function hangup(sendSignal = true) {
-                callActive = false; stopCallTimer();
-                if (sendSignal && channelId) sendToPong({ action: 'send', text: '__HANGUP__', channelId });
-                if (pc) { pc.close(); pc = null; }
-                if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
-                pendingOffer = null;
-                if (callStatus) callStatus.textContent = '📞 Звонок завершён';
-                updateUIState('ready');
-            }
-
-            function startCallTimer() {
-                callStartTime = Date.now();
-                if (callTimer) callTimer.classList.remove('hidden');
-                callTimerInterval = setInterval(() => {
-                    const e = Math.floor((Date.now() - callStartTime) / 1000);
-                    if (callTimer) callTimer.textContent = Math.floor(e/60).toString().padStart(2,'0')+':'+(e%60).toString().padStart(2,'0');
-                }, 1000);
-            }
-
-            function stopCallTimer() {
-                if (callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval = null; }
-                if (callTimer) { callTimer.classList.add('hidden'); callTimer.textContent = '00:00'; }
-            }
-
-            function acceptArrow(sid) {
-                if (!sid) { setRobinMsg('⚠ Введите ID колчана'); return; }
-                setRobinMsg('🔍 Ищу колчан...');
-                sendToPong({ action: 'accept', id: sid, key: '' });
-            }
-
-            function resetSession() {
-                if (callActive) hangup(true);
-                channelId = null; sessionSecret = null; currentLink = null;
-                quiverReady = false; pendingOffer = null;
-                updateUIState('idle');
-                if (joinInput) joinInput.value = '';
-                setRobinMsg('🏹 Колчан сброшен');
-            }
-
-            function copyLink() {
-                if (currentLink) {
-                    navigator.clipboard.writeText(currentLink).then(() => setRobinMsg('📋 Скопировано!')).catch(()=>{});
-                    refModal.classList.add('active');
-                } else { setRobinMsg('⚠ Сначала создайте стрелу'); }
-            }
-
-            async function shareLink() {
-                if (currentLink && navigator.share) {
-                    try { await navigator.share({ title:'RobinCall', text:'Присоединяйтесь!', url:currentLink }); } catch(e) {}
-                } else { copyLink(); }
-            }
-
-            function updateUIState(state) {
-                btnMainAction.classList.add('hidden');
-                incomingRow.classList.add('hidden');
-                activeRow.classList.add('hidden');
-                audioControls.classList.add('hidden');
-                btnMainAction.disabled = false;
-
-                if (state === 'idle') {
-                    btnMainAction.classList.remove('hidden');
-                    joinRow.classList.remove('hidden');
-                    if (callStatus) callStatus.textContent = '🏹 Создайте стрелу';
-                } else if (state === 'ready') {
-                    btnMainAction.classList.remove('hidden');
-                    btnMainAction.classList.add('ripple');
-                    joinRow.classList.remove('hidden');
-                    if (callStatus) callStatus.textContent = '📞 Готово! Можно звонить';
-                } else if (state === 'calling') {
-                    activeRow.classList.remove('hidden');
-                    audioControls.classList.remove('hidden');
-                } else if (state === 'incoming') {
-                    incomingRow.classList.remove('hidden');
-                    if (callStatus) callStatus.textContent = '📞 Входящий!';
-                } else if (state === 'active') {
-                    activeRow.classList.remove('hidden');
-                    audioControls.classList.remove('hidden');
-                }
-            }
-
-            btnMainAction.addEventListener('click', () => { if (!quiverReady) createQuiver(); else startCall(); });
-            btnArrowCreate.addEventListener('click', createQuiver);
-            btnCallMain.addEventListener('click', startCall);
-            btnHangupMain.addEventListener('click', () => hangup(true));
-            btnClearReset.addEventListener('click', resetSession);
-            btnAnswer.addEventListener('click', acceptCall);
-            btnReject.addEventListener('click', () => { sendToPong({ action: 'send', text: '__HANGUP__', channelId }); pendingOffer = null; updateUIState('ready'); });
-            btnEndCall.addEventListener('click', () => hangup(true));
-            btnMic.addEventListener('click', () => { if (localStream) { micOn = !micOn; localStream.getAudioTracks().forEach(t => t.enabled = micOn); btnMic.textContent = micOn ? '🎤' : '🔇'; } });
-            btnSpeaker.addEventListener('click', () => { speakerOn = !speakerOn; btnSpeaker.textContent = speakerOn ? '🔊' : '🔈'; });
-            btnCopyLink.addEventListener('click', copyLink);
-            btnShare.addEventListener('click', shareLink);
-            btnJoin.addEventListener('click', () => { const id = joinInput.value.trim(); if (id) acceptArrow(id); });
-            joinInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { const id = joinInput.value.trim(); if (id) acceptArrow(id); } });
-            $('btn-copy-link-modal')?.addEventListener('click', () => { if (currentLink) navigator.clipboard.writeText(currentLink).catch(()=>{}); });
-            $('btn-share-link')?.addEventListener('click', shareLink);
-            $('btn-close-modal')?.addEventListener('click', () => refModal.classList.remove('active'));
-            btnServerRender.addEventListener('click', () => switchServer('render'));
-            btnServerWorkers.addEventListener('click', () => switchServer('workers'));
-
-            window.addEventListener('message', async (event) => {
-                if (event.source !== pongFrame.contentWindow) return;
-                const data = event.data;
-
-                if (data.type === 'pong-ready') {
-                    handshakeSecret = data.handshake;
-                    sendToPong({ action: 'handshake' });
-                    setConnectionState('online');
-                    updateUIState('idle');
-                    setRobinMsg('🏹 Колчан готов!');
-                } else if (data.type === 'handshake-ok') {
-                    const sid = new URLSearchParams(window.location.search).get('id');
-                    if (sid) acceptArrow(sid);
-                } else if (data.type === 'session-created') {
-                    channelId = data.sessionId; sessionSecret = data.secret;
-                    currentLink = data.fullLink; quiverReady = true;
-                    setRobinMsg('✅ Стрела готова!');
-                    setConnectionState('online');
-                    if (refLinkDisplay) refLinkDisplay.textContent = data.fullLink;
-                    refModal.classList.add('active');
-                    if (joinInput) joinInput.value = data.sessionId;
-                    if (sessionIdDisplay) { sessionIdDisplay.classList.remove('hidden'); sessionIdDisplay.textContent = 'ID: ' + data.sessionId; }
-                    updateUIState('ready');
-                    navigator.clipboard.writeText(currentLink).catch(()=>{});
-                } else if (data.type === 'channel-open') {
-                    channelId = data.channelId; sessionSecret = data.secret; quiverReady = true;
-                    setRobinMsg('✅ Подключено!');
-                    setConnectionState('online');
-                    updateUIState('ready');
-                } else if (data.type === 'message' && data.text) {
-                    if (data.text.startsWith('__OFFER__')) {
-                        if (callActive || pc) { sendToPong({ action: 'send', text: '__HANGUP__', channelId }); return; }
-                        try { pendingOffer = JSON.parse(data.text.replace('__OFFER__','')); updateUIState('incoming'); } catch(e) {}
-                    } else if (data.text.startsWith('__ANSWER__') && pc) {
-                        try { await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(data.text.replace('__ANSWER__','')))); callActive = true; startCallTimer(); updateUIState('active'); } catch(e) {}
-                    } else if (data.text.startsWith('__ICE__') && pc) {
-                        try { await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(data.text.replace('__ICE__','')))); } catch(e) {}
-                    } else if (data.text === '__HANGUP__') {
-                        if (callActive || pc) { setRobinMsg('📞 Собеседник завершил звонок'); hangup(false); }
-                    }
-                } else if (data.type === 'error') {
-                    setRobinMsg('⚠ ' + data.text);
-                    btnMainAction.disabled = false;
-                    updateUIState('idle');
-                }
-            });
-
-            async function init() {
-                log('RobinCall v3.2 загружен');
-                setConnectionState('checking');
-                if (currentServer === 'workers') { btnServerWorkers.classList.add('active'); btnServerRender.classList.remove('active'); }
-                await checkServer();
-                pongFrame.src = P2PPONG_URL + '?v=' + Date.now();
-                updateUIState('idle');
-                setRobinMsg('🏹 Ждём колчан...');
-            }
-
-            window.addEventListener('beforeunload', () => {
-                if (callActive) sendToPong({ action: 'send', text: '__HANGUP__', channelId });
-                if (pc) pc.close();
-                if (localStream) localStream.getTracks().forEach(t => t.stop());
-            });
-
-            window.switchServer = switchServer;
-            window.manualCheckServer = manualCheckServer;
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', init);
-            } else {
-                init();
-            }
+        window.addEventListener('beforeunload',()=>{if(active)send({action:'send',text:'__HANGUP__',channelId:chId});if(pc)pc.close();if(stream)stream.getTracks().forEach(t=>t.stop())});
+        window.swSrv=swSrv;window.chkSrv=()=>chkSrv().then(o=>rMsg(o?'✅ Доступен':'❌ Офлайн'));
+        document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
         })();
     </script>
 </body>
