@@ -3,215 +3,1006 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>RobinCall</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>RobinHood P2P Call</title>
     <link rel="manifest" href="manifest.json">
-    <!-- ПРАВИЛЬНЫЕ ПУТИ: из ROBINHOOD-P2PCall/ поднимаемся в корень, затем в ROBINHOOD-P2P/assets/ -->
-    <link rel="icon" type="image/png" sizes="192x192" href="../ROBINHOOD-P2P/assets/avatars/001-.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/avatars/001-.png">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; media-src 'self' blob:; connect-src * blob:; img-src 'self' data: blob:;">
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-        html,body { height:100%; overflow:hidden; font-family:'Segoe UI','Inter','Georgia',serif; }
-        body {
-            background: linear-gradient(135deg, #1a2a1f 0%, #0d1a0c 100%);
-            color:#e8e2c7;
-            display:flex; flex-direction:column; align-items:center; justify-content:center;
-            height:100dvh; position:relative;
+        :root {
+            --bg-primary: #1a2a1f;
+            --bg-secondary: #0d1a0c;
+            --accent: #c4a24b;
+            --accent-light: #e8d5a3;
+            --text: #e8e2c7;
+            --text-dim: #b8a87a;
+            --border: #c4a24b;
+            --btn-bg: rgba(196, 162, 75, 0.15);
+            --robin-bg: rgba(50, 70, 40, 0.9);
+            --robin-accent: #e8c97a;
         }
-        /* Фон с правильным путем: ../ROBINHOOD-P2P/assets/background.webp */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', 'Inter', 'Georgia', serif; }
+        body {
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            position: relative;
+        }
         body::before {
-            content:""; position:fixed; top:0; left:0; width:100%; height:100%;
-            background-image:url('../ROBINHOOD-P2P/assets/background.webp');
-            background-size:cover; background-position:center; background-repeat:no-repeat;
-            z-index:0; opacity:0.3;
+            content: "";
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image: url('assets/background.webp');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 0;
+            opacity: 0.3;
         }
         body::after {
-            content:""; position:fixed; top:0; left:0; width:100%; height:100%;
-            background:radial-gradient(circle at 50% 50%, rgba(30,40,25,0.6), rgba(10,20,8,0.9));
-            z-index:0;
+            content: "";
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 50%, rgba(30,40,25,0.6), rgba(10,20,8,0.9));
+            z-index: 0;
         }
-        .container { position:relative; z-index:1; text-align:center; padding:20px; }
-        h1 { font-size:2em; background:linear-gradient(135deg,#e8d5a3,#c4a24b); -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:10px; }
-        .status { color:#b8a87a; font-size:1em; margin:15px 0; min-height:30px; }
+
+        /* Шапка */
+        .header {
+            background: linear-gradient(135deg, rgba(25,35,20,0.96), rgba(15,25,12,0.98));
+            border-bottom: 2px solid var(--border);
+            backdrop-filter: blur(8px);
+            z-index: 10;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .header-logo {
+            font-size: 1.2em;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--accent-light), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .header-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 10px;
+            font-size: 20px;
+            background: var(--btn-bg);
+            border: 1px solid rgba(196,162,75,0.3);
+            color: var(--text);
+            transition: all 0.2s;
+        }
+        .header-btn:hover {
+            background: rgba(196,162,75,0.3);
+            border-color: var(--accent);
+        }
+        .header-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 4px;
+        }
+        .header-status {
+            font-size: 0.7em;
+            color: var(--text-dim);
+            flex: 1;
+            text-align: right;
+        }
+
+        /* Основной контент */
+        .main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+            padding: 20px;
+            gap: 15px;
+        }
+
+        /* Robin строка */
+        .robin-row {
+            background: var(--robin-bg);
+            border: 2px solid var(--robin-accent);
+            border-radius: 16px;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 90%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .robin-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--robin-accent);
+            flex-shrink: 0;
+        }
+        .robin-text {
+            font-weight: 700;
+            font-size: 0.85em;
+            color: var(--text);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+        }
+
+        /* Кнопки */
         .btn {
-            width:80px; height:80px; border-radius:50%; border:3px solid #c4a24b;
-            cursor:pointer; font-size:35px; display:flex; align-items:center; justify-content:center;
-            margin:20px auto; transition:all 0.3s; background:rgba(196,162,75,0.15); color:#e8e2c7;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 3px solid var(--border);
+            cursor: pointer;
+            font-size: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            background: var(--btn-bg);
+            color: var(--text);
+            position: relative;
         }
-        .btn:hover { background:rgba(196,162,75,0.35); box-shadow:0 0 30px rgba(196,162,75,0.4); transform:scale(1.1); }
-        .btn-call { border-color:#4caf50; color:#4caf50; }
-        .btn-hangup { border-color:#f44336; color:#f44336; }
-        .btn-answer { border-color:#4caf50; color:#4caf50; }
-        .btn-reject { border-color:#f44336; color:#f44336; }
-        .btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
-        .btn:disabled:hover { background:rgba(196,162,75,0.15); box-shadow:none; transform:none; }
-        .hidden { display:none !important; }
-        .controls { display:flex; gap:20px; justify-content:center; margin-top:20px; }
-        .debug { color:#666; font-size:0.7em; margin-top:30px; word-break:break-all; max-height:80px; overflow-y:auto; }
-        .ripple { animation:ripple 1.5s infinite; }
-        @keyframes ripple { 0%{box-shadow:0 0 0 0 rgba(76,175,80,0.5)} 70%{box-shadow:0 0 0 30px rgba(76,175,80,0)} 100%{box-shadow:0 0 0 0 rgba(76,175,80,0)} }
-        .fingerprint-info { font-family:monospace; font-size:0.65em; background:rgba(0,0,0,0.3); padding:6px 12px; border-radius:8px; margin:8px 0; word-break:break-all; color:#81c784; }
+        .btn:hover {
+            background: rgba(196,162,75,0.35);
+            box-shadow: 0 0 35px rgba(196,162,75,0.5);
+            transform: scale(1.08);
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        .btn-call { border-color: #4caf50; }
+        .btn-call:hover { box-shadow: 0 0 35px rgba(76,175,80,0.5); }
+        .btn-hangup { border-color: #f44336; background: rgba(244,67,54,0.2); }
+        .btn-hangup:hover { box-shadow: 0 0 35px rgba(244,67,54,0.5); }
+        .btn-answer { border-color: #4caf50; background: rgba(76,175,80,0.2); }
+        .btn-reject { border-color: #f44336; background: rgba(244,67,54,0.2); }
+
+        .btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .hidden { display: none !important; }
+
+        .controls-row {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Статус */
+        .status-text {
+            font-size: 1.1em;
+            color: var(--accent-light);
+            text-align: center;
+            min-height: 30px;
+        }
+
+        /* Индикаторы */
+        .call-timer {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #4caf50;
+            font-family: monospace;
+        }
+
+        /* Поле ввода ID */
+        .input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: rgba(20,30,18,0.9);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 5px;
+            max-width: 90%;
+        }
+        .input-row input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 14px;
+            padding: 8px;
+            outline: none;
+            font-family: monospace;
+        }
+        .input-row button {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--btn-bg);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        /* Анимация */
+        .ripple {
+            animation: ripple 1.5s infinite;
+        }
+        @keyframes ripple {
+            0% { box-shadow: 0 0 0 0 rgba(76,175,80,0.5); }
+            70% { box-shadow: 0 0 0 35px rgba(76,175,80,0); }
+            100% { box-shadow: 0 0 0 0 rgba(76,175,80,0); }
+        }
+        .ripple-hangup {
+            animation: rippleHangup 1.5s infinite;
+        }
+        @keyframes rippleHangup {
+            0% { box-shadow: 0 0 0 0 rgba(244,67,54,0.5); }
+            70% { box-shadow: 0 0 0 35px rgba(244,67,54,0); }
+            100% { box-shadow: 0 0 0 0 rgba(244,67,54,0); }
+        }
+
+        /* Нижняя панель */
+        .bottom-bar {
+            background: linear-gradient(135deg, rgba(25,35,20,0.96), rgba(15,25,12,0.98));
+            border-top: 1px solid var(--border);
+            backdrop-filter: blur(8px);
+            z-index: 10;
+            padding: 10px;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+        }
+        .bottom-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: 1px solid rgba(196,162,75,0.3);
+            background: var(--btn-bg);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .bottom-btn:hover {
+            background: rgba(196,162,75,0.3);
+            border-color: var(--accent);
+        }
+        .bottom-btn.active {
+            background: rgba(76,175,80,0.3);
+            border-color: #4caf50;
+        }
+
+        /* Отпечаток */
+        .fingerprint-bar {
+            font-family: monospace;
+            font-size: 0.6em;
+            background: rgba(0,0,0,0.3);
+            padding: 6px 10px;
+            border-radius: 8px;
+            color: #81c784;
+            max-width: 90%;
+            word-break: break-all;
+            text-align: center;
+        }
+
+        /* Прокрутка */
+        .debug-log {
+            color: #555;
+            font-size: 0.6em;
+            max-height: 60px;
+            overflow-y: auto;
+            text-align: center;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>RobinCall</h1>
-    <div class="status" id="status">Загрузка...</div>
-    <div class="fingerprint-info hidden" id="fingerprint-info"></div>
-    <button class="btn btn-call hidden" id="btn-call"></button>
-    <div class="controls hidden" id="incoming-controls">
-        <button class="btn btn-answer" id="btn-answer"></button>
-        <button class="btn btn-reject" id="btn-reject">✕</button>
+    <!-- Шапка -->
+    <div class="header">
+        <span class="header-logo">🏹 RobinCall</span>
+        <span style="flex:1;"></span>
+        <span class="header-status" id="connection-status">⚫ Автономный</span>
     </div>
-    <div class="controls hidden" id="active-controls">
-        <button class="btn btn-hangup ripple" id="btn-hangup"></button>
+
+    <!-- Основная область -->
+    <div class="main-area" id="main-area">
+        <!-- Robin Hood -->
+        <div class="robin-row">
+            <img src="assets/avatars/231-icon-11433690.png" class="robin-avatar" alt="Robin" id="robin-avatar">
+            <span class="robin-text" id="robin-message">Готов к вызову, лучник!</span>
+        </div>
+
+        <!-- Статус -->
+        <div class="status-text" id="call-status">📞 Нажмите для вызова</div>
+        
+        <!-- Таймер -->
+        <div class="call-timer hidden" id="call-timer">00:00</div>
+        
+        <!-- Отпечаток -->
+        <div class="fingerprint-bar hidden" id="fingerprint-bar"></div>
+
+        <!-- Кнопка вызова -->
+        <button class="btn btn-call" id="btn-main-call" title="Создать звонок">📞</button>
+
+        <!-- Входящий -->
+        <div class="controls-row hidden" id="incoming-row">
+            <button class="btn btn-answer" id="btn-answer" title="Принять">📞</button>
+            <button class="btn btn-reject" id="btn-reject" title="Отклонить">✕</button>
+        </div>
+
+        <!-- Активный -->
+        <div class="controls-row hidden" id="active-row">
+            <button class="btn btn-hangup ripple-hangup" id="btn-hangup" title="Завершить">📞</button>
+        </div>
+
+        <!-- Поле ввода ID -->
+        <div class="input-row" id="join-row">
+            <input type="text" id="join-input" placeholder="Вставьте ID сессии..." autocomplete="off">
+            <button id="btn-join">Подключиться</button>
+        </div>
+
+        <!-- Доп кнопки -->
+        <div class="controls-row" id="extra-btns" style="gap:12px;">
+            <button class="bottom-btn" id="btn-mic" title="Микрофон">🎤</button>
+            <button class="bottom-btn" id="btn-speaker" title="Динамик">🔊</button>
+            <button class="bottom-btn" id="btn-create-session" title="Создать сессию">🔗</button>
+        </div>
     </div>
-    <div class="debug" id="debug"></div>
-</div>
 
-<script>
-(function(){
-const $=s=>document.getElementById(s);
-const statusDiv=$('status'),debugDiv=$('debug'),fingerprintInfo=$('fingerprint-info');
-const btnCall=$('btn-call'),btnHangup=$('btn-hangup'),btnAnswer=$('btn-answer'),btnReject=$('btn-reject');
-const incomingControls=$('incoming-controls'),activeControls=$('active-controls');
+    <!-- Нижняя панель -->
+    <div class="bottom-bar">
+        <button class="bottom-btn" id="btn-new-session" title="Новая сессия">➕</button>
+        <button class="bottom-btn" id="btn-copy-link" title="Копировать ссылку">📋</button>
+        <button class="bottom-btn" id="btn-share" title="Поделиться">📤</button>
+        <span style="flex:1;"></span>
+        <span class="debug-log" id="debug-log"></span>
+    </div>
 
-const ICE=[
-  {urls:"stun:stun.l.google.com:19302"},
-  {urls:"stun:stun1.l.google.com:19302"},
-  {urls:["turn:openrelay.metered.ca:80?transport=tcp","turn:openrelay.metered.ca:443?transport=tcp"],username:"openrelayproject",credential:"openrelayproject"}
-];
+    <!-- Скрытый iframe для P2PPong -->
+    <iframe id="pong-frame" src="about:blank" style="display:none;" title="p2p engine"></iframe>
 
-let pc=null,stream=null,channelId=null,callActive=false,callTimer=null,initReceived=false;
-const urlParams=new URLSearchParams(location.search);
+    <script>
+        (function() {
+            'use strict';
 
-function log(m){console.log('[RobinCall]',m);if(debugDiv){debugDiv.textContent+=m+'\n';debugDiv.scrollTop=debugDiv.scrollHeight}}
+            // ==================== КОНФИГУРАЦИЯ ====================
+            const P2PPONG_URL = 'https://stepweather-prog.github.io/P2PPong/';
+            
+            // ==================== DOM ====================
+            const $ = (s) => document.getElementById(s);
+            const pongFrame = $('pong-frame');
+            const robinMessage = $('robin-message');
+            const callStatus = $('call-status');
+            const callTimer = $('call-timer');
+            const fingerprintBar = $('fingerprint-bar');
+            const connectionStatus = $('connection-status');
+            const debugLog = $('debug-log');
+            const btnMainCall = $('btn-main-call');
+            const btnAnswer = $('btn-answer');
+            const btnReject = $('btn-reject');
+            const btnHangup = $('btn-hangup');
+            const btnMic = $('btn-mic');
+            const btnSpeaker = $('btn-speaker');
+            const btnCreateSession = $('btn-create-session');
+            const btnNewSession = $('btn-new-session');
+            const btnCopyLink = $('btn-copy-link');
+            const btnShare = $('btn-share');
+            const btnJoin = $('btn-join');
+            const joinInput = $('join-input');
+            const incomingRow = $('incoming-row');
+            const activeRow = $('active-row');
+            const joinRow = $('join-row');
+            const mainArea = $('main-area');
 
-function notify(t,d={}){
-  const m={type:t,...d};
-  if(window.opener&&!window.opener.closed)try{window.opener.postMessage(m,'*')}catch(e){}
-  if(window.parent&&window.parent!==window)try{window.parent.postMessage(m,'*')}catch(e){}
-}
+            // ==================== ICE СЕРВЕРЫ ====================
+            const ICE_SERVERS = [
+                { urls: "stun:stun.l.google.com:19302" },
+                { urls: "stun:stun1.l.google.com:19302" },
+                {
+                    urls: ["turn:openrelay.metered.ca:80?transport=tcp", "turn:openrelay.metered.ca:443?transport=tcp"],
+                    username: "openrelayproject",
+                    credential: "openrelayproject"
+                }
+            ];
 
-function sendSignal(t){notify('robinhood-call-signal',{text:t,channelId})}
+            // ==================== СОСТОЯНИЕ ====================
+            let pc = null;
+            let localStream = null;
+            let handshakeSecret = null;
+            let channelId = null;
+            let sessionSecret = null;
+            let currentSessionKey = null;
+            let callActive = false;
+            let callStartTime = null;
+            let callTimerInterval = null;
+            let micOn = true;
+            let speakerOn = true;
+            let pendingOffer = null;
+            let currentLink = null;
+            let ourFingerprint = null;
+            let peerFingerprint = null;
 
-async function getMedia(video=false){
-  try{
-    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:!0,noiseSuppression:!0,autoGainControl:!0},video:video?{width:{ideal:640},height:{ideal:480},facingMode:'user'}:!1});
-    log('Медиа получен');return!0
-  }catch(e){log('Ошибка медиа: '+e.message);statusDiv.textContent='Нет доступа к микрофону';return!1}
-}
+            // ==================== УТИЛИТЫ ====================
+            function log(msg) {
+                console.log('[RobinCall]', msg);
+                if (debugLog) {
+                    debugLog.textContent = msg;
+                    setTimeout(() => { if (debugLog.textContent === msg) debugLog.textContent = ''; }, 5000);
+                }
+            }
 
-function createPC(){
-  if(pc)pc.close();
-  pc=new RTCPeerConnection({iceServers:ICE,iceTransportPolicy:'all',iceCandidatePoolSize:2});
-  if(stream)stream.getTracks().forEach(t=>pc.addTrack(t,stream));
-  pc.ontrack=e=>{if(e.streams[0]){const a=new Audio();a.srcObject=e.streams[0];a.play().catch(()=>{})}};
-  pc.onicecandidate=e=>{if(e.candidate)sendSignal('__ICE__'+JSON.stringify(e.candidate))};
-  pc.onconnectionstatechange=()=>{
-    log('Состояние: '+pc.connectionState);
-    if(pc.connectionState==='connected'){statusDiv.textContent='Связь установлена';callActive=!0;clearTimeout(callTimer);notify('robinhood-call-connected',{})}
-    if(pc.connectionState==='failed'){statusDiv.textContent='Соединение не удалось';hangup()}
-  };
-  pc.oniceconnectionstatechange=()=>{log('ICE: '+pc.iceConnectionState);if(pc.iceConnectionState==='failed'){statusDiv.textContent='P2P не удался';hangup()}};
-  return pc
-}
+            function setRobinMsg(msg) {
+                if (robinMessage) robinMessage.textContent = msg;
+                log(msg);
+            }
 
-async function startCall(){
-  if(callActive||!channelId)return;
-  statusDiv.textContent='Вызов...';btnCall.classList.add('hidden');activeControls.classList.remove('hidden');
-  if(!await getMedia(urlParams.get('mode')==='video')){resetUI();return}
-  createPC();
-  try{
-    const offer=await pc.createOffer();await pc.setLocalDescription(offer);
-    sendSignal('__OFFER__'+JSON.stringify(offer));log('Offer отправлен');
-    callTimer=setTimeout(()=>{if(!callActive){statusDiv.textContent='Таймаут вызова';hangup()}},60000)
-  }catch(e){log('Ошибка offer: '+e.message);hangup()}
-}
+            function setCallStatus(msg) {
+                if (callStatus) callStatus.textContent = msg;
+            }
 
-async function acceptCall(){
-  statusDiv.textContent='Соединение...';incomingControls.classList.add('hidden');activeControls.classList.remove('hidden');
-  if(!await getMedia()){hangup();return}
-  createPC()
-}
+            function setConnectionStatus(msg, color = '#b8a87a') {
+                if (connectionStatus) {
+                    connectionStatus.textContent = msg;
+                    connectionStatus.style.color = color;
+                }
+            }
 
-function hangup(send=!0){
-  callActive=!1;clearTimeout(callTimer);
-  statusDiv.textContent='Звонок завершён';activeControls.classList.add('hidden');incomingControls.classList.add('hidden');btnCall.classList.remove('hidden');
-  if(send&&channelId)sendSignal('__HANGUP__');
-  notify('robinhood-call-ended',{channelId});
-  if(pc){pc.close();pc=null}
-  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
-  log('Ресурсы освобождены');
-  setTimeout(()=>{try{window.close()}catch(e){statusDiv.textContent='Окно можно закрыть'}},2000)
-}
+            function generateId() {
+                return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+            }
 
-function resetUI(){activeControls.classList.add('hidden');incomingControls.classList.add('hidden');btnCall.classList.remove('hidden');statusDiv.textContent='Готов к вызову'}
+            async function sha256(text) {
+                const data = new TextEncoder().encode(text);
+                const hash = await crypto.subtle.digest('SHA-256', data);
+                return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+            }
 
-async function handleSignal(text){
-  if(!text)return;
-  if(text.startsWith('__OFFER__')){
-    if(callActive||pc)return sendSignal('__HANGUP__');
-    try{
-      const offer=JSON.parse(text.replace('__OFFER__',''));
-      statusDiv.textContent='Входящий вызов...';btnCall.classList.add('hidden');incomingControls.classList.remove('hidden');
-      window._pendingOffer=offer
-    }catch(e){log('Ошибка парсинга offer')}
-    return
-  }
-  if(text.startsWith('__ANSWER__')){
-    if(!pc)return;
-    try{await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(text.replace('__ANSWER__',''))));log('Answer установлен')}catch(e){log('Ошибка answer')}
-    return
-  }
-  if(text.startsWith('__ICE__')){
-    if(!pc)return;
-    try{await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(text.replace('__ICE__',''))))}catch(e){}
-    return
-  }
-  if(text==='__HANGUP__'){statusDiv.textContent='Собеседник завершил звонок';hangup(!1)}
-}
+            async function computeFingerprint(pubKey) {
+                const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pubKey));
+                return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+            }
 
-window.addEventListener('message',e=>{
-  const d=e.data;if(!d||!d.type)return;
-  if(d.type==='robinhood-call-init'){
-    channelId=d.channelId;initReceived=!0;
-    log('Канал: '+channelId);
-    if(d.fingerprint){fingerprintInfo.classList.remove('hidden');fingerprintInfo.textContent='Отпечаток: '+d.fingerprint.substring(0,16)+'...'}
-    statusDiv.textContent='Готов к вызову';btnCall.classList.remove('hidden');
-    notify('robinhood-call-ready',{channelId});
-    return
-  }
-  if(d.type==='robinhood-call-signal'&&d.text){if(!initReceived&&!channelId)channelId=d.channelId;handleSignal(d.text);return}
-  if(d.type==='robinhood-call-hangup'){if(callActive)hangup(!1)}
-});
+            // ==================== P2PPong ВЗАИМОДЕЙСТВИЕ ====================
+            function sendToPong(msg) {
+                if (!msg) return;
+                if (channelId && sessionSecret) {
+                    msg.secret = sessionSecret;
+                    msg.channelId = channelId;
+                }
+                if (handshakeSecret && msg.action === 'handshake') msg.handshake = handshakeSecret;
+                if (pongFrame.contentWindow) {
+                    pongFrame.contentWindow.postMessage(msg, '*');
+                }
+            }
 
-btnCall.addEventListener('click',startCall);
-btnHangup.addEventListener('click',()=>hangup(!0));
-btnAnswer.addEventListener('click',async()=>{
-  await acceptCall();
-  if(pc&&window._pendingOffer){
-    try{
-      await pc.setRemoteDescription(new RTCSessionDescription(window._pendingOffer));
-      const answer=await pc.createAnswer();await pc.setLocalDescription(answer);
-      sendSignal('__ANSWER__'+JSON.stringify(answer));log('Answer отправлен');
-      delete window._pendingOffer
-    }catch(e){log('Ошибка ответа: '+e.message);hangup()}
-  }
-});
-btnReject.addEventListener('click',()=>{sendSignal('__HANGUP__');delete window._pendingOffer;resetUI();setTimeout(()=>{try{window.close()}catch(e){}},2000)});
+            // ==================== АУДИО ====================
+            async function getLocalStream() {
+                try {
+                    localStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        },
+                        video: false
+                    });
+                    log('Микрофон получен');
+                    return true;
+                } catch (e) {
+                    log('Ошибка микрофона: ' + e.message);
+                    setRobinMsg('❌ Нет доступа к микрофону');
+                    return false;
+                }
+            }
 
-window.addEventListener('beforeunload',()=>{if(callActive){sendSignal('__HANGUP__');notify('robinhood-call-ended',{channelId})}if(stream)stream.getTracks().forEach(t=>t.stop());if(pc)pc.close()});
+            // ==================== WEBRTC ====================
+            function createPeerConnection() {
+                if (pc) {
+                    pc.close();
+                    pc = null;
+                }
 
-setInterval(()=>{if(window.opener&&window.opener.closed){if(callActive)hangup(!1);try{window.close()}catch(e){}}},3000);
+                pc = new RTCPeerConnection({
+                    iceServers: ICE_SERVERS,
+                    iceTransportPolicy: 'all'
+                });
 
-(function init(){
-  log('RobinCall v2.0 загружен');
-  const urlChannel=urlParams.get('channel');
-  if(urlChannel){channelId=urlChannel;log('Канал из URL: '+urlChannel);statusDiv.textContent='Ожидание параметров...';notify('robinhood-call-ready',{channelId:urlChannel})}
-  else{statusDiv.textContent='Ожидание инициализации...';log('Канал: ожидание инициализации');setTimeout(()=>{if(!initReceived&&!channelId){statusDiv.textContent='Нет параметров звонка';btnCall.classList.remove('hidden')}},10000)}
-  if(channelId)btnCall.classList.remove('hidden')
-})();
-})();
-</script>
+                if (localStream) {
+                    localStream.getTracks().forEach(track => {
+                        pc.addTrack(track, localStream);
+                    });
+                }
+
+                pc.ontrack = (event) => {
+                    log('Получен удалённый аудио');
+                    const audio = new Audio();
+                    audio.srcObject = event.streams[0];
+                    audio.play().catch(e => log('Автовоспроизведение: ' + e.message));
+                };
+
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        sendToPong({
+                            action: 'send',
+                            text: '__ICE__' + JSON.stringify(event.candidate),
+                            channelId: channelId
+                        });
+                    }
+                };
+
+                pc.onconnectionstatechange = () => {
+                    log('Состояние соединения: ' + pc.connectionState);
+                    
+                    if (pc.connectionState === 'connected') {
+                        setCallStatus('✅ Разговор');
+                        startCallTimer();
+                        updateUIState('active');
+                    } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+                        setCallStatus('❌ Связь потеряна');
+                        hangup(false);
+                    }
+                };
+
+                pc.oniceconnectionstatechange = () => {
+                    log('ICE состояние: ' + pc.iceConnectionState);
+                    if (pc.iceConnectionState === 'failed') {
+                        setRobinMsg('⚠ Не удалось установить P2P соединение');
+                    }
+                };
+
+                return pc;
+            }
+
+            // ==================== УПРАВЛЕНИЕ ЗВОНКОМ ====================
+            async function startOutgoingCall() {
+                if (callActive) return;
+                if (!channelId || !sessionSecret) {
+                    setRobinMsg('⚠ Сначала создайте сессию');
+                    return;
+                }
+
+                setCallStatus('📞 Вызов...');
+                updateUIState('calling');
+
+                if (!await getLocalStream()) {
+                    updateUIState('idle');
+                    return;
+                }
+
+                createPeerConnection();
+
+                try {
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+
+                    sendToPong({
+                        action: 'send',
+                        text: '__OFFER__' + JSON.stringify(offer),
+                        channelId: channelId
+                    });
+
+                    log('Offer отправлен');
+                    
+                    // Таймаут
+                    setTimeout(() => {
+                        if (!callActive) {
+                            setRobinMsg('⏰ Таймаут вызова');
+                            hangup(true);
+                        }
+                    }, 60000);
+                    
+                } catch (e) {
+                    log('Ошибка создания offer: ' + e.message);
+                    setRobinMsg('❌ Ошибка вызова');
+                    hangup(true);
+                }
+            }
+
+            async function acceptIncomingCall() {
+                if (callActive || !pendingOffer) return;
+
+                setCallStatus('📞 Соединение...');
+                updateUIState('active');
+
+                if (!await getLocalStream()) {
+                    updateUIState('idle');
+                    return;
+                }
+
+                createPeerConnection();
+
+                try {
+                    await pc.setRemoteDescription(new RTCSessionDescription(pendingOffer));
+                    
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+
+                    sendToPong({
+                        action: 'send',
+                        text: '__ANSWER__' + JSON.stringify(answer),
+                        channelId: channelId
+                    });
+
+                    log('Answer отправлен');
+                    pendingOffer = null;
+                    
+                } catch (e) {
+                    log('Ошибка при ответе: ' + e.message);
+                    setRobinMsg('❌ Ошибка соединения');
+                    hangup(true);
+                }
+            }
+
+            function hangup(sendSignal = true) {
+                callActive = false;
+                stopCallTimer();
+
+                if (sendSignal && channelId) {
+                    sendToPong({
+                        action: 'send',
+                        text: '__HANGUP__',
+                        channelId: channelId
+                    });
+                }
+
+                if (pc) {
+                    pc.close();
+                    pc = null;
+                }
+
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                    localStream = null;
+                }
+
+                pendingOffer = null;
+                setCallStatus('📞 Звонок завершён');
+                updateUIState('idle');
+                log('Звонок завершён, ресурсы освобождены');
+            }
+
+            function startCallTimer() {
+                callStartTime = Date.now();
+                if (callTimer) callTimer.classList.remove('hidden');
+                
+                callTimerInterval = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+                    const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                    const secs = (elapsed % 60).toString().padStart(2, '0');
+                    if (callTimer) callTimer.textContent = mins + ':' + secs;
+                }, 1000);
+            }
+
+            function stopCallTimer() {
+                if (callTimerInterval) {
+                    clearInterval(callTimerInterval);
+                    callTimerInterval = null;
+                }
+                if (callTimer) {
+                    callTimer.classList.add('hidden');
+                    callTimer.textContent = '00:00';
+                }
+                callStartTime = null;
+            }
+
+            // ==================== УПРАВЛЕНИЕ СЕССИЕЙ ====================
+            function createSession() {
+                if (!handshakeSecret) {
+                    setRobinMsg('⚠ Сервер не готов. Подождите...');
+                    return;
+                }
+                setRobinMsg('⚒ Создание сессии...');
+                sendToPong({ action: 'create' });
+            }
+
+            function joinSession(sessionId, tempKey) {
+                if (!sessionId) {
+                    setRobinMsg('⚠ Введите ID сессии');
+                    return;
+                }
+                setRobinMsg('🔍 Поиск сессии...');
+                sendToPong({ action: 'accept', id: sessionId, key: tempKey || '' });
+            }
+
+            function copyLink() {
+                if (currentLink) {
+                    navigator.clipboard.writeText(currentLink).then(() => {
+                        setRobinMsg('📋 Ссылка скопирована!');
+                    }).catch(() => {
+                        setRobinMsg('📋 Ссылка: ' + currentLink);
+                    });
+                } else {
+                    setRobinMsg('⚠ Сначала создайте сессию');
+                }
+            }
+
+            async function shareLink() {
+                if (currentLink && navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: 'RobinCall',
+                            text: 'Присоединяйтесь к звонку RobinCall!',
+                            url: currentLink
+                        });
+                    } catch (e) {}
+                } else {
+                    copyLink();
+                }
+            }
+
+            // ==================== UI ====================
+            function updateUIState(state) {
+                // Скрываем всё
+                btnMainCall.classList.add('hidden');
+                incomingRow.classList.add('hidden');
+                activeRow.classList.add('hidden');
+                btnMic.classList.add('hidden');
+                btnSpeaker.classList.add('hidden');
+
+                switch (state) {
+                    case 'idle':
+                        btnMainCall.classList.remove('hidden');
+                        joinRow.classList.remove('hidden');
+                        break;
+                    case 'calling':
+                        activeRow.classList.remove('hidden');
+                        btnHangup.classList.add('ripple-hangup');
+                        break;
+                    case 'incoming':
+                        incomingRow.classList.remove('hidden');
+                        btnMainCall.classList.add('hidden');
+                        break;
+                    case 'active':
+                        activeRow.classList.remove('hidden');
+                        btnHangup.classList.add('ripple-hangup');
+                        btnMic.classList.remove('hidden');
+                        btnSpeaker.classList.remove('hidden');
+                        break;
+                }
+            }
+
+            function updateFingerprintDisplay() {
+                if (ourFingerprint) {
+                    fingerprintBar.classList.remove('hidden');
+                    fingerprintBar.textContent = '🔐 Вы: ' + ourFingerprint.substring(0, 12) + '...';
+                }
+                if (peerFingerprint) {
+                    fingerprintBar.textContent += ' | Соб.: ' + peerFingerprint.substring(0, 12) + '...';
+                }
+            }
+
+            // ==================== ОБРАБОТЧИКИ СОБЫТИЙ ====================
+            // Кнопки
+            btnMainCall.addEventListener('click', () => {
+                if (!channelId) {
+                    createSession();
+                } else {
+                    startOutgoingCall();
+                }
+            });
+
+            btnAnswer.addEventListener('click', () => {
+                acceptIncomingCall();
+            });
+
+            btnReject.addEventListener('click', () => {
+                sendToPong({ action: 'send', text: '__HANGUP__', channelId: channelId });
+                pendingOffer = null;
+                updateUIState('idle');
+                setCallStatus('📞 Вызов отклонён');
+            });
+
+            btnHangup.addEventListener('click', () => {
+                hangup(true);
+            });
+
+            btnMic.addEventListener('click', () => {
+                if (localStream) {
+                    micOn = !micOn;
+                    localStream.getAudioTracks().forEach(t => t.enabled = micOn);
+                    btnMic.classList.toggle('active', micOn);
+                    btnMic.textContent = micOn ? '🎤' : '🔇';
+                }
+            });
+
+            btnSpeaker.addEventListener('click', () => {
+                speakerOn = !speakerOn;
+                btnSpeaker.classList.toggle('active', speakerOn);
+                btnSpeaker.textContent = speakerOn ? '🔊' : '🔈';
+            });
+
+            btnCreateSession.addEventListener('click', createSession);
+            btnNewSession.addEventListener('click', createSession);
+            btnCopyLink.addEventListener('click', copyLink);
+            btnShare.addEventListener('click', shareLink);
+
+            btnJoin.addEventListener('click', () => {
+                const id = joinInput.value.trim();
+                if (id) {
+                    joinSession(id);
+                }
+            });
+
+            joinInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const id = joinInput.value.trim();
+                    if (id) joinSession(id);
+                }
+            });
+
+            // Сообщения от P2PPong
+            window.addEventListener('message', async (event) => {
+                if (event.source !== pongFrame.contentWindow) return;
+                const data = event.data;
+
+                switch (data.type) {
+                    case 'pong-ready':
+                        handshakeSecret = data.handshake;
+                        sendToPong({ action: 'handshake' });
+                        setConnectionStatus('🟢 Сервер готов', '#4caf50');
+                        setRobinMsg('🏹 Тетива натянута!');
+                        break;
+
+                    case 'handshake-ok':
+                        log('Handshake OK');
+                        // Проверяем URL параметры
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const sid = urlParams.get('id');
+                        const key = urlParams.get('key');
+                        if (sid && key) {
+                            setRobinMsg('📨 Подключаюсь к сессии...');
+                            sendToPong({ action: 'accept', id: sid, key: key });
+                        }
+                        break;
+
+                    case 'session-created':
+                        channelId = data.sessionId;
+                        currentSessionKey = data.key;
+                        sessionSecret = data.secret;
+                        currentLink = data.fullLink;
+                        
+                        ourFingerprint = await computeFingerprint(data.key);
+                        updateFingerprintDisplay();
+                        
+                        setRobinMsg('✅ Сессия создана! Ожидание...');
+                        setConnectionStatus('🟢 Сессия активна', '#4caf50');
+                        
+                        if (joinInput) joinInput.value = data.sessionId;
+                        break;
+
+                    case 'channel-open':
+                        channelId = data.channelId;
+                        sessionSecret = data.secret;
+                        
+                        setRobinMsg('✅ Канал открыт! Можно звонить.');
+                        setConnectionStatus('🟢 Канал открыт', '#4caf50');
+                        updateUIState('idle');
+                        break;
+
+                    case 'message':
+                        if (!data.text || typeof data.text !== 'string') return;
+
+                        // Входящий звонок
+                        if (data.text.startsWith('__OFFER__')) {
+                            if (callActive || pc) {
+                                sendToPong({ action: 'send', text: '__HANGUP__', channelId: channelId });
+                                return;
+                            }
+
+                            try {
+                                pendingOffer = JSON.parse(data.text.replace('__OFFER__', ''));
+                                setCallStatus('📞 Входящий вызов...');
+                                setRobinMsg('📞 Входящий вызов!');
+                                updateUIState('incoming');
+                            } catch (e) {
+                                log('Ошибка парсинга offer');
+                            }
+                            return;
+                        }
+
+                        // Ответ на вызов
+                        if (data.text.startsWith('__ANSWER__')) {
+                            if (!pc) return;
+                            try {
+                                const answer = JSON.parse(data.text.replace('__ANSWER__', ''));
+                                await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                                callActive = true;
+                                setCallStatus('✅ Разговор');
+                                startCallTimer();
+                                updateUIState('active');
+                                log('Answer получен');
+                            } catch (e) {
+                                log('Ошибка answer: ' + e.message);
+                            }
+                            return;
+                        }
+
+                        // ICE кандидат
+                        if (data.text.startsWith('__ICE__')) {
+                            if (!pc) return;
+                            try {
+                                const candidate = JSON.parse(data.text.replace('__ICE__', ''));
+                                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                            } catch (e) {
+                                log('Ошибка ICE: ' + e.message);
+                            }
+                            return;
+                        }
+
+                        // Завершение звонка
+                        if (data.text === '__HANGUP__') {
+                            if (callActive || pc) {
+                                setRobinMsg('📞 Собеседник завершил звонок');
+                                hangup(false);
+                            }
+                            return;
+                        }
+                        break;
+
+                    case 'error':
+                        setRobinMsg('⚠ ' + data.text);
+                        log('Ошибка: ' + data.text);
+                        break;
+
+                    case 'status':
+                        setRobinMsg(data.text);
+                        break;
+                }
+            });
+
+            // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+            function init() {
+                log('RobinCall v3.0 загружен');
+                setConnectionStatus('🟡 Подключение...', '#ff9800');
+                
+                // Загружаем P2PPong
+                pongFrame.src = P2PPONG_URL + '?v=' + Date.now();
+                
+                updateUIState('idle');
+                setRobinMsg('🏹 Готов к вызову');
+            }
+
+            // Очистка при закрытии
+            window.addEventListener('beforeunload', () => {
+                if (callActive) {
+                    sendToPong({ action: 'send', text: '__HANGUP__', channelId: channelId });
+                }
+                if (pc) pc.close();
+                if (localStream) {
+                    localStream.getTracks().forEach(t => t.stop());
+                }
+            });
+
+            // Запуск
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
+    </script>
 </body>
 </html>
