@@ -64,8 +64,6 @@
         .bottom-btn { width:38px; height:38px; border-radius:10px; border:1px solid var(--btn-border); background:var(--btn-bg); color:var(--text); cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; }
         .bottom-btn img { width:100%; height:100%; object-fit:contain; padding:5px; }
         .debug-text { color:#555; font-size:0.5em; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .video-circle-msg { max-width:200px; border-radius:12px; overflow:hidden; cursor:pointer; }
-        .video-circle-msg video { width:100%; display:block; border-radius:12px; }
         #pong-frame { display:none !important; position:fixed !important; top:-9999px !important; left:-9999px !important; width:1px !important; height:1px !important; opacity:0 !important; pointer-events:none !important; visibility:hidden !important; border:none !important; z-index:-1 !important; }
     </style>
 </head>
@@ -119,7 +117,7 @@ const refModal=$('ref-modal'),refLinkDisplay=$('ref-link-display'),btnCheckServe
 const ICE=[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:["turn:openrelay.metered.ca:80?transport=tcp","turn:openrelay.metered.ca:443?transport=tcp"],username:"openrelayproject",credential:"openrelayproject"}];
 
 let pc=null,stream=null,handshake=null,chId=null,sec=null,srv='render',active=!1,tStart=null,tInt=null,mic=!0,spk=!0,offer=null,link=null,ready=!1,online=!1;
-let videoCircleRecorder=null,videoCircleChunks=[];
+let videoCircleRecorder=null,videoCircleChunks=[],autoConnectDone=!1;
 const MAX_VIDEO_CIRCLE_DURATION=30;
 try{srv=localStorage.getItem('robinhood_server')||'render'}catch(e){}
 
@@ -129,7 +127,7 @@ function conn(s){if(connectionDot)connectionDot.className='connection-dot '+s;if
 
 async function api(m,p,b){const url=srv==='workers'?WORKERS_URL:RENDER_SERVER;const c=new AbortController(),t=setTimeout(()=>c.abort(),srv==='workers'?5000:10000);try{const o={method:m,headers:{'Content-Type':'application/json'},signal:c.signal};if(b)o.body=JSON.stringify(b);const r=await fetch(url+p,o);clearTimeout(t);return r.ok?await r.json():null}catch(e){clearTimeout(t);return null}}
 async function chkSrv(){conn('checking');online=(await api('GET','/ping'))!==null;conn(online?'online':'offline');return online}
-function swSrv(s){if(s===srv)return;srv=s;try{localStorage.setItem('robinhood_server',srv)}catch(e){}btnServerRender.classList.toggle('active',srv==='render');btnServerWorkers.classList.toggle('active',srv==='workers');conn('checking');rMsg('🔄 Сервер: '+(s==='workers'?'Workers':'Render')+' (канал сохранён)');}
+function swSrv(s){if(s===srv)return;srv=s;try{localStorage.setItem('robinhood_server',srv)}catch(e){}btnServerRender.classList.toggle('active',srv==='render');btnServerWorkers.classList.toggle('active',srv==='workers');rMsg('🔄 Сервер: '+(s==='workers'?'Workers':'Render'));}
 
 function send(m){if(!m)return;if(chId&&sec){m.secret=sec;m.channelId=chId}if(handshake&&m.action==='handshake')m.handshake=handshake;pongFrame.contentWindow?.postMessage(m,'*')}
 async function getStream(video=false){try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:!0,noiseSuppression:!0,autoGainControl:!0},video:video});return!0}catch(e){rMsg('❌ Нет доступа к микрофону/камере');return!1}}
@@ -140,12 +138,11 @@ async function call(){if(!ready||!chId){rMsg('⚠ Создайте стрелу'
 async function accept(){if(!offer)return;ui('active');if(!await getStream(!1)){ui('ready');return}mkPC();try{await pc.setRemoteDescription(new RTCSessionDescription(offer));const a=await pc.createAnswer();await pc.setLocalDescription(a);send({action:'send',text:'__ANSWER__'+JSON.stringify(a),channelId:chId});offer=null}catch(e){hang(!0)}}
 function hang(sig=!0){active=!1;if(tInt){clearInterval(tInt);tInt=null}if(callTimer){callTimer.classList.add('hidden');callTimer.textContent='00:00'}if(sig&&chId)send({action:'send',text:'__HANGUP__',channelId:chId});if(pc){pc.close();pc=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}offer=null;if(callStatus)callStatus.textContent='📞 Завершён';ui('ready')}
 function timer(){if(callTimer)callTimer.classList.remove('hidden');tInt=setInterval(()=>{const e=Math.floor((Date.now()-tStart)/1000);if(callTimer)callTimer.textContent=Math.floor(e/60).toString().padStart(2,'0')+':'+(e%60).toString().padStart(2,'0')},1000)}
-function accArrow(id){if(!id){rMsg('⚠ ID колчана');return}rMsg('🔍 Поиск...');send({action:'accept',id:id,key:''})}
-function reset(){if(active)hang(!0);chId=null;sec=null;link=null;ready=!1;offer=null;ui('idle');if(joinInput)joinInput.value='';rMsg('🏹 Сброшен')}
+function accArrow(id,key){if(!id){rMsg('⚠ ID колчана');return}rMsg('🔍 Поиск...');send({action:'accept',id:id,key:key||''})}
+function reset(){if(active)hang(!0);chId=null;sec=null;link=null;ready=!1;offer=null;autoConnectDone=!1;ui('idle');if(joinInput)joinInput.value='';rMsg('🏹 Сброшен')}
 function cp(){if(link){navigator.clipboard.writeText(link).then(()=>rMsg('📋 Скопировано')).catch(()=>{});refModal.classList.add('active')}else rMsg('⚠ Создайте стрелу')}
 async function shr(){if(link&&navigator.share)try{await navigator.share({title:'RobinCall',text:'Звонок!',url:link})}catch(e){}else cp()}
 
-// Видео-кружок
 function sendVideoCircle(videoData){if(!chId||!sec)return;const payload={type:'video-circle',name:'video_circle.webm',size:videoData.size,mime:'video/webm',data:videoData.data};send({action:'send',text:'__FILE__'+JSON.stringify(payload),channelId:chId});rMsg('📹 Кружок отправлен')}
 function startVideoCircle(){if(videoCircleRecorder?.state==='recording'){videoCircleRecorder.stop();btnVideoCircle.style.background='';return}navigator.mediaDevices.getUserMedia({video:!0,audio:!0}).then(st=>{videoCircleRecorder=new MediaRecorder(st,{mimeType:'video/webm; codecs=vp8,opus'});videoCircleChunks=[];videoCircleRecorder.ondataavailable=e=>videoCircleChunks.push(e.data);videoCircleRecorder.onstop=()=>{const blob=new Blob(videoCircleChunks,{type:'video/webm'});const reader=new FileReader();reader.onload=()=>{sendVideoCircle({size:blob.size,data:reader.result.split(',')[1]})};reader.readAsDataURL(blob);st.getTracks().forEach(t=>t.stop());videoCircleRecorder=null;btnVideoCircle.style.background=''};videoCircleRecorder.start();btnVideoCircle.style.background='#f44336';setTimeout(()=>{if(videoCircleRecorder?.state==='recording')videoCircleRecorder.stop()},MAX_VIDEO_CIRCLE_DURATION*1000)}).catch(()=>rMsg('❌ Нет камеры'))}
 
@@ -171,12 +168,42 @@ btnServerRender.addEventListener('click',()=>swSrv('render'));
 btnServerWorkers.addEventListener('click',()=>swSrv('workers'));
 btnCheckServer.addEventListener('click',()=>chkSrv().then(o=>rMsg(o?'✅ Доступен':'❌ Офлайн')));
 
+// ==================== КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ ====================
+let handshakeOkReceived = false;
+
 window.addEventListener('message',async e=>{
     if(e.source!==pongFrame.contentWindow)return;const d=e.data;
-    if(d.type==='pong-ready'){handshake=d.handshake;send({action:'handshake'});conn('online');ui('idle');rMsg('🏹 Готов!')}
-    else if(d.type==='handshake-ok'){const s=new URLSearchParams(location.search).get('id');if(s){const refServer=new URLSearchParams(location.search).get('server')||srv;srv=refServer;localStorage.setItem('robinhood_server',srv);btnServerRender.classList.toggle('active',srv==='render');btnServerWorkers.classList.toggle('active',srv==='workers');accArrow(s)}}
-    else if(d.type==='session-created'){chId=d.sessionId;sec=d.secret;link=d.fullLink;ready=!0;rMsg('✅ Стрела!');conn('online');if(refLinkDisplay)refLinkDisplay.textContent=d.fullLink;refModal.classList.add('active');if(joinInput)joinInput.value=d.sessionId;ui('ready');navigator.clipboard.writeText(link).catch(()=>{})}
-    else if(d.type==='channel-open'){chId=d.channelId;sec=d.secret;ready=!0;rMsg('✅ Подключено');conn('online');ui('ready')}
+    if(d.type==='pong-ready'){
+        handshake=d.handshake;send({action:'handshake'});conn('online');
+        if(!handshakeOkReceived){ui('idle');rMsg('🏹 Готов!')}
+    }
+    else if(d.type==='handshake-ok'){
+        handshakeOkReceived = true;
+        // Автоподключение по URL — только один раз
+        if(!autoConnectDone){
+            const urlParams=new URLSearchParams(location.search);
+            const sid=urlParams.get('id');
+            const key=urlParams.get('key');
+            if(sid){
+                const refServer=urlParams.get('server')||srv;
+                if(refServer!==srv){srv=refServer;localStorage.setItem('robinhood_server',srv);btnServerRender.classList.toggle('active',srv==='render');btnServerWorkers.classList.toggle('active',srv==='workers')}
+                autoConnectDone=true;
+                accArrow(sid,key);
+            }
+        }
+    }
+    else if(d.type==='session-created'){
+        chId=d.sessionId;sec=d.secret;link=d.fullLink;ready=!0;
+        rMsg('✅ Стрела!');conn('online');
+        if(refLinkDisplay)refLinkDisplay.textContent=d.fullLink;
+        refModal.classList.add('active');
+        if(joinInput)joinInput.value=d.sessionId;
+        ui('ready');navigator.clipboard.writeText(link).catch(()=>{})
+    }
+    else if(d.type==='channel-open'){
+        chId=d.channelId;sec=d.secret;ready=!0;
+        rMsg('✅ Подключено! Канал: '+d.channelId.substring(0,8)+'...');conn('online');ui('ready')
+    }
     else if(d.type==='message'&&d.text){
         if(d.text.startsWith('__OFFER__')){if(active||pc){send({action:'send',text:'__HANGUP__',channelId:chId});return}try{offer=JSON.parse(d.text.replace('__OFFER__',''));ui('incoming')}catch(e){}}
         else if(d.text.startsWith('__ANSWER__')&&pc){try{await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(d.text.replace('__ANSWER__',''))));active=!0;tStart=Date.now();timer();ui('active')}catch(e){}}
@@ -190,7 +217,9 @@ async function init(){
     log('RobinCall v3.3-sec');conn('checking');
     const savedServer=localStorage.getItem('robinhood_server');if(savedServer){srv=savedServer}
     if(srv==='workers'){btnServerWorkers.classList.add('active');btnServerRender.classList.remove('active')}
-    await chkSrv();pongFrame.src=P2PPONG_URL+'?v='+Date.now();pongFrame.style.display='none';ui('idle');rMsg('🏹 Ждём...')
+    await chkSrv();pongFrame.src=P2PPONG_URL+'?v='+Date.now();pongFrame.style.display='none';
+    // НЕ вызываем ui('idle') здесь — дождёмся handshake-ok
+    rMsg('🏹 Ждём...')
 }
 window.addEventListener('beforeunload',()=>{if(active)send({action:'send',text:'__HANGUP__',channelId:chId});if(pc)pc.close();if(stream)stream.getTracks().forEach(t=>t.stop())});
 window.swSrv=swSrv;window.chkSrv=()=>chkSrv().then(o=>rMsg(o?'✅ Доступен':'❌ Офлайн'));
