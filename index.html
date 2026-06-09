@@ -9,9 +9,9 @@
     <title>RobinCall v3.2-sec</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/avatars/001-.png">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; media-src 'self' blob:; connect-src 'self' https://p2ppong.onrender.com https://robincall.stephanclaps-491.workers.dev https://stepweather-prog.github.io blob:; img-src 'self' data: blob:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; media-src 'self' blob:; connect-src 'self' https://p2ppong.onrender.com https://robincall.stephanclaps-491.workers.dev https://stepweather-prog.github.io blob:; img-src 'self' data: blob:;">
     <style>
-        :root { --bg-primary: #1a2a1f; --bg-secondary: #0d1a0c; --accent: #c4a24b; --accent-light: #e8d5a3; --accent-glow: rgba(196,162,75,0.5); --text: #e8e2c7; --text-bright: #f5e6b8; --text-dim: #b8a87a; --border: #c4a24b; --btn-bg: rgba(196,162,75,0.1); --btn-border: rgba(196,162,75,0.3); --btn-hover: rgba(196,162,75,0.25); --sheet-bg: linear-gradient(145deg, #1e2a1a 0%, #0f180d 100%); --input-bg: rgba(20,30,18,0.9); --robin-bg: rgba(50,70,40,0.9); --robin-accent: #e8c97a; }
+        :root { --bg-primary: #1a2a1f; --bg-secondary: #0d1a0c; --accent: #c4a24b; --accent-light: #e8d5a3; --text: #e8e2c7; --text-bright: #f5e6b8; --text-dim: #b8a87a; --border: #c4a24b; --btn-bg: rgba(196,162,75,0.1); --btn-border: rgba(196,162,75,0.3); --btn-hover: rgba(196,162,75,0.25); --sheet-bg: linear-gradient(145deg, #1e2a1a 0%, #0f180d 100%); --input-bg: rgba(20,30,18,0.9); --robin-bg: rgba(50,70,40,0.9); --robin-accent: #e8c97a; }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         html,body { height:100%; overflow:hidden; font-family:'Segoe UI','Inter','Georgia',serif; }
         body { background:linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%); color:var(--text); display:flex; flex-direction:column; height:100dvh; position:relative; }
@@ -38,7 +38,7 @@
         .status-text { font-size:0.9em; color:var(--accent-light); text-align:center; }
         .call-timer { font-size:1.4em; font-weight:bold; color:#4caf50; font-family:monospace; }
         .btn-round { width:75px; height:75px; border-radius:50%; border:3px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.3s; background:var(--btn-bg); }
-        .btn-round:hover { background:var(--btn-hover); box-shadow:0 0 30px var(--accent-glow); transform:scale(1.08); }
+        .btn-round:hover { background:var(--btn-hover); box-shadow:0 0 30px rgba(196,162,75,0.4); transform:scale(1.08); }
         .btn-round img { width:100%; height:100%; object-fit:contain; padding:12px; }
         .btn-call { border-color:#4caf50; }
         .btn-hangup { border-color:#f44336; background:rgba(244,67,54,0.2); }
@@ -150,14 +150,7 @@ function reset(){if(active)hang(!0);chId=null;sec=null;link=null;ready=!1;offer=
 function cp(){if(link){navigator.clipboard.writeText(link).then(()=>rMsg('📋 Скопировано')).catch(()=>{});refModal.classList.add('active')}else rMsg('⚠ Создайте стрелу')}
 async function shr(){if(link&&navigator.share)try{await navigator.share({title:'RobinCall',text:'Звонок!',url:link})}catch(e){}else cp()}
 
-function ui(s){
-    btnMainAction.classList.add('hidden');incomingRow.classList.add('hidden');activeRow.classList.add('hidden');audioControls.classList.add('hidden');btnMainAction.disabled=!1;
-    if(s==='idle'){btnMainAction.classList.remove('hidden');joinRow.classList.remove('hidden');if(callStatus)callStatus.textContent='🏹 Создайте стрелу'}
-    else if(s==='ready'){btnMainAction.classList.remove('hidden');joinRow.classList.remove('hidden');if(callStatus)callStatus.textContent='📞 Готово!'}
-    else if(s==='calling'){activeRow.classList.remove('hidden');audioControls.classList.remove('hidden')}
-    else if(s==='incoming'){incomingRow.classList.remove('hidden');if(callStatus)callStatus.textContent='📞 Входящий!'}
-    else if(s==='active'){activeRow.classList.remove('hidden');audioControls.classList.remove('hidden')}
-}
+function ui(s){btnMainAction.classList.add('hidden');incomingRow.classList.add('hidden');activeRow.classList.add('hidden');audioControls.classList.add('hidden');btnMainAction.disabled=!1;if(s==='idle'){btnMainAction.classList.remove('hidden');joinRow.classList.remove('hidden');if(callStatus)callStatus.textContent='🏹 Создайте стрелу'}else if(s==='ready'){btnMainAction.classList.remove('hidden');joinRow.classList.remove('hidden');if(callStatus)callStatus.textContent='📞 Готово!'}else if(s==='calling'){activeRow.classList.remove('hidden');audioControls.classList.remove('hidden')}else if(s==='incoming'){incomingRow.classList.remove('hidden');if(callStatus)callStatus.textContent='📞 Входящий!'}else if(s==='active'){activeRow.classList.remove('hidden');audioControls.classList.remove('hidden')}}
 
 btnMainAction.addEventListener('click',()=>{if(!ready)mkQ();else call()});
 btnArrowCreate.addEventListener('click',mkQ);btnCallMain.addEventListener('click',call);
