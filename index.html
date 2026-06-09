@@ -6,217 +6,215 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>RobinCall v3.2-sec</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/avatars/001-.png">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; media-src 'self' blob:; connect-src 'self' https://p2ppong.onrender.com https://robincall.stephanclaps-491.workers.dev https://stepweather-prog.github.io blob:; img-src 'self' data: blob:;">
+    <title>P2PPong v3.2-sec</title>
+    <link rel="icon" type="image/png" sizes="192x192" href="https://stepweather-prog.github.io/ROBINHOOD-P2P/assets/avatars/001-.png">
+    <!-- CSP С 'unsafe-inline' для совместимости -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://p2ppong.onrender.com https://robincall.stephanclaps-491.workers.dev; img-src 'self' data: https://stepweather-prog.github.io;">
     <style>
-        :root { --bg-primary: #1a2a1f; --bg-secondary: #0d1a0c; --accent: #c4a24b; --accent-light: #e8d5a3; --text: #e8e2c7; --text-bright: #f5e6b8; --text-dim: #b8a87a; --border: #c4a24b; --btn-bg: rgba(196,162,75,0.1); --btn-border: rgba(196,162,75,0.3); --btn-hover: rgba(196,162,75,0.25); --sheet-bg: linear-gradient(145deg, #1e2a1a 0%, #0f180d 100%); --input-bg: rgba(20,30,18,0.9); --robin-bg: rgba(50,70,40,0.9); --robin-accent: #e8c97a; }
-        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-        html,body { height:100%; overflow:hidden; font-family:'Segoe UI','Inter','Georgia',serif; }
-        body { background:linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%); color:var(--text); display:flex; flex-direction:column; height:100dvh; position:relative; }
-        body::before { content:""; position:fixed; top:0; left:0; width:100%; height:100%; background-image:url('assets/background.webp'); background-size:cover; background-position:center; background-repeat:no-repeat; z-index:0; opacity:0.35; }
+        :root { --bg-primary: #1a2a1f; --bg-secondary: #0d1a0c; --accent: #c4a24b; --accent-light: #e8d5a3; --text: #e8e2c7; --text-dim: #b8a87a; --border: #c4a24b; --btn-bg: rgba(196,162,75,0.15); --robin-bg: rgba(50,70,40,0.9); --robin-accent: #e8c97a; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html,body { height:100%; font-family:'Segoe UI','Inter','Georgia',serif; overflow:hidden; }
+        body { background:linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%); color:var(--text); display:flex; flex-direction:column; align-items:center; justify-content:center; height:100dvh; position:relative; }
+        body::before { content:""; position:fixed; top:0; left:0; width:100%; height:100%; background-image:url('https://stepweather-prog.github.io/ROBINHOOD-P2P/assets/background.webp'); background-size:cover; background-position:center; background-repeat:no-repeat; z-index:0; opacity:0.3; }
         body::after { content:""; position:fixed; top:0; left:0; width:100%; height:100%; background:radial-gradient(circle at 50% 50%, rgba(30,40,25,0.6), rgba(10,20,8,0.9)); z-index:0; }
-        .header { background:linear-gradient(135deg, rgba(25,35,20,0.96), rgba(15,25,12,0.98)); border-bottom:2px solid var(--border); backdrop-filter:blur(8px); z-index:10; padding:8px 12px; display:flex; flex-direction:column; gap:4px; }
-        .header-row-1 { display:flex; align-items:center; gap:8px; }
-        .header-title { font-size:1.1em; font-weight:bold; background:linear-gradient(135deg, var(--accent-light), var(--accent)); -webkit-background-clip:text; background-clip:text; color:transparent; }
-        .connection-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; }
-        .connection-dot.online { background:#4caf50; box-shadow:0 0 6px #4caf50; }
-        .connection-dot.offline { background:#f44336; }
-        .connection-dot.checking { background:#ff9800; animation:pulse 1s infinite; }
+        .container { position:relative; z-index:1; width:100%; max-width:420px; padding:20px; }
+        .header-title { text-align:center; font-size:1.3em; font-weight:bold; background:linear-gradient(135deg, var(--accent-light), var(--accent)); -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:15px; }
+        .robin-row { background:var(--robin-bg); border-left:3px solid var(--robin-accent); border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:15px; }
+        .robin-avatar { width:40px; height:40px; border-radius:50%; border:2px solid var(--robin-accent); }
+        .robin-text { font-weight:700; font-size:0.8em; color:var(--text); }
+        .status-block { background:rgba(20,30,18,0.9); border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:12px; text-align:center; }
+        .status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+        .status-dot.online { background:#4caf50; box-shadow:0 0 6px #4caf50; }
+        .status-dot.offline { background:#f44336; }
+        .status-dot.checking { background:#ff9800; animation:pulse 1s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        .header-row-2 { display:flex; justify-content:space-around; align-items:center; }
-        .header-btn { width:40px; height:40px; display:flex; align-items:center; justify-content:center; cursor:pointer; border-radius:10px; background:var(--btn-bg); border:1px solid var(--btn-border); transition:all 0.2s; }
-        .header-btn:hover { background:var(--btn-hover); }
-        .header-btn img { width:100%; height:100%; object-fit:contain; padding:5px; }
-        .header-label { font-size:0.5em; color:var(--text-dim); text-align:center; width:40px; }
-        .header-avatar { width:28px; height:28px; border-radius:50%; object-fit:cover; border:2px solid var(--border); }
-        .main-area { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; z-index:1; padding:15px; gap:10px; }
-        .robin-row { background:var(--robin-bg); border-left:3px solid var(--robin-accent); border-radius:14px; padding:10px 14px; display:flex; align-items:center; gap:10px; max-width:90%; }
-        .robin-avatar { width:40px; height:40px; border-radius:50%; border:2px solid var(--robin-accent); object-fit:cover; }
-        .robin-text { font-weight:700; font-size:0.8em; color:var(--text-bright); }
-        .status-text { font-size:0.9em; color:var(--accent-light); text-align:center; }
-        .call-timer { font-size:1.4em; font-weight:bold; color:#4caf50; font-family:monospace; }
-        .btn-round { width:75px; height:75px; border-radius:50%; border:3px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.3s; background:var(--btn-bg); }
-        .btn-round:hover { background:var(--btn-hover); box-shadow:0 0 30px rgba(196,162,75,0.4); transform:scale(1.08); }
-        .btn-round img { width:100%; height:100%; object-fit:contain; padding:12px; }
-        .btn-call { border-color:#4caf50; }
-        .btn-hangup { border-color:#f44336; background:rgba(244,67,54,0.2); }
-        .btn-main { width:85px; height:85px; border-radius:50%; border:3px solid var(--accent); cursor:pointer; background:var(--btn-bg); display:flex; align-items:center; justify-content:center; }
-        .btn-main img { width:100%; height:100%; object-fit:contain; padding:14px; }
-        .hidden { display:none!important; }
-        .controls-row { display:flex; gap:20px; align-items:center; justify-content:center; }
-        .input-row { display:flex; gap:8px; align-items:center; background:var(--input-bg); border:1px solid var(--border); border-radius:12px; padding:5px; max-width:90%; }
-        .input-row input { flex:1; background:transparent; border:none; color:var(--text); font-size:13px; padding:10px; outline:none; font-family:monospace; }
-        .input-row button { padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--btn-bg); color:var(--text); cursor:pointer; font-size:11px; font-weight:bold; }
-        .server-row { display:flex; gap:8px; align-items:center; justify-content:center; font-size:0.6em; color:var(--text-dim); }
-        .server-btn { padding:4px 10px; border-radius:8px; border:1px solid var(--btn-border); background:var(--btn-bg); color:var(--text); cursor:pointer; font-size:11px; }
-        .server-btn.active { border-color:#4caf50; background:rgba(76,175,80,0.15); color:#4caf50; }
-        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:300; justify-content:center; align-items:center; }
-        .modal-overlay.active { display:flex; }
-        .modal-dialog { background:var(--sheet-bg); padding:20px; border-radius:20px; width:85%; max-width:360px; text-align:center; border:2px solid var(--border); }
-        .modal-dialog h3 { color:var(--accent-light); margin:0 0 12px; }
-        .modal-dialog button { width:100%; padding:10px; margin-top:6px; border:none; border-radius:10px; font-size:13px; font-weight:bold; cursor:pointer; }
+        .servers-row { display:flex; gap:10px; margin-bottom:12px; }
+        .server-card { flex:1; background:rgba(20,30,18,0.85); border:1px solid var(--border); border-radius:10px; padding:10px; text-align:center; cursor:pointer; transition:all 0.2s; }
+        .server-card:hover { background:rgba(196,162,75,0.2); border-color:var(--accent); }
+        .server-card.active { border-color:#4caf50; background:rgba(76,175,80,0.1); }
+        .server-name { font-size:0.8em; font-weight:bold; color:var(--accent-light); }
+        .server-status { font-size:0.6em; color:var(--text-dim); margin-top:2px; }
+        .btn { width:100%; padding:12px; border-radius:12px; border:1px solid var(--border); cursor:pointer; font-size:14px; font-weight:bold; transition:all 0.2s; margin-bottom:8px; font-family:inherit; }
         .btn-primary { background:linear-gradient(135deg, var(--accent), #b8903a); color:#1a1f0f; }
-        .btn-dark { background:#4a3a2a; color:#eee; }
-        .code-display { background:#0a1208; border:1px solid var(--border); color:var(--accent-light); border-radius:10px; padding:10px; font-size:0.7em; word-break:break-all; margin:12px 0; font-family:monospace; user-select:all; }
-        .bottom-bar { background:linear-gradient(135deg, rgba(25,35,20,0.96), rgba(15,25,12,0.98)); border-top:1px solid var(--border); backdrop-filter:blur(8px); z-index:10; padding:8px 12px; padding-bottom:calc(8px + env(safe-area-inset-bottom, 0px)); display:flex; gap:8px; align-items:center; justify-content:center; }
-        .bottom-btn { width:38px; height:38px; border-radius:10px; border:1px solid var(--btn-border); background:var(--btn-bg); color:var(--text); cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; }
-        .bottom-btn img { width:100%; height:100%; object-fit:contain; padding:5px; }
-        .debug-text { color:#555; font-size:0.5em; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        
-        /* КРИТИЧЕСКИ ВАЖНО: скрываем iframe P2PPong */
-        #pong-frame {
-            display: none !important;
-            position: fixed !important;
-            top: -9999px !important;
-            left: -9999px !important;
-            width: 1px !important;
-            height: 1px !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
-            visibility: hidden !important;
-            border: none !important;
-            z-index: -1 !important;
-        }
+        .btn-secondary { background:var(--btn-bg); color:var(--text); }
+        .btn-secondary:hover { background:rgba(196,162,75,0.25); }
+        .btn:disabled { opacity:0.4; cursor:not-allowed; }
+        .info-row { display:flex; justify-content:space-between; align-items:center; font-size:0.6em; color:var(--text-dim); margin-top:8px; }
+        .log-area { background:rgba(0,0,0,0.3); border-radius:8px; padding:8px; margin-top:10px; max-height:80px; overflow-y:auto; font-family:monospace; font-size:0.55em; color:#666; }
     </style>
 </head>
 <body>
-<div class="header">
-    <div class="header-row-1">
-        <span class="header-title">RobinCall</span><span style="flex:1;"></span>
-        <span class="connection-dot checking" id="connection-dot"></span>
-        <span style="font-size:0.6em;color:var(--text-dim);" id="connection-label">Проверка...</span>
-    </div>
-    <div class="header-row-2">
-        <div class="header-btn"><img src="assets/avatars/001-.png" class="header-avatar" alt="avatar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">🏹</span></div>
-        <div class="header-btn" id="btn-arrow-create"><img src="assets/3.png" alt="arrow" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">🏹</span></div>
-        <div class="header-btn" id="btn-call-main"><img src="assets/phone-go.png" alt="call" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">📞</span></div>
-        <div class="header-btn" id="btn-hangup-main"><img src="assets/phone-stop.png" alt="hangup" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">📞</span></div>
-        <div class="header-btn" id="btn-clear-reset"><img src="assets/6.png" alt="clear" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">🔄</span></div>
-    </div>
-    <div style="display:flex;justify-content:space-around;"><span class="header-label">Аватар</span><span class="header-label">Стрела</span><span class="header-label">Звонок</span><span class="header-label">Сброс</span><span class="header-label">Новая</span></div>
-</div>
-<div class="main-area">
+<div class="container">
+    <div class="header-title">🏹 P2PPong v3.2-sec</div>
     <div class="robin-row">
-        <img src="assets/avatars/231-icon-11433690.png" class="robin-avatar" alt="Robin" onerror="this.src='assets/avatars/001-.png';">
-        <div><div style="font-weight:900;font-size:0.85em;">Robin Hood</div><div class="robin-text" id="robin-message">Колчан готов!</div></div>
+        <img src="https://stepweather-prog.github.io/ROBINHOOD-P2P/assets/avatars/231-icon-11433690.png" class="robin-avatar" alt="Robin">
+        <div><div style="font-weight:900;font-size:0.85em;">Robin Hood</div><div class="robin-text" id="robin-message">Сервер готов</div></div>
     </div>
-    <div class="status-text" id="call-status">🏹 Создайте стрелу</div>
-    <div class="call-timer hidden" id="call-timer">00:00</div>
-    <div class="server-row"><span>Сервер:</span><button class="server-btn active" id="btn-server-render">🌐 Render</button><button class="server-btn" id="btn-server-workers">⚡ Workers</button></div>
-    <button class="btn-main hidden" id="btn-main-action"><img src="assets/3.png" alt="arrow" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">🏹</span></button>
-    <div class="controls-row hidden" id="incoming-row">
-        <button class="btn-round btn-call" id="btn-answer"><img src="assets/phone-go.png" alt="accept" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">📞</span></button>
-        <button class="btn-round btn-hangup" id="btn-reject"><img src="assets/phone-stop.png" alt="reject" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">✕</span></button>
+    <div class="status-block">
+        <span class="status-dot checking" id="status-dot"></span>
+        <span id="status-main">Проверка серверов...</span>
+        <div style="font-size:0.6em;color:var(--text-dim);" id="status-sub">Каналов: 0/2</div>
     </div>
-    <div class="controls-row hidden" id="active-row"><button class="btn-round btn-hangup" id="btn-end-call"><img src="assets/phone-stop.png" alt="end" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">📞</span></button></div>
-    <div class="controls-row hidden" id="audio-controls" style="gap:12px;"><button class="bottom-btn" id="btn-mic" style="width:44px;height:44px;font-size:20px;">🎤</button><button class="bottom-btn" id="btn-speaker" style="width:44px;height:44px;font-size:20px;">🔊</button></div>
-    <div class="input-row" id="join-row"><input type="text" id="join-input" placeholder="ID колчана..." autocomplete="off"><button id="btn-join">🔗 Принять</button></div>
+    <div class="servers-row">
+        <div class="server-card active" id="server-render">
+            <div class="server-name">🌐 Render</div>
+            <div class="server-status" id="render-status">Проверка...</div>
+        </div>
+        <div class="server-card" id="server-workers">
+            <div class="server-name">⚡ Workers</div>
+            <div class="server-status" id="workers-status">Проверка...</div>
+        </div>
+    </div>
+    <button class="btn btn-secondary" id="btn-check-servers">🔄 Проверить серверы</button>
+    <div class="info-row">
+        <span>ID: <span id="my-id-display">-</span></span>
+        <span id="pwa-badge">Браузер</span>
+        <span>Каналы: <span id="channel-count">0/2</span></span>
+    </div>
+    <div class="log-area" id="log-area"></div>
 </div>
-<div class="modal-overlay" id="ref-modal"><div class="modal-dialog"><h3>🏹 Стрела готова!</h3><div class="code-display" id="ref-link-display"></div><button class="btn-primary" id="btn-copy-link-modal">📋 Копировать</button><button class="btn-primary" id="btn-share-link">📤 Поделиться</button><button class="btn-dark" id="btn-close-modal">Закрыть</button></div></div>
-<div class="bottom-bar">
-    <button class="bottom-btn" id="btn-copy-link"><img src="assets/1.png" alt="copy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">📋</span></button>
-    <button class="bottom-btn" id="btn-share">📤</button>
-    <button class="bottom-btn" id="btn-check-server">🔄</button>
-    <span style="flex:1;"></span><span class="debug-text" id="debug-text"></span>
-</div>
-<!-- КРИТИЧЕСКИ ВАЖНО: iframe полностью скрыт -->
-<iframe id="pong-frame" src="about:blank" style="display:none;position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;visibility:hidden;border:none;z-index:-1;" title="p2p"></iframe>
 
 <script>
 (function(){'use strict';
-const P2PPONG_URL='https://stepweather-prog.github.io/P2PPong/';
 const RENDER_SERVER='https://p2ppong.onrender.com';
 const WORKERS_URL='https://robincall.stephanclaps-491.workers.dev';
+let currentServer='render',channels={},handshakeSecret=null,pollIntervals={},serverStatuses={render:'checking',workers:'checking'};
+const MY_ID=crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).substring(2)+Date.now().toString(36);
+const isPWA=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone||false;
+const MAX_CH=isPWA?20:2;
+
 const $=s=>document.getElementById(s);
-const pongFrame=$('pong-frame'),robinMessage=$('robin-message'),callStatus=$('call-status'),callTimer=$('call-timer');
-const connectionDot=$('connection-dot'),connectionLabel=$('connection-label'),debugText=$('debug-text');
-const btnMainAction=$('btn-main-action'),btnAnswer=$('btn-answer'),btnReject=$('btn-reject'),btnEndCall=$('btn-end-call');
-const btnMic=$('btn-mic'),btnSpeaker=$('btn-speaker'),btnArrowCreate=$('btn-arrow-create'),btnCallMain=$('btn-call-main');
-const btnHangupMain=$('btn-hangup-main'),btnClearReset=$('btn-clear-reset'),btnCopyLink=$('btn-copy-link'),btnShare=$('btn-share');
-const btnJoin=$('btn-join'),joinInput=$('join-input'),btnServerRender=$('btn-server-render'),btnServerWorkers=$('btn-server-workers');
-const incomingRow=$('incoming-row'),activeRow=$('active-row'),audioControls=$('audio-controls'),joinRow=$('join-row');
-const refModal=$('ref-modal'),refLinkDisplay=$('ref-link-display');
-const btnCheckServer=$('btn-check-server');
+const robinMessage=$('robin-message'),statusMain=$('status-main'),statusSub=$('status-sub'),statusDot=$('status-dot');
+const renderStatus=$('render-status'),workersStatus=$('workers-status'),serverRender=$('server-render'),serverWorkers=$('server-workers');
+const myIdDisplay=$('my-id-display'),pwaBadge=$('pwa-badge'),channelCount=$('channel-count'),logArea=$('log-area');
+const btnCheckServers=$('btn-check-servers');
 
-const ICE=[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:["turn:openrelay.metered.ca:80?transport=tcp","turn:openrelay.metered.ca:443?transport=tcp"],username:"openrelayproject",credential:"openrelayproject"}];
+function getMax(){return isPWA?20:2}
+function log(m,t){console.log('[P2PPong]',m);if(logArea){const time=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});logArea.textContent=`[${time}] ${t==='error'?'❌':t==='success'?'✅':'ℹ️'} ${m}\n`+logArea.textContent;const lines=logArea.textContent.split('\n').slice(0,20);logArea.textContent=lines.join('\n')}}
+function setMsg(m){if(robinMessage)robinMessage.textContent=m}
+function updateUI(){const c=Object.keys(channels).length,m=getMax();if(channelCount)channelCount.textContent=c+'/'+m;if(pwaBadge)pwaBadge.textContent=isPWA?'PWA (20)':'Браузер (2)';if(statusSub)statusSub.textContent='Каналов: '+c+'/'+m+' | Сервер: '+(currentServer==='workers'?'Workers':'Render')}
+function updateServerUI(){
+    serverRender.classList.toggle('active',currentServer==='render');serverWorkers.classList.toggle('active',currentServer==='workers');
+    if(renderStatus)renderStatus.textContent=(serverStatuses.render==='online'?'🟢 ':'🔴 ')+(serverStatuses.render==='online'?'Онлайн':'Офлайн');
+    if(workersStatus)workersStatus.textContent=(serverStatuses.workers==='online'?'🟢 ':'🔴 ')+(serverStatuses.workers==='online'?'Онлайн':'Офлайн');
+    const cs=serverStatuses[currentServer];statusDot.className='status-dot '+(cs==='online'?'online':cs==='checking'?'checking':'offline');
+    if(statusMain)statusMain.textContent=cs==='online'?'✅ Сервер готов':cs==='checking'?'🟡 Проверка...':'❌ Сервер офлайн';
+}
 
-let pc=null,stream=null,handshake=null,chId=null,sec=null,srv='render',active=!1,tStart=null,tInt=null,mic=!0,spk=!0,offer=null,link=null,ready=!1,online=!1;
-try{srv=localStorage.getItem('robinhood_server')||'render'}catch(e){}
+async function apiCall(method,path,body=null,retries=1){
+    const url=currentServer==='workers'?WORKERS_URL:RENDER_SERVER;
+    for(let a=0;a<=retries;a++){
+        const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),currentServer==='workers'?5000:10000);
+        try{
+            const opts={method,headers:{'Content-Type':'application/json'},signal:ctrl.signal};
+            if(body)opts.body=JSON.stringify(body);
+            const res=await fetch(url+path,opts);clearTimeout(timeout);
+            if(!res.ok){if(a<retries){await new Promise(r=>setTimeout(r,2000));continue}return null}
+            return await res.json();
+        }catch(e){clearTimeout(timeout);if(a<retries){await new Promise(r=>setTimeout(r,3000));continue}return null}
+    }return null;
+}
 
-function log(m){console.log('[RC]',m);if(debugText)debugText.textContent=m}
-function rMsg(m){if(robinMessage)robinMessage.textContent=m;log(m)}
-function conn(s){if(connectionDot)connectionDot.className='connection-dot '+s;if(connectionLabel)connectionLabel.textContent=s==='online'?'Готов':s==='offline'?'Нет связи':'Проверка...'}
+async function checkServer(server){
+    const prev=currentServer;if(server)currentServer=server;
+    const ping=await apiCall('GET','/ping');
+    if(ping){serverStatuses[currentServer]='online';if(!handshakeSecret||server!==prev){handshakeSecret=generateToken();sendToParent({type:'pong-ready',handshake:handshakeSecret})}}
+    else{serverStatuses[currentServer]='offline'}
+    if(server)currentServer=prev;updateServerUI();return ping!==null;
+}
+async function checkAllServers(){
+    await Promise.all([checkServer('render'),checkServer('workers')]);
+    if(serverStatuses[currentServer]==='offline'){const other=currentServer==='render'?'workers':'render';if(serverStatuses[other]==='online')switchServer(other)}
+    updateServerUI();setMsg(serverStatuses[currentServer]==='online'?'✅ Сервер готов!':'⚠ Все серверы офлайн');
+}
+function switchServer(server){
+    if(server===currentServer)return;
+    currentServer=server;try{localStorage.setItem('robinhood_server',currentServer)}catch(e){}
+    stopAllPolling();handshakeSecret=null;sendToParent({server:currentServer});
+    checkServer().then(()=>{if(serverStatuses[currentServer]==='online')restoreSessions()});
+    updateServerUI();updateUI();
+}
 
-async function api(m,p,b){const url=srv==='workers'?WORKERS_URL:RENDER_SERVER;const c=new AbortController(),t=setTimeout(()=>c.abort(),srv==='workers'?5000:10000);try{const o={method:m,headers:{'Content-Type':'application/json'},signal:c.signal};if(b)o.body=JSON.stringify(b);const r=await fetch(url+p,o);clearTimeout(t);return r.ok?await r.json():null}catch(e){clearTimeout(t);return null}}
-async function chkSrv(){conn('checking');online=(await api('GET','/ping'))!==null;conn(online?'online':'offline');return online}
-function swSrv(s){if(s===srv)return;srv=s;try{localStorage.setItem('robinhood_server',srv)}catch(e){}btnServerRender.classList.toggle('active',srv==='render');btnServerWorkers.classList.toggle('active',srv==='workers');pongFrame.src=P2PPONG_URL+'?v='+Date.now();handshake=null;ready=!1;ui('idle');rMsg('🔄 '+(s==='workers'?'Workers':'Render'));conn('checking')}
+function generateToken(){return crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).substring(2)+Math.random().toString(36).substring(2)}
+async function sha256(text){const data=new TextEncoder().encode(text);const hash=await crypto.subtle.digest('SHA-256',data);return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('')}
 
-function send(m){if(!m)return;if(chId&&sec){m.secret=sec;m.channelId=chId}if(handshake&&m.action==='handshake')m.handshake=handshake;pongFrame.contentWindow?.postMessage(m,'*')}
-async function getStream(){try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:!0,noiseSuppression:!0,autoGainControl:!0},video:!1});return!0}catch(e){rMsg('❌ Нет микрофона');return!1}}
-function mkPC(){if(pc){pc.close();pc=null}pc=new RTCPeerConnection({iceServers:ICE,iceTransportPolicy:'all'});if(stream)stream.getTracks().forEach(t=>pc.addTrack(t,stream));pc.ontrack=e=>{if(e.streams[0]){const a=new Audio();a.srcObject=e.streams[0];a.play().catch(()=>{})}};pc.onicecandidate=e=>{if(e.candidate)send({action:'send',text:'__ICE__'+JSON.stringify(e.candidate),channelId:chId})};pc.onconnectionstatechange=()=>{if(pc.connectionState==='connected'){active=!0;tStart=Date.now();timer();ui('active');if(callStatus)callStatus.textContent='✅ Разговор'}else if(pc.connectionState==='disconnected'||pc.connectionState==='failed')hang(!1)};return pc}
+function sendToParent(msg){if(window.parent&&window.parent!==window)try{window.parent.postMessage(msg,'*')}catch(e){}}
 
-function mkQ(){if(!online){rMsg('⚠ Сервер офлайн');return}rMsg('⚒ Куём стрелу...');btnMainAction.disabled=!0;send({action:'create'})}
-async function call(){if(!ready||!chId){rMsg('⚠ Создайте стрелу');return}if(callStatus)callStatus.textContent='📞 Вызов...';ui('calling');if(!await getStream()){ui('ready');return}mkPC();try{const o=await pc.createOffer();await pc.setLocalDescription(o);send({action:'send',text:'__OFFER__'+JSON.stringify(o),channelId:chId})}catch(e){hang(!0)}}
-async function accept(){if(!offer)return;ui('active');if(!await getStream()){ui('ready');return}mkPC();try{await pc.setRemoteDescription(new RTCSessionDescription(offer));const a=await pc.createAnswer();await pc.setLocalDescription(a);send({action:'send',text:'__ANSWER__'+JSON.stringify(a),channelId:chId});offer=null}catch(e){hang(!0)}}
-function hang(sig=!0){active=!1;if(tInt){clearInterval(tInt);tInt=null}if(callTimer){callTimer.classList.add('hidden');callTimer.textContent='00:00'}if(sig&&chId)send({action:'send',text:'__HANGUP__',channelId:chId});if(pc){pc.close();pc=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}offer=null;if(callStatus)callStatus.textContent='📞 Завершён';ui('ready')}
-function timer(){if(callTimer)callTimer.classList.remove('hidden');tInt=setInterval(()=>{const e=Math.floor((Date.now()-tStart)/1000);if(callTimer)callTimer.textContent=Math.floor(e/60).toString().padStart(2,'0')+':'+(e%60).toString().padStart(2,'0')},1000)}
-function accArrow(id){if(!id){rMsg('⚠ ID колчана');return}rMsg('🔍 Поиск...');send({action:'accept',id:id,key:''})}
-function reset(){if(active)hang(!0);chId=null;sec=null;link=null;ready=!1;offer=null;ui('idle');if(joinInput)joinInput.value='';rMsg('🏹 Сброшен')}
-function cp(){if(link){navigator.clipboard.writeText(link).then(()=>rMsg('📋 Скопировано')).catch(()=>{});refModal.classList.add('active')}else rMsg('⚠ Создайте стрелу')}
-async function shr(){if(link&&navigator.share)try{await navigator.share({title:'RobinCall',text:'Звонок!',url:link})}catch(e){}else cp()}
+function startPolling(sid){
+    if(pollIntervals[sid])return;
+    let lastTime=Date.now(),pollCount=0;
+    const interval=currentServer==='workers'?4000:8000;
+    const poll=async()=>{
+        pollCount++;
+        if(currentServer==='workers'&&Object.keys(channels).length>5&&pollCount%3!==0)return;
+        try{
+            const res=await apiCall('GET',`/message?id=${sid}&since=${lastTime}`);
+            if(!res)return;
+            if(res.messages&&Array.isArray(res.messages)){for(const m of res.messages){const ch=channels[sid];if(!ch||!ch.sessionSecret)continue;let text=m.packet;try{const decrypted=decryptLegacy(m.packet,ch.sessionSecret);if(decrypted){const parsed=JSON.parse(decrypted);if(parsed.sender===MY_ID){lastTime=Math.max(lastTime,m.time);continue}text=parsed.text}}catch(err){}sendToParent({type:'message',text:text,sender:'Друг',channelId:sid});lastTime=Math.max(lastTime,m.time)}}
+        }catch(e){}
+    };
+    poll();pollIntervals[sid]=setInterval(poll,interval);
+}
+function stopPolling(sid){if(pollIntervals[sid]){clearInterval(pollIntervals[sid]);delete pollIntervals[sid]}}
+function stopAllPolling(){Object.keys(pollIntervals).forEach(stopPolling)}
 
-function ui(s){btnMainAction.classList.add('hidden');incomingRow.classList.add('hidden');activeRow.classList.add('hidden');audioControls.classList.add('hidden');btnMainAction.disabled=!1;if(s==='idle'){btnMainAction.classList.remove('hidden');joinRow.classList.remove('hidden');if(callStatus)callStatus.textContent='🏹 Создайте стрелу'}else if(s==='ready'){btnMainAction.classList.remove('hidden');joinRow.classList.remove('hidden');if(callStatus)callStatus.textContent='📞 Готово!'}else if(s==='calling'){activeRow.classList.remove('hidden');audioControls.classList.remove('hidden')}else if(s==='incoming'){incomingRow.classList.remove('hidden');if(callStatus)callStatus.textContent='📞 Входящий!'}else if(s==='active'){activeRow.classList.remove('hidden');audioControls.classList.remove('hidden')}}
+function encryptLegacy(text,key){const enc=new TextEncoder().encode(text),keyBytes=new TextEncoder().encode(key),out=new Uint8Array(enc.length);for(let i=0;i<enc.length;i++)out[i]=enc[i]^keyBytes[i%keyBytes.length];return btoa(String.fromCharCode(...out))}
+function decryptLegacy(text,key){try{const enc=Uint8Array.from(atob(text),c=>c.charCodeAt(0)),keyBytes=new TextEncoder().encode(key),out=new Uint8Array(enc.length);for(let i=0;i<enc.length;i++)out[i]=enc[i]^keyBytes[i%keyBytes.length];return new TextDecoder().decode(out)}catch(e){return null}}
 
-// ==================== ВСЕ ОБРАБОТЧИКИ ЧЕРЕЗ addEventListener ====================
-btnMainAction.addEventListener('click',()=>{if(!ready)mkQ();else call()});
-btnArrowCreate.addEventListener('click',mkQ);
-btnCallMain.addEventListener('click',call);
-btnHangupMain.addEventListener('click',()=>hang(!0));
-btnClearReset.addEventListener('click',reset);
-btnAnswer.addEventListener('click',accept);
-btnReject.addEventListener('click',()=>{send({action:'send',text:'__HANGUP__',channelId:chId});offer=null;ui('ready')});
-btnEndCall.addEventListener('click',()=>hang(!0));
-btnMic.addEventListener('click',()=>{if(stream){mic=!mic;stream.getAudioTracks().forEach(t=>t.enabled=mic);btnMic.textContent=mic?'🎤':'🔇'}});
-btnSpeaker.addEventListener('click',()=>{spk=!spk;btnSpeaker.textContent=spk?'🔊':'🔈'});
-btnCopyLink.addEventListener('click',cp);
-btnShare.addEventListener('click',shr);
-btnJoin.addEventListener('click',()=>{const v=joinInput.value.trim();if(v)accArrow(v)});
-joinInput.addEventListener('keypress',e=>{if(e.key==='Enter'){const v=joinInput.value.trim();if(v)accArrow(v)}});
-$('btn-copy-link-modal')?.addEventListener('click',()=>{if(link)navigator.clipboard.writeText(link).catch(()=>{})});
-$('btn-share-link')?.addEventListener('click',shr);
-$('btn-close-modal')?.addEventListener('click',()=>refModal.classList.remove('active'));
-btnServerRender.addEventListener('click',()=>swSrv('render'));
-btnServerWorkers.addEventListener('click',()=>swSrv('workers'));
-btnCheckServer.addEventListener('click',()=>chkSrv().then(o=>rMsg(o?'✅ Доступен':'❌ Офлайн')));
+async function createSession(){
+    const count=Object.keys(channels).length,max=getMax();
+    if(count>=max){sendToParent({type:'error',text:isPWA?'Максимум '+max+' каналов.':'Максимум '+max+' каналов. Установите PWA для 20.'});if(!isPWA)sendToParent({type:'install-prompt'});return}
+    const tempKey=generateToken(),beaconRes=await apiCall('POST','/beacon',{tempKey});
+    if(!beaconRes||!beaconRes.sessionId){sendToParent({type:'error',text:'Сервер не отвечает'});return}
+    const sid=beaconRes.sessionId,sessionSecret=await sha256(tempKey);
+    channels[sid]={tempKey,sessionSecret,status:'waiting',isCreator:true,createdAt:Date.now()};
+    const link='https://stepweather-prog.github.io/ROBINHOOD-P2P/?id='+sid+'&key='+tempKey;
+    sendToParent({type:'session-created',sessionId:sid,key:tempKey,fullLink:link});
+    updateUI();
+    let matched=false;const start=Date.now();
+    while(Date.now()-start<90000){const check=await apiCall('GET','/beacon?id='+sid);if(check&&check.matched){matched=true;break}await new Promise(r=>setTimeout(r,5000))}
+    if(!matched){delete channels[sid];saveSessions();sendToParent({type:'error',text:'Таймаут ожидания'});updateUI();return}
+    channels[sid].status='open';startPolling(sid);saveSessions();
+    sendToParent({type:'channel-open',secret:sessionSecret,channelId:sid,role:'creator'});
+    updateUI();
+}
+async function acceptSession(sid,tempKey){
+    if(Object.keys(channels).length>=getMax()){sendToParent({type:'error',text:'Максимум каналов'});if(!isPWA)sendToParent({type:'install-prompt'});return}
+    if(channels[sid]){sendToParent({type:'error',text:'Уже в канале'});return}
+    const findRes=await apiCall('POST','/find',{tempKey});
+    if(!findRes||findRes.status!=='matched'){sendToParent({type:'error',text:'Маяк не найден'});return}
+    const actualSid=findRes.sessionId||sid,sessionSecret=await sha256(tempKey);
+    channels[actualSid]={tempKey,sessionSecret,status:'open',isCreator:false,createdAt:Date.now()};
+    startPolling(actualSid);saveSessions();
+    sendToParent({type:'channel-open',secret:sessionSecret,channelId:actualSid,role:'receiver'});
+    updateUI();
+}
 
-window.addEventListener('message',async e=>{
-    if(e.source!==pongFrame.contentWindow)return;const d=e.data;
-    if(d.type==='pong-ready'){handshake=d.handshake;send({action:'handshake'});conn('online');ui('idle');rMsg('🏹 Готов!')}
-    else if(d.type==='handshake-ok'){const s=new URLSearchParams(location.search).get('id');if(s)accArrow(s)}
-    else if(d.type==='session-created'){chId=d.sessionId;sec=d.secret;link=d.fullLink;ready=!0;rMsg('✅ Стрела!');conn('online');if(refLinkDisplay)refLinkDisplay.textContent=d.fullLink;refModal.classList.add('active');if(joinInput)joinInput.value=d.sessionId;ui('ready');navigator.clipboard.writeText(link).catch(()=>{})}
-    else if(d.type==='channel-open'){chId=d.channelId;sec=d.secret;ready=!0;rMsg('✅ Подключено');conn('online');ui('ready')}
-    else if(d.type==='message'&&d.text){
-        if(d.text.startsWith('__OFFER__')){if(active||pc){send({action:'send',text:'__HANGUP__',channelId:chId});return}try{offer=JSON.parse(d.text.replace('__OFFER__',''));ui('incoming')}catch(e){}}
-        else if(d.text.startsWith('__ANSWER__')&&pc){try{await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(d.text.replace('__ANSWER__',''))));active=!0;tStart=Date.now();timer();ui('active')}catch(e){}}
-        else if(d.text.startsWith('__ICE__')&&pc){try{await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(d.text.replace('__ICE__',''))))}catch(e){}}
-        else if(d.text==='__HANGUP__'){if(active||pc){rMsg('📞 Собеседник завершил');hang(!1)}}
-    }else if(d.type==='error'){rMsg('⚠ '+d.text);btnMainAction.disabled=!1;ui('idle')}
+function saveSessions(){try{const s=Object.entries(channels).filter(([_,c])=>c.status==='open').map(([id,c])=>({id,key:c.tempKey,secret:c.sessionSecret,creator:c.isCreator,createdAt:c.createdAt}));localStorage.setItem('robinhood_pong_sessions',JSON.stringify(s))}catch(e){}}
+async function restoreSessions(){try{const saved=localStorage.getItem('robinhood_pong_sessions');if(!saved)return;const sessions=JSON.parse(saved),restored=[],now=Date.now();for(const sc of sessions){if(now-sc.createdAt>7*24*60*60*1000)continue;const check=await apiCall('GET','/beacon?id='+sc.id);if(check&&check.matched){channels[sc.id]={tempKey:sc.key,sessionSecret:sc.secret,status:'open',isCreator:sc.creator,createdAt:sc.createdAt};startPolling(sc.id);restored.push({channelId:sc.id,secret:sc.secret,role:sc.creator?'creator':'receiver'})}}if(restored.length>0)sendToParent({type:'restored-channels',channels:restored});updateUI()}catch(e){}}
+
+// Все обработчики через addEventListener
+serverRender.addEventListener('click',()=>switchServer('render'));
+serverWorkers.addEventListener('click',()=>switchServer('workers'));
+btnCheckServers.addEventListener('click',checkAllServers);
+
+window.addEventListener('message',(event)=>{
+    const data=event.data;if(!data||!data.action)return;
+    if(data.action==='handshake'){if(data.handshake===handshakeSecret){handshakeSecret=null;sendToParent({type:'handshake-ok'})}return}
+    if(data.action==='send'){const ch=channels[data.channelId];if(!ch||!ch.sessionSecret){sendToParent({type:'error',text:'Канал не найден'});return}if(data.secret!==ch.sessionSecret){sendToParent({type:'error',text:'Неверный секрет'});return}const packet=encryptLegacy(JSON.stringify({text:data.text,sender:MY_ID,time:Date.now()}),ch.sessionSecret);apiCall('POST','/message',{sessionId:data.channelId,packet});return}
+    if(data.server&&data.server!==currentServer){switchServer(data.server);return}
+    switch(data.action){case'create':createSession();break;case'accept':if(data.id&&data.key)acceptSession(data.id,data.key);break}
 });
 
+window.addEventListener('beforeunload',()=>{saveSessions();stopAllPolling()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){Object.keys(pollIntervals).forEach(stopPolling)}else{Object.keys(channels).forEach(sid=>{if(channels[sid].status==='open')startPolling(sid)});checkAllServers()}});
+
 async function init(){
-    log('RobinCall v3.2-sec');conn('checking');
-    if(srv==='workers'){btnServerWorkers.classList.add('active');btnServerRender.classList.remove('active')}
-    await chkSrv();
-    pongFrame.src=P2PPONG_URL+'?v='+Date.now();
-    // ГАРАНТИРОВАННО СКРЫВАЕМ IFRAME
-    pongFrame.style.display='none';
-    ui('idle');rMsg('🏹 Ждём...')
+    const saved=localStorage.getItem('robinhood_server');if(saved&&(saved==='render'||saved==='workers'))currentServer=saved;
+    updateServerUI();updateUI();if(myIdDisplay)myIdDisplay.textContent=MY_ID.substring(0,8)+'...';
+    await checkAllServers();setMsg('✅ Сервер готов!');
 }
-window.addEventListener('beforeunload',()=>{if(active)send({action:'send',text:'__HANGUP__',channelId:chId});if(pc)pc.close();if(stream)stream.getTracks().forEach(t=>t.stop())});
-window.swSrv=swSrv;window.chkSrv=()=>chkSrv().then(o=>rMsg(o?'✅ Доступен':'❌ Офлайн'));
-document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
+init();
 })();
 </script>
 </body>
