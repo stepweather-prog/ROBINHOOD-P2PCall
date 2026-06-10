@@ -9,8 +9,6 @@
     <title>RobinCall v4.1</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/avatars/001-.png">
-    <script src="shared/crypto.js"></script>
-    <script src="shared/themes.js"></script>
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; media-src 'self' blob:; connect-src 'self' https://p2ppong.onrender.com https://robincall.stephanclaps-491.workers.dev https://stepweather-prog.github.io blob:; img-src 'self' data: blob:;">
     <style>
         :root, [data-theme="forest"] { --bg-primary: #1a2a1f; --bg-secondary: #0d1a0c; --accent: #c4a24b; --accent-light: #e8d5a3; --accent-glow: rgba(196,162,75,0.5); --text: #e8e2c7; --text-bright: #f5e6b8; --text-dim: #b8a87a; --border: #c4a24b; --btn-bg: rgba(196,162,75,0.1); --btn-border: rgba(196,162,75,0.3); --btn-hover: rgba(196,162,75,0.25); --sheet-bg: linear-gradient(145deg, #1e2a1a 0%, #0f180d 100%); --input-bg: rgba(20,30,18,0.9); --robin-bg: rgba(50,70,40,0.9); --robin-accent: #e8c97a; }
@@ -206,10 +204,80 @@
 <div class="overlay" id="overlay"></div>
 <iframe id="pong-frame" src="about:blank" style="display:none;position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;visibility:hidden;border:none;z-index:-1;" title="p2p"></iframe>
 </div>
+
 <script>
+// ========== ROBIHOOD SHARED CRYPTO v1.0 ==========
+const CRYPTO = (() => {
+    'use strict';
+    const MSG_ENCRYPT_KEY = 'robinhood_msg_key_v1';
+    const SECURE_STORAGE_KEY = 'robinhood_secure_v2';
+    const KEK_SALT_KEY = 'robinhood_kek_salt_v1';
+    const KEK_WRAPPED_KEY = 'robinhood_kek_wrapped_v1';
+    const KEK_VERIFY_KEY = 'robinhood_kek_verify_v1';
+    const RATCHET_STORE_KEY = 'robinhood_ratchet_v1';
+    const PBKDF2_ITERATIONS = 100000;
+    const MAX_SKIP = 100;
+    let msgEncryptKey = null;
+    let kekKey = null;
+    let ratchetStates = {};
+
+    async function sha256(text) { const data = new TextEncoder().encode(text); const hash = await crypto.subtle.digest('SHA-256', data); return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join(''); }
+    
+    async function getStorageKey() {
+        let kb = sessionStorage.getItem(SECURE_STORAGE_KEY) || localStorage.getItem(SECURE_STORAGE_KEY + '_backup');
+        if (!kb) { const k = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']); const r = await crypto.subtle.exportKey('raw', k); kb = btoa(String.fromCharCode(...new Uint8Array(r))); sessionStorage.setItem(SECURE_STORAGE_KEY, kb); localStorage.setItem(SECURE_STORAGE_KEY + '_backup', kb); setTimeout(() => localStorage.removeItem(SECURE_STORAGE_KEY + '_backup'), 300000); return k; }
+        sessionStorage.setItem(SECURE_STORAGE_KEY, kb); const r = Uint8Array.from(atob(kb), c => c.charCodeAt(0)); return await crypto.subtle.importKey('raw', r, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+    }
+
+    async function secureSetItem(key, value) { try { const sk = await getStorageKey(); const iv = crypto.getRandomValues(new Uint8Array(12)); const enc = new TextEncoder().encode(JSON.stringify(value)); const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, sk, enc); const combined = new Uint8Array(iv.length + new Uint8Array(ct).length); combined.set(iv); combined.set(new Uint8Array(ct), iv.length); localStorage.setItem(key, btoa(String.fromCharCode(...combined))); } catch (e) {} }
+    async function secureGetItem(key) { try { const stored = localStorage.getItem(key); if (!stored) return null; const sk = await getStorageKey(); const combined = Uint8Array.from(atob(stored), c => c.charCodeAt(0)); const iv = combined.slice(0, 12); const ct = combined.slice(12); const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, sk, ct); return JSON.parse(new TextDecoder().decode(dec)); } catch (e) { return null; } }
+    function secureRemoveItem(key) { localStorage.removeItem(key); }
+
+    async function openDB() { return new Promise((resolve, reject) => { const request = indexedDB.open('RobinCallSecure', 1); request.onupgradeneeded = () => { request.result.createObjectStore('keys', { keyPath: 'id' }); }; request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); }); }
+    
+    async function getMsgEncryptKey() {
+        if (msgEncryptKey) return msgEncryptKey;
+        try { const db = await openDB(); const tx = db.transaction('keys', 'readonly'); const store = tx.objectStore('keys'); const getReq = store.get(MSG_ENCRYPT_KEY); const result = await new Promise((resolve) => { getReq.onsuccess = () => resolve(getReq.result); getReq.onerror = () => resolve(null); }); if (result) { const bytes = Uint8Array.from(atob(result.value), c => c.charCodeAt(0)); msgEncryptKey = await crypto.subtle.importKey('raw', bytes, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']); return msgEncryptKey; } } catch (e) {}
+        let raw = localStorage.getItem(MSG_ENCRYPT_KEY); if (raw) { const bytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0)); msgEncryptKey = await crypto.subtle.importKey('raw', bytes, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']); return msgEncryptKey; }
+        const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']); const exported = await crypto.subtle.exportKey('raw', key); raw = btoa(String.fromCharCode(...new Uint8Array(exported))); localStorage.setItem(MSG_ENCRYPT_KEY, raw); msgEncryptKey = key; return msgEncryptKey;
+    }
+
+    async function encryptMessage(plainText) { try { const key = await getMsgEncryptKey(); const iv = crypto.getRandomValues(new Uint8Array(12)); const enc = new TextEncoder().encode(plainText); const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc); const combined = new Uint8Array(iv.length + new Uint8Array(ct).length); combined.set(iv); combined.set(new Uint8Array(ct), iv.length); return '🔐' + btoa(String.fromCharCode(...combined)); } catch (e) { return plainText; } }
+    async function decryptMessage(encryptedText) { if (!encryptedText || !encryptedText.startsWith('🔐')) return encryptedText; try { const key = await getMsgEncryptKey(); const combined = Uint8Array.from(atob(encryptedText.slice(2)), c => c.charCodeAt(0)); const iv = combined.slice(0, 12); const ct = combined.slice(12); const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct); return new TextDecoder().decode(dec); } catch (e) { return encryptedText; } }
+
+    async function performECDHHandshake(channelId, sendFn) { try { const ourKeyPair = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveKey', 'deriveBits']); const ourPubKey = await crypto.subtle.exportKey('raw', ourKeyPair.publicKey); const ourPubKeyB64 = btoa(String.fromCharCode(...new Uint8Array(ourPubKey))); sendFn({ action: 'send', text: '__ECDH__' + ourPubKeyB64, channelId }); return new Promise((resolve) => { const handler = async (event) => { if (event.data && event.data.text && event.data.text.startsWith('__ECDH__')) { const theirPubKeyB64 = event.data.text.replace('__ECDH__', ''); const theirPubKeyBytes = Uint8Array.from(atob(theirPubKeyB64), c => c.charCodeAt(0)); const theirPubKey = await crypto.subtle.importKey('raw', theirPubKeyBytes, { name: 'ECDH', namedCurve: 'P-256' }, false, []); const sharedSecret = await crypto.subtle.deriveBits({ name: 'ECDH', public: theirPubKey }, ourKeyPair.privateKey, 256); const newKey = await crypto.subtle.importKey('raw', sharedSecret, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']); msgEncryptKey = newKey; const db = await openDB(); const exported = await crypto.subtle.exportKey('raw', newKey); const raw = btoa(String.fromCharCode(...new Uint8Array(exported))); const tx = db.transaction('keys', 'readwrite'); tx.objectStore('keys').put({ id: MSG_ENCRYPT_KEY, value: raw }); window.removeEventListener('message', handler); resolve(newKey); } }; window.addEventListener('message', handler); }); } catch (e) { return null; } }
+
+    async function getOrCreateKEK(password) { if (kekKey) return kekKey; let salt = localStorage.getItem(KEK_SALT_KEY); if (!salt) { const saltBytes = crypto.getRandomValues(new Uint8Array(32)); salt = btoa(String.fromCharCode(...saltBytes)); localStorage.setItem(KEK_SALT_KEY, salt); } const saltBytes = Uint8Array.from(atob(salt), c => c.charCodeAt(0)); const enc = new TextEncoder(); const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']); kekKey = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: saltBytes, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' }, keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']); return kekKey; }
+    async function wrapMsgKey(key, password) { try { const kek = await getOrCreateKEK(password); const exported = await crypto.subtle.exportKey('raw', key); const iv = crypto.getRandomValues(new Uint8Array(12)); const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, kek, exported); const combined = new Uint8Array(iv.length + new Uint8Array(encrypted).length); combined.set(iv); combined.set(new Uint8Array(encrypted), iv.length); localStorage.setItem(KEK_WRAPPED_KEY, btoa(String.fromCharCode(...combined))); const verifyData = new TextEncoder().encode('robinhood_verify'); const verifyIv = crypto.getRandomValues(new Uint8Array(12)); const verifyEncrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: verifyIv }, kek, verifyData); const verifyCombined = new Uint8Array(verifyIv.length + new Uint8Array(verifyEncrypted).length); verifyCombined.set(verifyIv); verifyCombined.set(new Uint8Array(verifyEncrypted), verifyIv.length); localStorage.setItem(KEK_VERIFY_KEY, btoa(String.fromCharCode(...verifyCombined))); return true; } catch (e) { return false; } }
+    async function unwrapMsgKey(password) { try { const stored = localStorage.getItem(KEK_WRAPPED_KEY); if (!stored) return null; const kek = await getOrCreateKEK(password); const combined = Uint8Array.from(atob(stored), c => c.charCodeAt(0)); const iv = combined.slice(0, 12); const encryptedKey = combined.slice(12); const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, kek, encryptedKey); return await crypto.subtle.importKey('raw', decrypted, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']); } catch (e) { return null; } }
+    async function verifyPassword(password) { try { const verifyData = localStorage.getItem(KEK_VERIFY_KEY); if (!verifyData) return false; const kek = await getOrCreateKEK(password); const combined = Uint8Array.from(atob(verifyData), c => c.charCodeAt(0)); const iv = combined.slice(0, 12); const encrypted = combined.slice(12); const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, kek, encrypted); return new TextDecoder().decode(decrypted) === 'robinhood_verify'; } catch (e) { return false; } }
+    function isKEKSetup() { return localStorage.getItem(KEK_WRAPPED_KEY) !== null; }
+
+    return { sha256, secureSetItem, secureGetItem, secureRemoveItem, getMsgEncryptKey, encryptMessage, decryptMessage, performECDHHandshake, getOrCreateKEK, wrapMsgKey, unwrapMsgKey, verifyPassword, isKEKSetup, getRatchetStates: () => ratchetStates, setRatchetStates: (s) => { ratchetStates = s; }, setMsgEncryptKey: (k) => { msgEncryptKey = k; }, getStorageKey, openDB, STORAGE_KEY: SECURE_STORAGE_KEY, MSG_KEY: MSG_ENCRYPT_KEY };
+})();
+
+// ========== ROBIHOOD SHARED THEMES v1.0 ==========
+const THEMES = (() => {
+    'use strict';
+    const themes = [
+        { id: 'forest', icon: '🌲', name: 'Лес' }, { id: 'sunset', icon: '🌅', name: 'Закат' },
+        { id: 'ocean', icon: '🌊', name: 'Океан' }, { id: 'rose', icon: '🌹', name: 'Роза' },
+        { id: 'amber', icon: '🍯', name: 'Янтарь' }, { id: 'mint', icon: '🌿', name: 'Мята' },
+        { id: 'lavender', icon: '💜', name: 'Лаванда' }, { id: 'cherry', icon: '🍒', name: 'Вишня' },
+        { id: 'emerald', icon: '💚', name: 'Изумруд' }, { id: 'slate', icon: '🪨', name: 'Сланец' },
+        { id: 'coral', icon: '🪸', name: 'Коралл' }, { id: 'plum', icon: '🫐', name: 'Слива' }
+    ];
+    function getThemes() { return themes; }
+    function getTheme(id) { return themes.find(t => t.id === id) || themes[0]; }
+    function applyTheme(id, iconEl, nameEl) { document.documentElement.setAttribute('data-theme', id); localStorage.setItem('robinhood_theme', id); const theme = getTheme(id); if (iconEl) iconEl.textContent = theme.icon; if (nameEl) nameEl.textContent = theme.name; return theme; }
+    function generateRandomTheme() { const hue = Math.floor(Math.random() * 360); const sat = 40 + Math.floor(Math.random() * 50); const bgLight = 5 + Math.floor(Math.random() * 15); const bgDark = 2 + Math.floor(Math.random() * 8); const id = 'random_' + Date.now(); const name = 'Случайная ' + Math.floor(Math.random() * 100); const icons = ['🎨', '🌈', '🎲', '✨', '💫', '⭐', '🔥', '💎', '🍀', '🌸']; const icon = icons[Math.floor(Math.random() * icons.length)]; return { id, icon, name, styles: `[data-theme="${id}"]{--bg-primary:hsl(${hue},${sat}%,${bgLight}%);--bg-secondary:hsl(${hue},${sat-10}%,${bgDark}%);--accent:hsl(${(hue+30)%360},${sat+10}%,50%);--accent-light:hsl(${(hue+30)%360},${sat+20}%,70%);--accent-glow:hsla(${(hue+30)%360},${sat+10}%,50%,0.5);--text:hsl(${hue},20%,85%);--text-bright:hsl(${hue},25%,92%);--text-dim:hsl(${hue},15%,60%);--border:hsl(${(hue+30)%360},${sat+10}%,50%);--btn-bg:hsla(${(hue+30)%360},${sat+10}%,50%,0.1);--btn-border:hsla(${(hue+30)%360},${sat+10}%,50%,0.3);--btn-hover:hsla(${(hue+30)%360},${sat+10}%,50%,0.25);--sheet-bg:linear-gradient(145deg,hsl(${hue},${sat}%,${bgLight}%)0%,hsl(${hue},${sat-10}%,${bgDark}%)100%);--input-bg:hsla(${hue},${sat-10}%,${bgLight+2}%,0.9);--msg-bg:hsla(${hue},${sat-5}%,${bgLight+3}%,0.85);--msg-accent:hsl(${(hue+30)%360},${sat+10}%,50%);--robin-bg:hsla(${hue},${sat}%,${bgLight+8}%,0.9);--robin-accent:hsl(${(hue+30)%360},${sat+20}%,65%);--overlay-bg:rgba(0,0,0,0.6);--call-bg:linear-gradient(135deg,hsla(${hue},${sat}%,${bgLight}%,0.98),hsla(${hue},${sat-10}%,${bgDark}%,0.98))}` }; }
+    function applyGeneratedTheme(theme, iconEl, nameEl) { let styleEl = document.getElementById('generated-theme-style'); if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'generated-theme-style'; document.head.appendChild(styleEl); } styleEl.textContent = theme.styles; document.documentElement.setAttribute('data-theme', theme.id); if (iconEl) iconEl.textContent = theme.icon; if (nameEl) nameEl.textContent = theme.name; localStorage.setItem('robinhood_theme', theme.id); const generatedThemes = JSON.parse(localStorage.getItem('robinhood_generated_themes') || '[]'); if (!generatedThemes.find(t => t.id === theme.id)) { generatedThemes.push(theme); localStorage.setItem('robinhood_generated_themes', JSON.stringify(generatedThemes)); } }
+    return { getThemes, getTheme, applyTheme, generateRandomTheme, applyGeneratedTheme };
+})();
+
+// ========== ОСНОВНОЙ КОД ROBINCALL ==========
 (function(){'use strict';
 const SECURE_STORAGE_KEY = CRYPTO.STORAGE_KEY;
-const MSG_ENCRYPT_KEY = CRYPTO.MSG_KEY;
 const LOCK_KEY = 'robincall_lock_v3';
 const MAX_ATTEMPTS = 3;
 const P2PPONG_URL = 'https://stepweather-prog.github.io/P2PPong/';
@@ -244,9 +312,8 @@ let autoConnectDone = false;
 let audioPool = {}, contactOnlineStatus = {};
 let toggleSoundState = true;
 let voiceRecorder = null, voiceChunks = [], voiceStream = null;
-let voiceTimer = null, voiceStartTime = 0, voiceSeconds = 0, voiceTimerInterval = null;
+let voiceSeconds = 0, voiceTimerInterval = null;
 let currentTheme = localStorage.getItem('robinhood_theme') || 'forest';
-let isUnlocked = false;
 
 try { srv = localStorage.getItem('robinhood_server') || 'render'; } catch (e) { }
 
@@ -294,11 +361,9 @@ function setupLockUI() {
         drawPatternGrid();
         lockSubtitle.textContent = isSettingUp ? 'Нарисуйте ключ' : 'Нарисуйте ключ';
     }
-    lockError.textContent = '';
-    lockActions.style.display = isSettingUp ? 'flex' : 'none';
+    lockError.textContent = ''; lockActions.style.display = isSettingUp ? 'flex' : 'none';
     if (lockForgotBtn) lockForgotBtn.style.display = isSettingUp ? 'none' : 'inline-block';
-    pinInput = ''; patternInput = [];
-    updatePinDots(); drawPatternGrid();
+    pinInput = ''; patternInput = []; updatePinDots(); drawPatternGrid();
 }
 
 function drawNumpad() {
@@ -380,7 +445,7 @@ async function showMasterPasswordPrompt(isSetup = false) {
         dialog.style.cssText = 'background:var(--sheet-bg);border:2px solid var(--border);border-radius:20px;padding:24px;width:85%;max-width:360px;text-align:center;color:var(--text);';
         dialog.innerHTML = `
             <h3 style="color:var(--accent-light);margin-bottom:12px;">${isSetup ? '🔐 Задайте мастер-пароль' : '🔐 Введите мастер-пароль'}</h3>
-            <p style="font-size:0.75em;color:var(--text-dim);margin-bottom:16px;">${isSetup ? 'Пароль защищает ключи шифрования.<br>Без него сообщения не расшифровать.' : 'Введите пароль для расшифровки.'}</p>
+            <p style="font-size:0.75em;color:var(--text-dim);margin-bottom:16px;">${isSetup ? 'Пароль защищает ключи шифрования.' : 'Введите пароль для расшифровки.'}</p>
             <input type="password" id="kek-password-input" placeholder="Мастер-пароль" style="width:100%;padding:12px;margin-bottom:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;outline:none;text-align:center;">
             ${isSetup ? '<input type="password" id="kek-password-confirm" placeholder="Повторите пароль" style="width:100%;padding:12px;margin-bottom:16px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;outline:none;text-align:center;">' : ''}
             <div id="kek-error" style="color:#f44336;font-size:0.75em;min-height:20px;margin-bottom:8px;"></div>
@@ -555,7 +620,7 @@ function initApp() {
     $('setting-contacts').addEventListener('click', () => { settingsSheet.classList.remove('open'); loadContacts(); contactsSheet.classList.add('open'); overlay.classList.add('show'); });
     $('setting-theme').addEventListener('click', () => { const themes = THEMES.getThemes(); const idx = themes.findIndex(t => t.id === currentTheme); THEMES.applyTheme(themes[(idx + 1) % themes.length].id, themeIcon, themeName); currentTheme = localStorage.getItem('robinhood_theme') || 'forest'; });
     $('setting-lock').addEventListener('click', () => { isSettingUp = true; tempPinHash = ''; tempPatternHash = ''; lockScreen.style.display = 'flex'; appContainer.style.display = 'none'; setupLockUI(); });
-    $('setting-clear').addEventListener('click', () => { if (confirm('⚠ Все данные чата будут удалены!\nНик и аватар сохранены.\n\nПродолжить?')) { resetSession(); CRYPTO.secureRemoveItem('robinhood_contacts'); CRYPTO.secureRemoveItem('robinhood_channels_state'); if (contactsListInner) contactsListInner.innerHTML = ''; rMsg('🚬 Всё сжожено!'); } });
+    $('setting-clear').addEventListener('click', async () => { if (confirm('⚠ Все данные чата будут удалены!\nНик и аватар сохранены.\n\nПродолжить?')) { resetSession(); await CRYPTO.secureRemoveItem('robinhood_contacts'); await CRYPTO.secureRemoveItem('robinhood_channels_state'); if (contactsListInner) contactsListInner.innerHTML = ''; rMsg('🚬 Всё сжожено!'); } });
 
     btnMainAction.addEventListener('click', () => { if (!ready) mkQ(); else call(); });
     btnCallMain.addEventListener('click', call);
