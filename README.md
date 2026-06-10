@@ -103,4 +103,4 @@
 
 MIT License
 
-Copyright (c) 2024-2025 stepweather-prog
+Copyright (c) 2026 stepweather-prog
