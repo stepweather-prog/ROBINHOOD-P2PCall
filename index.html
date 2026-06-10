@@ -570,7 +570,7 @@ async function loadContacts() {
     if (confirmed.length) { confirmed.forEach(c => { const div = document.createElement('div'); div.className = 'contact-item'; div.innerHTML = `<div class="contact-info"><span class="online-dot ${contactOnlineStatus[c.pubkey] ? 'online' : 'offline'}"></span><img src="${c.avatar || 'assets/avatars/001-.png'}" class="contact-avatar"><span class="contact-name">${c.name || 'Лучник'}</span></div>`; div.querySelector('.contact-info')?.addEventListener('click', () => { if (c.pubkey) { chId = c.pubkey; ready = true; } contactsSheet.classList.remove('open'); overlay.classList.remove('show'); rMsg('💬 Чат с ' + c.name); }); contactsListInner.appendChild(div); }); } else { rMsg('🏹 Лучников нет!'); }
 }
 
-function initApp() {
+async function initApp() {
     pongFrame = $('pong-frame'); robinMessage = $('robin-message'); callTimer = $('call-timer');
     connectionDot = $('connection-dot'); connectionLabel = $('connection-label');
     btnMainAction = $('btn-main-action'); btnAnswer = $('btn-answer'); btnReject = $('btn-reject');
