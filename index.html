@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>RobinCall v3.9</title>
+    <title>RobinCall v4.0</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/avatars/001-.png">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; media-src 'self' blob:; connect-src 'self' https://p2ppong.onrender.com https://robincall.stephanclaps-491.workers.dev https://stepweather-prog.github.io blob:; img-src 'self' data: blob:;">
@@ -211,25 +211,20 @@ const SECURE_STORAGE_KEY='robincall_secure_v3';
 const MSG_ENCRYPT_KEY='robincall_msg_key_v1';
 let msgEncryptKey=null;
 
-// ========== IndexedDB ==========
 function openDB(){return new Promise((resolve,reject)=>{const request=indexedDB.open('RobinCallSecure',1);request.onupgradeneeded=()=>{request.result.createObjectStore('keys',{keyPath:'id'})};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
 async function getMsgKey(){if(msgEncryptKey)return msgEncryptKey;try{const db=await openDB();return new Promise(async(resolve)=>{const tx=db.transaction('keys','readonly');const store=tx.objectStore('keys');const getReq=store.get(MSG_ENCRYPT_KEY);getReq.onsuccess=async()=>{if(getReq.result){const bytes=Uint8Array.from(atob(getReq.result.value),c=>c.charCodeAt(0));msgEncryptKey=await crypto.subtle.importKey('raw',bytes,{name:'AES-GCM'},false,['encrypt','decrypt'])}else{const key=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);const exported=await crypto.subtle.exportKey('raw',key);const raw=btoa(String.fromCharCode(...new Uint8Array(exported)));const tx2=db.transaction('keys','readwrite');tx2.objectStore('keys').put({id:MSG_ENCRYPT_KEY,value:raw});msgEncryptKey=key}resolve(msgEncryptKey)}})}catch(e){return null}}
 async function encryptMsg(text){try{const key=await getMsgKey();if(!key)return text;const iv=crypto.getRandomValues(new Uint8Array(12));const enc=new TextEncoder().encode(text);const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,enc);const combined=new Uint8Array(iv.length+new Uint8Array(ct).length);combined.set(iv);combined.set(new Uint8Array(ct),iv.length);return'🔐'+btoa(String.fromCharCode(...combined))}catch(e){return text}}
 async function decryptMsg(text){if(!text||!text.startsWith('🔐'))return text;try{const key=await getMsgKey();if(!key)return text;const combined=Uint8Array.from(atob(text.slice(2)),c=>c.charCodeAt(0));const iv=combined.slice(0,12);const ct=combined.slice(12);const dec=await crypto.subtle.decrypt({name:"AES-GCM",iv},key,ct);return new TextDecoder().decode(dec)}catch(e){return text}}
 
-// ========== ECDH ==========
 async function doECDH(channelId){try{const ourKeyPair=await crypto.subtle.generateKey({name:'ECDH',namedCurve:'P-256'},true,['deriveKey','deriveBits']);const ourPubKey=await crypto.subtle.exportKey('raw',ourKeyPair.publicKey);const ourPubKeyB64=btoa(String.fromCharCode(...new Uint8Array(ourPubKey)));send({action:'send',text:'__ECDH__'+ourPubKeyB64,channelId});return new Promise((resolve)=>{const handler=async(e)=>{if(e.data&&e.data.text&&e.data.text.startsWith('__ECDH__')){const theirPubKeyB64=e.data.text.replace('__ECDH__','');const theirPubKeyBytes=Uint8Array.from(atob(theirPubKeyB64),c=>c.charCodeAt(0));const theirPubKey=await crypto.subtle.importKey('raw',theirPubKeyBytes,{name:'ECDH',namedCurve:'P-256'},false,[]);const sharedSecret=await crypto.subtle.deriveBits({name:'ECDH',public:theirPubKey},ourKeyPair.privateKey,256);const newKey=await crypto.subtle.importKey('raw',sharedSecret,{name:'AES-GCM'},false,['encrypt','decrypt']);msgEncryptKey=newKey;const db=await openDB();const exported=await crypto.subtle.exportKey('raw',newKey);const raw=btoa(String.fromCharCode(...new Uint8Array(exported)));const tx=db.transaction('keys','readwrite');tx.objectStore('keys').put({id:MSG_ENCRYPT_KEY,value:raw});window.removeEventListener('message',handler);resolve(newKey)}};window.addEventListener('message',handler)})}catch(e){return null}}
 
-// ========== Safety Number ==========
 function showSafety(pc){const el=$('safety-number');const code=$('safety-code');if(el&&code&&pc.remoteDescription){const fp=pc.remoteDescription.sdp.match(/a=fingerprint:sha-256\s+([A-F0-9:]+)/i);if(fp&&fp[1]){const nums=fp[1].replace(/[^0-9]/g,'').slice(0,6);code.textContent=nums.slice(0,3)+' '+nums.slice(3,6);el.style.display='block';setTimeout(()=>{el.style.display='none'},8000)}}}
 
-// ========== Хранилище ==========
 async function getStorageKey(){let kb=localStorage.getItem(SECURE_STORAGE_KEY);if(!kb){const k=await crypto.subtle.generateKey({name:"AES-GCM",length:256},true,["encrypt","decrypt"]);const r=await crypto.subtle.exportKey("raw",k);kb=btoa(String.fromCharCode(...new Uint8Array(r)));localStorage.setItem(SECURE_STORAGE_KEY,kb);return k}const r=Uint8Array.from(atob(kb),c=>c.charCodeAt(0));return await crypto.subtle.importKey("raw",r,{name:"AES-GCM"},false,["encrypt","decrypt"])}
 async function secureSetItem(key,value){try{const sk=await getStorageKey();const iv=crypto.getRandomValues(new Uint8Array(12));const enc=new TextEncoder().encode(JSON.stringify(value));const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},sk,enc);const combined=new Uint8Array(iv.length+new Uint8Array(ct).length);combined.set(iv);combined.set(new Uint8Array(ct),iv.length);localStorage.setItem(key,btoa(String.fromCharCode(...combined)))}catch(e){}}
 async function secureGetItem(key){try{const stored=localStorage.getItem(key);if(!stored)return null;const sk=await getStorageKey();const combined=Uint8Array.from(atob(stored),c=>c.charCodeAt(0));const iv=combined.slice(0,12);const ct=combined.slice(12);const dec=await crypto.subtle.decrypt({name:"AES-GCM",iv},sk,ct);return JSON.parse(new TextDecoder().decode(dec))}catch(e){return null}}
 function secureRemoveItem(key){localStorage.removeItem(key)}
 
-// ========== Блокировка ==========
 const LOCK_KEY='robincall_lock_v3',MAX_ATTEMPTS=3;
 let lockType=null,lockPinHash='',lockPatternHash='',pinInput='',patternInput=[],isSettingUp=false,tempPinHash='',tempPatternHash='',failedAttempts=0;
 const lockScreen=$('lock-screen'),appContainer=$('app-container'),lockSubtitle=$('lock-subtitle'),lockPinDots=$('lock-pin-dots'),lockNumpad=$('lock-numpad'),lockPatternCanvas=$('lock-pattern-canvas'),lockError=$('lock-error'),lockActions=$('lock-actions'),lockForgotBtn=$('lock-forgot');
@@ -257,7 +252,6 @@ $('lock-reset')?.addEventListener('click',()=>{tempPinHash='';tempPatternHash=''
 $('lock-skip')?.addEventListener('click',()=>{isSettingUp=false;tempPinHash='';tempPatternHash='';unlock()});
 $('lock-forgot')?.addEventListener('click',forgotPassword);
 
-// ========== КОНФИГУРАЦИЯ ==========
 const P2PPONG_URL='https://stepweather-prog.github.io/P2PPong/',RENDER_SERVER='https://p2ppong.onrender.com',WORKERS_URL='https://robincall.stephanclaps-491.workers.dev';
 let pongFrame,robinMessage,callTimer,connectionDot,connectionLabel,btnMainAction,btnAnswer,btnReject,btnEndCall,btnMic,btnSpeaker,btnCallMain,btnVideoCircle,btnVoice,incomingRow,activeRow,audioControls,volumeControls,refModal,refLinkDisplay,avatarSelector,avatarList,overlay,profileAvatarSmall,nickLabel,nickModal,nickInput,contactsSheet,contactsListInner,settingsSheet,toggleSound,toggleServer,themeIcon,themeName,serverLabel;
 let voiceTimerOverlay,videoCirclePlayer,videoCircleVideo,videoCircleClose;
@@ -311,7 +305,14 @@ function ui(s){btnMainAction.classList.remove('hidden');incomingRow.classList.ad
 const avatars=['assets/avatars/001-.png','assets/avatars/002--1.png','assets/avatars/003-icon-8033085.png','assets/avatars/009--7.png','assets/avatars/010--8.png','assets/avatars/018--16.png','assets/avatars/022--20.png','assets/avatars/037--35.png','assets/avatars/043--41.png','assets/avatars/048--46.png','assets/avatars/050--48.png','assets/avatars/052--50.png','assets/avatars/053--51.png','assets/avatars/056--54.png','assets/avatars/066--64.png','assets/avatars/077-icon-8033092.png','assets/avatars/083-icon-11885568.png','assets/avatars/094-icon-18926716.png','assets/avatars/108--83.png','assets/avatars/147-icon-6081840.png','assets/avatars/148-icon-5532632.png','assets/avatars/149-icon-4132697.png','assets/avatars/150-icon-10756654.png','assets/avatars/153-icon-4964924.png','assets/avatars/154-icon-4261075.png','assets/avatars/156-icon-4132828.png','assets/avatars/158--116.png','assets/avatars/160-icon-2332597.png','assets/avatars/162-icon-6237595.png','assets/avatars/167-icon-1920840.png','assets/avatars/168-icon-228268.png','assets/avatars/169-icon-5613167.png','assets/avatars/173-icon-1615623.png','assets/avatars/183-icon-5840846.png','assets/avatars/186-icon-6237499.png','assets/avatars/188-icon-6267517.png','assets/avatars/203-icon-3516506.png','assets/avatars/216-icon-5504960.png','assets/avatars/221-icon-9530256.png','assets/avatars/226-icon-9669507.png','assets/avatars/227-icon-9623471.png','assets/avatars/229-icon-10032172.png','assets/avatars/230-icon-10049316.png','assets/avatars/232-icon-11434002.png','assets/avatars/234-icon-10756328.png','assets/avatars/245-icon-16150697.png','assets/avatars/246-icon-16150730.png','assets/avatars/249-icon-17159913.png','assets/avatars/250-icon-17159758.png','assets/avatars/251-icon-17159744.png','assets/avatars/253-icon-18426073.png','assets/avatars/254-icon-18621065.png','assets/avatars/255-icon-18926692.png','assets/avatars/256--120.png'];
 function loadAvatars(){if(!avatarList)return;avatarList.innerHTML='';avatars.forEach(src=>{const img=document.createElement('img');img.src=src;img.className='avatar-option';img.addEventListener('error',()=>{img.src='assets/avatars/001-.png'});img.addEventListener('click',()=>{if(profileAvatarSmall)profileAvatarSmall.src=src;const ra=$('robin-avatar');if(ra)ra.src=src;localStorage.setItem('robinhood_avatar',src);avatarSelector.classList.remove('show');overlay.classList.remove('show');rMsg('🖼 Аватар обновлён')});avatarList.appendChild(img)})}
 
-function loadContacts(){if(!contactsListInner)return;const contacts=JSON.parse(localStorage.getItem('robinhood_contacts')||'[]').filter(c=>c.status==='confirmed');contactsListInner.innerHTML='';if(contacts.length){contacts.forEach(c=>{const div=document.createElement('div');div.className='contact-item';div.innerHTML=`<div class="contact-info"><span class="online-dot ${contactOnlineStatus[c.pubkey]?'online':'offline'}"></span><img src="${c.avatar||'assets/avatars/001-.png'}" class="contact-avatar"><span class="contact-name">${c.name||'Лучник'}</span></div>`;div.querySelector('.contact-info')?.addEventListener('click',()=>{if(c.pubkey){chId=c.pubkey;ready=true}contactsSheet.classList.remove('open');overlay.classList.remove('show');rMsg('💬 Чат с '+c.name)});contactsListInner.appendChild(div)})}else{rMsg('🏹 Лучников нет!')}}
+// ========== ЗАШИФРОВАННЫЕ КОНТАКТЫ ==========
+async function loadContacts(){
+    if(!contactsListInner)return;
+    const contacts=await secureGetItem('robinhood_contacts')||[];
+    const confirmed=contacts.filter(c=>c.status==='confirmed');
+    contactsListInner.innerHTML='';
+    if(confirmed.length){confirmed.forEach(c=>{const div=document.createElement('div');div.className='contact-item';div.innerHTML=`<div class="contact-info"><span class="online-dot ${contactOnlineStatus[c.pubkey]?'online':'offline'}"></span><img src="${c.avatar||'assets/avatars/001-.png'}" class="contact-avatar"><span class="contact-name">${c.name||'Лучник'}</span></div>`;div.querySelector('.contact-info')?.addEventListener('click',()=>{if(c.pubkey){chId=c.pubkey;ready=true}contactsSheet.classList.remove('open');overlay.classList.remove('show');rMsg('💬 Чат с '+c.name)});contactsListInner.appendChild(div)})}else{rMsg('🏹 Лучников нет!')}
+}
 
 function initApp(){
     pongFrame=$('pong-frame');robinMessage=$('robin-message');callTimer=$('call-timer');connectionDot=$('connection-dot');connectionLabel=$('connection-label');
@@ -347,7 +348,7 @@ function initApp(){
     $('setting-contacts').addEventListener('click',()=>{settingsSheet.classList.remove('open');loadContacts();contactsSheet.classList.add('open');overlay.classList.add('show')});
     $('setting-theme').addEventListener('click',()=>{const idx=themes.findIndex(t=>t.id===currentTheme);applyTheme(themes[(idx+1)%themes.length].id)});
     $('setting-lock').addEventListener('click',()=>{isSettingUp=true;tempPinHash='';tempPatternHash='';lockScreen.style.display='flex';appContainer.style.display='none';setupLockUI()});
-    $('setting-clear').addEventListener('click',()=>{if(confirm('⚠ Все данные чата будут удалены!\nНик и аватар сохранены.\n\nПродолжить?')){resetSession();localStorage.removeItem('robinhood_contacts');localStorage.removeItem('robinhood_channels_state');if(contactsListInner)contactsListInner.innerHTML='';rMsg('🚬 Всё сожжено!')}});
+    $('setting-clear').addEventListener('click',()=>{if(confirm('⚠ Все данные чата будут удалены!\nНик и аватар сохранены.\n\nПродолжить?')){resetSession();secureRemoveItem('robinhood_contacts');secureRemoveItem('robinhood_channels_state');if(contactsListInner)contactsListInner.innerHTML='';rMsg('🚬 Всё сожжено!')}});
 
     btnMainAction.addEventListener('click',()=>{if(!ready)mkQ();else call()});
     btnCallMain.addEventListener('click',call);
@@ -381,8 +382,7 @@ function initApp(){
         else if(d.type==='channel-open'){
             chId=d.channelId;sec=d.secret;ready=!0;
             doECDH(d.channelId);
-            const contacts=JSON.parse(localStorage.getItem('robinhood_contacts')||'[]');
-            if(!contacts.find(c=>c.pubkey===d.channelId)){contacts.push({pubkey:d.channelId,name:'Лучник',avatar:'assets/avatars/001-.png',status:'confirmed'});localStorage.setItem('robinhood_contacts',JSON.stringify(contacts))}
+            (async()=>{const contacts=await secureGetItem('robinhood_contacts')||[];if(!contacts.find(c=>c.pubkey===d.channelId)){contacts.push({pubkey:d.channelId,name:'Лучник',avatar:'assets/avatars/001-.png',status:'confirmed'});await secureSetItem('robinhood_contacts',contacts)}})();
             rMsg('✅ Подключено!');conn('online');ui('ready');contactOnlineStatus[d.channelId]=true
         }
         else if(d.type==='message'&&d.text){
@@ -403,6 +403,23 @@ function initApp(){
     const secWarning=$('setting-security-info');
     if(secWarning){secWarning.addEventListener('click',function(e){e.stopPropagation();this.style.display='none';localStorage.setItem('robincall_security_hidden','true')})}
     if(localStorage.getItem('robincall_security_hidden')==='true'&&secWarning)secWarning.style.display='none';
+
+    // ========== АВТООБНОВЛЕНИЕ ==========
+    if('serviceWorker' in navigator){
+        navigator.serviceWorker.register('/sw.js').catch(()=>{});
+        navigator.serviceWorker.addEventListener('message',(event)=>{if(event.data&&event.data.type==='update-available'){showUpdateButton()}});
+    }
+    function showUpdateButton(){
+        const existingBtn=document.getElementById('update-btn');if(existingBtn)return;
+        const btn=document.createElement('button');btn.id='update-btn';btn.textContent='📲 Обновить';
+        btn.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--accent);color:#1a1f0f;padding:10px 20px;border-radius:20px;border:none;font-weight:bold;z-index:999;cursor:pointer;';
+        btn.onclick=()=>{navigator.serviceWorker.controller.postMessage({type:'apply-update'});btn.remove();const laterBtn=document.getElementById('update-later');if(laterBtn)laterBtn.remove()};
+        const later=document.createElement('button');later.id='update-later';later.textContent='⏭ Позже';
+        later.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:var(--btn-bg);color:var(--text);padding:6px 16px;border-radius:14px;border:1px solid var(--border);font-size:0.7em;z-index:999;cursor:pointer;';
+        later.onclick=()=>{btn.remove();later.remove();rMsg('🏹 Обновление отложено')};
+        document.body.appendChild(btn);document.body.appendChild(later);
+        rMsg('🔄 Новая версия RobinCall!');
+    }
 
     chkSrv().then(()=>{if(online){ui('idle');rMsg('🏹 Готов!')}else{rMsg('⚠ Сервер офлайн')}});
     window.addEventListener('beforeunload',()=>{if(active)send({action:'send',text:'__HANGUP__',channelId:chId});if(pc)pc.close();if(stream)stream.getTracks().forEach(t=>t.stop())});
