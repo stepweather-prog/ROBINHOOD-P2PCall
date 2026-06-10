@@ -682,7 +682,7 @@ async function initApp() {
     const lockSetting = $('setting-lock'); if (lockSetting) lockSetting.after(kekItem);
 
     // ========== АВТООБНОВЛЕНИЕ ==========
-    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(() => { }); navigator.serviceWorker.addEventListener('message', (event) => { if (event.data && event.data.type === 'update-available') { showUpdateButton(); } }); }
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => { }); navigator.serviceWorker.addEventListener('message', (event) => { if (event.data && event.data.type === 'update-available') { showUpdateButton(); } }); }
     function showUpdateButton() {
         const existingBtn = document.getElementById('update-btn'); if (existingBtn) return;
         const btn = document.createElement('button'); btn.id = 'update-btn'; btn.textContent = '📲 Обновить';
