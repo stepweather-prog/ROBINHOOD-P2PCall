@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Шервудский Рог</title>
+    <title>RobinCall</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/avatars/001-.png">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; media-src 'self' blob:; connect-src 'self' https://p2ppong.onrender.com https://robincall.stephanclaps-491.workers.dev https://stepweather-prog.github.io blob:; img-src 'self' data: blob:;">
@@ -37,7 +37,6 @@
         body::after { content:""; position:fixed; top:0; left:0; width:100%; height:100%; background:radial-gradient(circle at 50% 50%, rgba(30,40,25,0.6), rgba(10,20,8,0.9)); z-index:0; }
 
         #lock-screen { position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%); }
-        #lock-screen::before { content:""; position:fixed; top:0; left:0; width:100%; height:100%; background-image:url('assets/background.webp'); background-size:cover; background-position:center; background-repeat:no-repeat; z-index:-1; opacity:0.3; }
         .lock-title { font-size:1.3em; font-weight:bold; background:linear-gradient(135deg, var(--accent-light), var(--accent)); -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:16px; }
         .lock-subtitle { color:var(--text-dim); font-size:0.8em; margin-bottom:8px; }
         .lock-tabs { display:flex; gap:0; margin-bottom:16px; border-radius:10px; overflow:hidden; border:1px solid var(--border); }
@@ -53,13 +52,11 @@
         .lock-num.del { font-size:0.9em; }
         .lock-pattern-canvas { border:2px solid var(--border); border-radius:14px; background:rgba(0,0,0,0.3); touch-action:none; }
         .lock-error { color:#f44336; font-size:0.75em; margin-top:6px; min-height:18px; }
-        .lock-setup-hint { color:var(--text-dim); font-size:0.7em; margin-top:6px; }
         .lock-actions { display:flex; gap:8px; margin-top:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
         .lock-actions button { padding:6px 14px; border-radius:8px; border:1px solid var(--border); background:var(--btn-bg); color:var(--text); cursor:pointer; font-size:0.75em; }
         .lock-forgot-btn { border-color:#f44336 !important; color:#f44336 !important; background:rgba(244,67,54,0.1) !important; }
 
-        .header { background:linear-gradient(135deg, rgba(25,35,20,0.96), rgba(15,25,12,0.98)); border-bottom:3px solid var(--border); backdrop-filter:blur(8px); z-index:10; padding:6px 10px; display:flex; flex-direction:column; gap:4px; box-shadow:0 4px 20px rgba(0,0,0,0.3), inset 0 -1px 0 rgba(196,162,75,0.2); }
-        .header::after { content:''; position:absolute; bottom:-3px; left:0; width:100%; height:3px; background:linear-gradient(90deg, transparent 0%, var(--accent) 15%, var(--accent-light) 50%, var(--accent) 85%, transparent 100%); opacity:0.5; }
+        .header { background:linear-gradient(135deg, rgba(25,35,20,0.96), rgba(15,25,12,0.98)); border-bottom:3px solid var(--border); backdrop-filter:blur(8px); z-index:10; padding:6px 10px; display:flex; flex-direction:column; gap:4px; box-shadow:0 4px 20px rgba(0,0,0,0.3); }
         .header-top { display:flex; align-items:center; gap:6px; }
         .header-title { font-size:1em; font-weight:bold; background:linear-gradient(135deg, var(--accent-light), var(--accent)); -webkit-background-clip:text; background-clip:text; color:transparent; }
         .header-status { margin-left:auto; display:flex; align-items:center; gap:4px; font-size:0.6em; color:var(--text-dim); }
@@ -83,26 +80,22 @@
         .call-timer { font-size:1.4em; font-weight:bold; color:#4caf50; font-family:monospace; }
         .btn-round { width:70px; height:70px; border-radius:50%; border:3px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.3s; background:var(--btn-bg); font-size:28px; }
         .btn-round:hover { background:var(--btn-hover); box-shadow:0 0 30px rgba(196,162,75,0.4); transform:scale(1.08); }
-        .btn-round img { width:100%; height:100%; object-fit:contain; padding:11px; }
         .btn-call { border-color:#4caf50; }
         .btn-hangup { border-color:#f44336; background:rgba(244,67,54,0.2); }
-        .btn-main { width:90px; height:90px; border-radius:50%; border:3px solid var(--accent); cursor:pointer; background:linear-gradient(180deg, rgba(196,162,75,0.9) 0%, rgba(139,90,43,0.95) 100%); display:flex; align-items:center; justify-content:center; transition:all 0.3s; font-size:36px; color:#1a1f0f; text-shadow:0 1px 0 rgba(255,255,255,0.2); box-shadow:0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15); }
+        .btn-main { width:90px; height:90px; border-radius:50%; border:3px solid var(--accent); cursor:pointer; background:linear-gradient(180deg, rgba(196,162,75,0.9) 0%, rgba(139,90,43,0.95) 100%); display:flex; align-items:center; justify-content:center; transition:all 0.3s; font-size:36px; color:#1a1f0f; box-shadow:0 4px 12px rgba(0,0,0,0.3); }
         .btn-main:hover { box-shadow:0 0 35px rgba(196,162,75,0.5); transform:scale(1.08); }
-        .btn-main img { width:100%; height:100%; object-fit:contain; padding:14px; }
         .hidden { display:none!important; }
         .controls-row { display:flex; gap:18px; align-items:center; justify-content:center; }
 
         .voice-timer-overlay { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.9); color:#f44336; font-family:monospace; font-size:1.2em; padding:10px 20px; border-radius:12px; z-index:50; pointer-events:none; border:2px solid #f44336; }
-
         .video-circle-player { position:fixed; top:0; left:0; width:100%; height:100%; z-index:400; background:#000; display:none; justify-content:center; align-items:center; }
         .video-circle-player video { max-width:100%; max-height:100%; }
         .video-circle-close { position:absolute; top:16px; right:16px; width:44px; height:44px; border-radius:50%; background:rgba(244,67,54,0.8); border:2px solid #f44336; color:white; font-size:22px; cursor:pointer; z-index:401; display:flex; align-items:center; justify-content:center; }
 
         .bottom-sheet, .avatar-selector { position:fixed; top:0; left:0; width:min(85%, 320px); height:100%; background:var(--sheet-bg); border-right:2px solid var(--border); z-index:200; transform:translateX(-100%); transition:transform 0.3s ease; overflow-y:auto; backdrop-filter:blur(16px); box-shadow:8px 0 30px rgba(0,0,0,0.5); }
         .bottom-sheet.open, .avatar-selector.show { transform:translateX(0); }
-        .bottom-sheet-header { padding:14px 14px 8px; font-weight:bold; color:var(--accent-light); border-bottom:1px solid var(--border); margin-bottom:4px; font-size:0.9em; display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.2); }
+        .bottom-sheet-header { padding:14px 14px 8px; font-weight:bold; color:var(--accent-light); border-bottom:1px solid var(--border); font-size:0.9em; display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.2); }
         .bottom-sheet-close { background:none; border:none; color:var(--accent-light); font-size:20px; cursor:pointer; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
-        .bottom-sheet-close:hover { background:var(--btn-hover); }
         .bottom-sheet-list { padding:4px 10px; }
         .contact-item { display:flex; align-items:center; justify-content:space-between; padding:8px; margin:4px 0; border-radius:10px; background:rgba(255,245,215,0.05); border:1px solid var(--btn-border); cursor:pointer; color:var(--text); }
         .contact-item:hover { background:var(--btn-hover); border-color:var(--accent); }
@@ -123,12 +116,12 @@
 
         .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:300; justify-content:center; align-items:center; }
         .modal-overlay.active { display:flex; }
-        .modal-dialog { background:var(--sheet-bg); padding:18px; border-radius:8px 20px 8px 20px; width:85%; max-width:320px; text-align:center; border:3px solid var(--border); box-shadow:0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(196,162,75,0.1); }
+        .modal-dialog { background:var(--sheet-bg); padding:18px; border-radius:8px 20px 8px 20px; width:85%; max-width:320px; text-align:center; border:3px solid var(--border); box-shadow:0 8px 30px rgba(0,0,0,0.5); }
         .modal-dialog h3 { color:var(--accent-light); margin:0 0 10px; }
         .modal-dialog input { width:100%; padding:8px; margin-bottom:8px; background:rgba(30,25,15,0.9); border:1px solid rgba(196,162,75,0.4); border-radius:8px; color:#d4c5a0; font-family:'Georgia','Segoe UI',serif; font-size:14px; outline:none; }
         .modal-dialog .modal-btns { display:flex; gap:6px; }
         .modal-dialog .modal-btns button { flex:1; padding:8px; border:none; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; }
-        .btn-primary { background:linear-gradient(180deg, rgba(196,162,75,0.9) 0%, rgba(139,90,43,0.95) 100%); color:#1a1f0f; text-shadow:0 1px 0 rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.1); }
+        .btn-primary { background:linear-gradient(180deg, rgba(196,162,75,0.9) 0%, rgba(139,90,43,0.95) 100%); color:#1a1f0f; border:1px solid rgba(255,255,255,0.1); }
         .btn-dark { background:#4a3a2a; color:#eee; }
         .code-display { background:#0a1208; border:1px solid var(--border); color:var(--accent-light); border-radius:8px; padding:8px; font-size:0.65em; word-break:break-all; margin:10px 0; font-family:monospace; user-select:all; }
 
@@ -140,14 +133,11 @@
         .toggle-switch input:checked + .toggle-slider:before { transform:translateX(18px); background:white; }
 
         #pong-frame { display:none !important; position:fixed !important; top:-9999px !important; left:-9999px !important; width:1px !important; height:1px !important; opacity:0 !important; pointer-events:none !important; visibility:hidden !important; border:none !important; z-index:-1 !important; }
-
         .volume-slider-container { display:flex; align-items:center; gap:8px; margin:4px 0; justify-content:center; }
         .volume-slider-container label { font-size:0.7em; color:var(--text-dim); min-width:50px; }
         .volume-slider-container input[type=range] { width:100px; accent-color:var(--accent); }
         #safety-number { display:none; font-size:0.85em; color:var(--accent-light); margin-bottom:4px; font-family:monospace; letter-spacing:2px; }
         .security-warning { border:1px solid #f44336 !important; background:rgba(244,67,54,0.08) !important; cursor:pointer; }
-        .security-warning .contact-name { color:#f44336 !important; }
-
         @keyframes callPulse { 0%,100%{box-shadow:0 0 0 0 rgba(76,175,80,0.5)} 50%{box-shadow:0 0 0 20px rgba(76,175,80,0)} }
         .btn-call-incoming { animation:callPulse 1.5s infinite; }
         @keyframes leafFall { 0%{transform:translateY(-10vh) rotate(0deg);opacity:0} 10%{opacity:0.6} 90%{opacity:0.4} 100%{transform:translateY(110vh) rotate(720deg);opacity:0} }
@@ -156,7 +146,7 @@
 </head>
 <body>
 <div id="lock-screen">
-    <div class="lock-title">🏹 Шервудский Рог</div>
+    <div class="lock-title">🏹 RobinCall</div>
     <div class="lock-subtitle" id="lock-subtitle">Введите ключ от ворот</div>
     <div class="lock-tabs" id="lock-tabs"><button class="lock-tab active" data-tab="pin">🔢 Ключ</button><button class="lock-tab" data-tab="pattern">🔐 Узор</button></div>
     <div id="lock-pin-section"><div class="lock-pin-dots" id="lock-pin-dots"><div class="lock-pin-dot"></div><div class="lock-pin-dot"></div><div class="lock-pin-dot"></div><div class="lock-pin-dot"></div></div><div class="lock-numpad" id="lock-numpad"></div><div class="lock-setup-hint" id="lock-pin-hint"></div></div>
@@ -167,7 +157,7 @@
 
 <div id="app-container" style="display:none;flex-direction:column;height:100%;">
 <div class="header">
-    <div class="header-top"><span class="header-title">🏹 Шервудский Рог</span><div class="header-status"><span class="connection-dot checking" id="connection-dot"></span><span id="connection-label">Проверка...</span></div></div>
+    <div class="header-top"><span class="header-title">🏹 RobinCall</span><div class="header-status"><span class="connection-dot checking" id="connection-dot"></span><span id="connection-label">Проверка...</span></div></div>
     <div class="header-btns">
         <div class="header-btn" id="btn-avatar-menu"><img src="assets/avatars/001-.png" class="header-avatar" id="profile-avatar-small" alt="avatar"></div>
         <div class="header-btn" id="btn-call-main"><span>📞</span></div>
@@ -175,11 +165,11 @@
         <div class="header-btn" id="btn-voice"><span>🎤</span></div>
         <div class="header-btn" id="btn-settings"><span>⚙️</span></div>
     </div>
-    <div class="header-labels"><span class="header-label" id="nick-label">Лучник</span><span class="header-label">Рог</span><span class="header-label">Глаз</span><span class="header-label">Голос</span><span class="header-label" id="settings-label">Опции</span></div>
+    <div class="header-labels"><span class="header-label" id="nick-label">Ник</span><span class="header-label">Рог</span><span class="header-label">Глаз</span><span class="header-label">Голос</span><span class="header-label" id="settings-label">Опции</span></div>
 </div>
 
 <div class="main-area">
-    <div class="robin-row"><img src="assets/avatars/231-icon-11433690.png" class="robin-avatar" alt="Robin" onerror="this.src='assets/avatars/001-.png';"><div><div style="font-weight:900;font-size:0.85em;">Робин Гуд</div><div class="robin-text" id="robin-message">Рог готов!</div></div></div>
+    <div class="robin-row"><img src="assets/avatars/231-icon-11433690.png" class="robin-avatar" alt="Robin" onerror="this.src='assets/avatars/001-.png';"><div><div style="font-weight:900;font-size:0.85em;">Robin Hood</div><div class="robin-text" id="robin-message">Колчан готов!</div></div></div>
     <div class="call-timer hidden" id="call-timer">00:00</div>
     <div id="safety-number">🔒 Код стражи: <span id="safety-code">--- ---</span></div>
     <button class="btn-main" id="btn-main-action"><span>🏹</span></button>
@@ -199,26 +189,26 @@
 <div class="video-circle-player" id="video-circle-player"><button class="video-circle-close" id="video-circle-close">✕</button><video id="video-circle-video" controls autoplay playsinline></video></div>
 
 <div class="modal-overlay" id="ref-modal"><div class="modal-dialog"><h3>🏹 Колчан готов!</h3><div class="code-display" id="ref-link-display"></div><button class="btn-primary" id="btn-copy-link-modal">📋 Копировать</button><button class="btn-primary" id="btn-share-link">📤 Отправить ворона</button><button class="btn-dark" id="btn-close-modal">Закрыть</button></div></div>
-<div class="modal-overlay" id="nick-modal"><div class="modal-dialog"><h3>🏷 Лесное имя</h3><input type="text" id="nick-input" placeholder="Ваше имя (макс. 12 знаков)" maxlength="12" autocomplete="off"><div class="modal-btns"><button class="btn-dark" id="btn-nick-cancel">Отмена</button><button class="btn-primary" id="btn-nick-save">✓ Сохранить</button></div></div></div>
+<div class="modal-overlay" id="nick-modal"><div class="modal-dialog"><h3>🏷 Сменить ник</h3><input type="text" id="nick-input" placeholder="Ваш ник (макс. 12 символов)" maxlength="12" autocomplete="off"><div class="modal-btns"><button class="btn-dark" id="btn-nick-cancel">Отмена</button><button class="btn-primary" id="btn-nick-save">✓ Сохранить</button></div></div></div>
 
-<div class="bottom-sheet" id="contacts-sheet"><div class="bottom-sheet-header"><span>🏹 Отряд лучников</span><button class="bottom-sheet-close" id="contacts-close">✕</button></div><div class="bottom-sheet-list" id="contacts-list-inner"></div></div>
-<div class="bottom-sheet" id="settings-sheet"><div class="bottom-sheet-header"><span>⚙️ Лесные настройки</span><button class="bottom-sheet-close" id="settings-close">✕</button></div><div class="bottom-sheet-list" id="settings-list-inner">
-    <div class="contact-item" id="setting-contacts"><div class="contact-info"><span style="font-size:20px;">🏹</span><span class="contact-name">Отряд</span></div><span style="color:var(--text-dim);">→</span></div>
+<div class="bottom-sheet" id="contacts-sheet"><div class="bottom-sheet-header"><span>🏹 Лучники</span><button class="bottom-sheet-close" id="contacts-close">✕</button></div><div class="bottom-sheet-list" id="contacts-list-inner"></div></div>
+<div class="bottom-sheet" id="settings-sheet"><div class="bottom-sheet-header"><span>⚙️ Опции</span><button class="bottom-sheet-close" id="settings-close">✕</button></div><div class="bottom-sheet-list" id="settings-list-inner">
+    <div class="contact-item" id="setting-contacts"><div class="contact-info"><span style="font-size:20px;">🏹</span><span class="contact-name">Лучники</span></div><span style="color:var(--text-dim);">→</span></div>
     <div class="contact-item" id="setting-sound"><div class="contact-info"><span style="font-size:20px;">🔔</span><span class="contact-name">Звук</span></div><label class="toggle-switch"><input type="checkbox" id="toggle-sound" checked><span class="toggle-slider"></span></label></div>
     <div class="contact-item" id="setting-theme"><div class="contact-info"><span style="font-size:20px;" id="theme-icon">🌲</span><span class="contact-name">Тема</span></div><span id="theme-name" style="color:var(--text-dim);">Лес</span></div>
-    <div class="contact-item" id="setting-server"><div class="contact-info"><span style="font-size:20px;">🌐</span><span class="contact-name">Телеграф</span></div><div style="display:flex;align-items:center;gap:6px;"><span id="server-label" style="color:var(--text-dim);font-size:0.65em;">Render</span><label class="toggle-switch"><input type="checkbox" id="toggle-server"><span class="toggle-slider"></span></label></div></div>
-    <div class="contact-item" id="setting-lock"><div class="contact-info"><span style="font-size:20px;">🔐</span><span class="contact-name">Ворота</span></div><span id="lock-status">Не задан</span></div>
+    <div class="contact-item" id="setting-server"><div class="contact-info"><span style="font-size:20px;">🌐</span><span class="contact-name">Сервер</span></div><div style="display:flex;align-items:center;gap:6px;"><span id="server-label" style="color:var(--text-dim);font-size:0.65em;">Render</span><label class="toggle-switch"><input type="checkbox" id="toggle-server"><span class="toggle-slider"></span></label></div></div>
+    <div class="contact-item" id="setting-lock"><div class="contact-info"><span style="font-size:20px;">🔐</span><span class="contact-name">Блокировка</span></div><span id="lock-status">Не задан</span></div>
     <div class="contact-item" id="setting-clear"><div class="contact-info"><span style="font-size:20px;">🚬</span><span class="contact-name">Костёр (сброс)</span></div><span style="color:#f44336;font-size:0.7em;">Опасно</span></div>
     <div class="contact-item security-warning" id="setting-security-info"><div class="contact-info"><span style="font-size:20px;">⚠️</span><div><div class="contact-name">Безопасность</div><div style="font-size:0.55em;color:var(--text-dim);">Мы не рассылаем APK!<br>Установка только через браузер.<br>Нажмите чтобы скрыть</div></div></div><span>🛡️</span></div>
 </div></div>
 
-<div class="avatar-selector" id="avatar-selector"><p>🏹 Выбери портрет 🏹</p><div id="avatar-list"></div></div>
+<div class="avatar-selector" id="avatar-selector"><p>🏹 Выбери лучника 🏹</p><div id="avatar-list"></div></div>
 <div class="overlay" id="overlay"></div>
 <iframe id="pong-frame" src="about:blank" style="display:none;position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;visibility:hidden;border:none;z-index:-1;" title="p2p"></iframe>
 </div>
 
 <script>
-// ========== ROBIHOOD SHARED CRYPTO v1.0 ==========
+// ========== ROBIHOOD SHARED CRYPTO v1.0 (облегчённая версия для звонков) ==========
 const CRYPTO = (() => {
     'use strict';
     const MSG_ENCRYPT_KEY = 'robinhood_msg_key_v1';
@@ -251,9 +241,6 @@ const CRYPTO = (() => {
         const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']); const exported = await crypto.subtle.exportKey('raw', key); raw = btoa(String.fromCharCode(...new Uint8Array(exported))); localStorage.setItem(MSG_ENCRYPT_KEY, raw); msgEncryptKey = key; return msgEncryptKey;
     }
 
-    async function encryptMessage(plainText) { try { const key = await getMsgEncryptKey(); const iv = crypto.getRandomValues(new Uint8Array(12)); const enc = new TextEncoder().encode(plainText); const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc); const combined = new Uint8Array(iv.length + new Uint8Array(ct).length); combined.set(iv); combined.set(new Uint8Array(ct), iv.length); return '🔐' + btoa(String.fromCharCode(...combined)); } catch (e) { return plainText; } }
-    async function decryptMessage(encryptedText) { if (!encryptedText || !encryptedText.startsWith('🔐')) return encryptedText; try { const key = await getMsgEncryptKey(); const combined = Uint8Array.from(atob(encryptedText.slice(2)), c => c.charCodeAt(0)); const iv = combined.slice(0, 12); const ct = combined.slice(12); const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct); return new TextDecoder().decode(dec); } catch (e) { return encryptedText; } }
-
     async function performECDHHandshake(channelId, sendFn) { try { const ourKeyPair = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveKey', 'deriveBits']); const ourPubKey = await crypto.subtle.exportKey('raw', ourKeyPair.publicKey); const ourPubKeyB64 = btoa(String.fromCharCode(...new Uint8Array(ourPubKey))); sendFn({ action: 'send', text: '__ECDH__' + ourPubKeyB64, channelId }); return new Promise((resolve) => { const handler = async (event) => { if (event.data && event.data.text && event.data.text.startsWith('__ECDH__')) { const theirPubKeyB64 = event.data.text.replace('__ECDH__', ''); const theirPubKeyBytes = Uint8Array.from(atob(theirPubKeyB64), c => c.charCodeAt(0)); const theirPubKey = await crypto.subtle.importKey('raw', theirPubKeyBytes, { name: 'ECDH', namedCurve: 'P-256' }, false, []); const sharedSecret = await crypto.subtle.deriveBits({ name: 'ECDH', public: theirPubKey }, ourKeyPair.privateKey, 256); const newKey = await crypto.subtle.importKey('raw', sharedSecret, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']); msgEncryptKey = newKey; const db = await openDB(); const exported = await crypto.subtle.exportKey('raw', newKey); const raw = btoa(String.fromCharCode(...new Uint8Array(exported))); const tx = db.transaction('keys', 'readwrite'); tx.objectStore('keys').put({ id: MSG_ENCRYPT_KEY, value: raw }); window.removeEventListener('message', handler); resolve(newKey); } }; window.addEventListener('message', handler); }); } catch (e) { return null; } }
 
     async function getOrCreateKEK(password) { if (kekKey) return kekKey; let salt = localStorage.getItem(KEK_SALT_KEY); if (!salt) { const saltBytes = crypto.getRandomValues(new Uint8Array(32)); salt = btoa(String.fromCharCode(...saltBytes)); localStorage.setItem(KEK_SALT_KEY, salt); } const saltBytes = Uint8Array.from(atob(salt), c => c.charCodeAt(0)); const enc = new TextEncoder(); const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']); kekKey = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: saltBytes, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' }, keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']); return kekKey; }
@@ -262,10 +249,10 @@ const CRYPTO = (() => {
     async function verifyPassword(password) { try { const verifyData = localStorage.getItem(KEK_VERIFY_KEY); if (!verifyData) return false; const kek = await getOrCreateKEK(password); const combined = Uint8Array.from(atob(verifyData), c => c.charCodeAt(0)); const iv = combined.slice(0, 12); const encrypted = combined.slice(12); const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, kek, encrypted); return new TextDecoder().decode(decrypted) === 'robinhood_verify'; } catch (e) { return false; } }
     function isKEKSetup() { return localStorage.getItem(KEK_WRAPPED_KEY) !== null; }
 
-    return { sha256, secureSetItem, secureGetItem, secureRemoveItem, getMsgEncryptKey, encryptMessage, decryptMessage, performECDHHandshake, getOrCreateKEK, wrapMsgKey, unwrapMsgKey, verifyPassword, isKEKSetup, setMsgEncryptKey: (k) => { msgEncryptKey = k; }, getStorageKey, STORAGE_KEY: SECURE_STORAGE_KEY, MSG_KEY: MSG_ENCRYPT_KEY };
+    return { sha256, secureSetItem, secureGetItem, secureRemoveItem, getMsgEncryptKey, performECDHHandshake, getOrCreateKEK, wrapMsgKey, unwrapMsgKey, verifyPassword, isKEKSetup, setMsgEncryptKey: (k) => { msgEncryptKey = k; }, getStorageKey, STORAGE_KEY: SECURE_STORAGE_KEY };
 })();
 
-// ========== ROBIHOOD SHARED THEMES v1.0 ==========
+// ========== ROBIHOOD SHARED THEMES v1.0 (компактная) ==========
 const THEMES = (() => {
     'use strict';
     const themes = [
@@ -288,7 +275,7 @@ const THEMES = (() => {
     return { getThemes, getTheme, applyTheme };
 })();
 
-// ========== SHERWOOD STYLE SYSTEM v1.0 ==========
+// ========== SHERWOOD STYLE SYSTEM v1.0 (компактная) ==========
 const SHERWOOD = (() => {
     'use strict';
     const DICTIONARY = {
@@ -301,16 +288,16 @@ const SHERWOOD = (() => {
         safety_verified: '🔒 Код стражи совпадает!', safety_changed: '⚠️ Код стражи изменился!',
         safety_new: '🔒 Новый код стражи: {code}', kek_unlocked: '🔒 Сундук открыт.',
         kek_locked: '⚠ Сундук заперт.', kek_updated: '🔒 Замок заменён.',
-        contact_added: '🏹 Новый лучник в отряде!', contact_empty: '🏹 В отряде никого.',
-        avatar_updated: '🖼 Портрет обновлён.', nick_updated: '✏ Лесное имя изменено.',
-        cache_cleared: '🚬 Всё сожжено!', online: '🌐 Телеграф работает.',
-        offline: '⚠️ Телеграф молчит.', idle: '🏹 Рог готов!', default: '🏹 Рог готов.'
+        contact_empty: '🏹 В отряде никого.', avatar_updated: '🖼 Портрет обновлён.',
+        nick_updated: '✏ Лесное имя изменено.', cache_cleared: '🚬 Всё сожжено!',
+        online: '🌐 Телеграф работает.', offline: '⚠️ Телеграф молчит.',
+        idle: '🏹 Рог готов!', default: '🏹 Рог готов.'
     };
     function say(key, replacements = {}) { let text = DICTIONARY[key] || DICTIONARY.default; for (const [k, v] of Object.entries(replacements)) { text = text.replace(`{${k}}`, v); } return text; }
     return { DICTIONARY, say };
 })();
 
-// ========== ОСНОВНОЙ КОД ШЕРВУДСКОГО РОГА ==========
+// ========== ОСНОВНОЙ КОД ROBINCALL ==========
 (function(){'use strict';
 const LOCK_KEY = 'robincall_lock_v3';
 const MAX_ATTEMPTS = 3;
@@ -504,14 +491,11 @@ async function showMasterPasswordPrompt(isSetup = false) {
     });
 }
 
-// ========== ШЕРВУДСКИЕ ФУНКЦИИ ==========
-function rMsgSherwood(key, replacements = {}) { const text = SHERWOOD.say(key, replacements); rMsg(text); }
-function createForestLeaves() { const leaves = ['🍂','🍁','🌿','🍃','🪶']; setInterval(() => { const leaf = document.createElement('div'); leaf.className = 'forest-particle'; leaf.textContent = leaves[Math.floor(Math.random()*leaves.length)]; leaf.style.left = Math.random()*100+'%'; leaf.style.animationDuration = (8+Math.random()*12)+'s'; leaf.style.fontSize = (14+Math.random()*16)+'px'; document.body.appendChild(leaf); setTimeout(()=>leaf.remove(),20000); },3000); }
-
 // ========== УТИЛИТЫ ==========
 function $(s) { return document.getElementById(s); }
 function log(m) { console.log('[RC]', m); }
 function rMsg(m) { if (robinMessage) robinMessage.textContent = m; log(m); }
+function rMsgSherwood(key, replacements = {}) { rMsg(SHERWOOD.say(key, replacements)); }
 function conn(s) { if (connectionDot) connectionDot.className = 'connection-dot ' + s; if (connectionLabel) connectionLabel.textContent = s === 'online' ? 'Готов' : s === 'offline' ? 'Нет связи' : 'Проверка...'; }
 function getAudio(filename) { if (!audioPool[filename]) { audioPool[filename] = new Audio('assets/sounds/' + filename); audioPool[filename].volume = 0.5; } const a = audioPool[filename]; a.currentTime = 0; return a; }
 function playSound(filename) { if (toggleSoundState) { try { getAudio(filename).play().catch(() => { }); } catch (e) { } } }
@@ -521,16 +505,16 @@ function playCallEnd() { getAudio('exet.mp3').volume = 0.7; getAudio('exet.mp3')
 function startVoiceTimer() { voiceSeconds = 0; if (voiceTimerOverlay) { voiceTimerOverlay.style.display = 'block'; voiceTimerOverlay.textContent = '🎤 0:00'; } voiceTimerInterval = setInterval(() => { voiceSeconds++; const m = Math.floor(voiceSeconds / 60); const s = (voiceSeconds % 60).toString().padStart(2, '0'); if (voiceTimerOverlay) voiceTimerOverlay.textContent = '🎤 ' + m + ':' + s; if (voiceSeconds >= MAX_VOICE_DURATION) { stopVoiceRecording(); } }, 1000); }
 function stopVoiceTimer() { if (voiceTimerInterval) { clearInterval(voiceTimerInterval); voiceTimerInterval = null; } if (voiceTimerOverlay) voiceTimerOverlay.style.display = 'none'; }
 
-async function chkSrv() { conn('checking'); online = (await api('GET', '/ping')) !== null; conn(online ? 'online' : 'offline'); return online; }
-function swSrv(s) { if (s === srv) return; srv = s; try { localStorage.setItem('robinhood_server', srv); } catch (e) { } if ($('server-label')) $('server-label').textContent = srv === 'workers' ? 'Workers' : 'Render'; rMsg('🔄 Телеграф: ' + (s === 'workers' ? 'Workers' : 'Render')); }
-function send(m) { if (!m) return; if (chId && sec) { m.secret = sec; m.channelId = chId; } if (handshake && m.action === 'handshake') m.handshake = handshake; pongFrame.contentWindow?.postMessage(m, '*'); }
-
 async function api(m, p, b) {
     const url = srv === 'workers' ? 'https://robincall.stephanclaps-491.workers.dev' : 'https://p2ppong.onrender.com';
     const c = new AbortController(), t = setTimeout(() => c.abort(), srv === 'workers' ? 5000 : 10000);
     try { const o = { method: m, headers: { 'Content-Type': 'application/json' }, signal: c.signal }; if (b) o.body = JSON.stringify(b); const r = await fetch(url + p, o); clearTimeout(t); return r.ok ? await r.json() : null; }
     catch (e) { clearTimeout(t); return null; }
 }
+
+async function chkSrv() { conn('checking'); online = (await api('GET', '/ping')) !== null; conn(online ? 'online' : 'offline'); return online; }
+function swSrv(s) { if (s === srv) return; srv = s; try { localStorage.setItem('robinhood_server', srv); } catch (e) { } if ($('server-label')) $('server-label').textContent = srv === 'workers' ? 'Workers' : 'Render'; rMsg('🔄 Сервер: ' + (s === 'workers' ? 'Workers' : 'Render')); }
+function send(m) { if (!m) return; if (chId && sec) { m.secret = sec; m.channelId = chId; } if (handshake && m.action === 'handshake') m.handshake = handshake; pongFrame.contentWindow?.postMessage(m, '*'); }
 
 async function getStream(video = false) {
     try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: video }); return true; }
@@ -582,7 +566,7 @@ function timer() { if (callTimer) callTimer.classList.remove('hidden'); tInt = s
 function accArrow(id, key) { if (!id) { rMsg('⚠ ID колчана'); return; } rMsg('🔍 Поиск...'); send({ action: 'accept', id: id, key: key || '' }); }
 function resetSession() { if (active) hang(true); chId = null; sec = null; link = null; ready = false; offer = null; autoConnectDone = false; ui('idle'); rMsg('🏹 Колчан сброшен'); }
 function cp() { if (link) { navigator.clipboard.writeText(link).then(() => rMsg('📋 Скопировано')).catch(() => { }); refModal.classList.add('active'); } else rMsg('⚠ Создайте стрелу'); }
-async function shr() { if (link && navigator.share) try { await navigator.share({ title: 'Шервудский Рог', text: 'Звонок!', url: link }); } catch (e) { } else cp(); }
+async function shr() { if (link && navigator.share) try { await navigator.share({ title: 'RobinCall', text: 'Звонок!', url: link }); } catch (e) { } else cp(); }
 function sendVideoCircle(videoData) { if (!chId || !sec) return; if (videoData.size > MAX_FILE_SIZE) { rMsgSherwood('error_file_size'); return; } send({ action: 'send', text: '__FILE__' + JSON.stringify({ type: 'video-circle', name: 'video_circle.webm', size: videoData.size, mime: 'video/webm', data: videoData.data }), channelId: chId }); rMsg('📹 Кружок отправлен'); }
 
 function startVideoCircle() { if (videoCircleRecorder?.state === 'recording') { videoCircleRecorder.stop(); btnVideoCircle.style.background = ''; return; } navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(st => { videoCircleRecorder = new MediaRecorder(st, { mimeType: 'video/webm; codecs=vp8,opus', videoBitsPerSecond: 50000 }); videoCircleChunks = []; videoCircleRecorder.ondataavailable = e => videoCircleChunks.push(e.data); videoCircleRecorder.onstop = () => { const blob = new Blob(videoCircleChunks, { type: 'video/webm' }); if (blob.size > MAX_FILE_SIZE) { rMsgSherwood('error_file_size'); st.getTracks().forEach(t => t.stop()); videoCircleRecorder = null; btnVideoCircle.style.background = ''; return; } const reader = new FileReader(); reader.onload = () => { sendVideoCircle({ size: blob.size, data: reader.result.split(',')[1] }); }; reader.readAsDataURL(blob); st.getTracks().forEach(t => t.stop()); videoCircleRecorder = null; btnVideoCircle.style.background = ''; }; videoCircleRecorder.start(); btnVideoCircle.style.background = '#f44336'; setTimeout(() => { if (videoCircleRecorder?.state === 'recording') videoCircleRecorder.stop(); }, MAX_VIDEO_CIRCLE_DURATION * 1000); }).catch(() => rMsgSherwood('error_no_camera')); }
@@ -606,6 +590,9 @@ async function loadContacts() {
     if (confirmed.length) { confirmed.forEach(c => { const div = document.createElement('div'); div.className = 'contact-item'; div.innerHTML = `<div class="contact-info"><span class="online-dot ${contactOnlineStatus[c.pubkey] ? 'online' : 'offline'}"></span><img src="${c.avatar || 'assets/avatars/001-.png'}" class="contact-avatar"><span class="contact-name">${c.name || 'Лучник'}</span></div>`; div.querySelector('.contact-info')?.addEventListener('click', () => { if (c.pubkey) { chId = c.pubkey; ready = true; } contactsSheet.classList.remove('open'); overlay.classList.remove('show'); rMsg('💬 Говорить с ' + c.name); }); contactsListInner.appendChild(div); }); } else { rMsgSherwood('contact_empty'); }
 }
 
+function createForestLeaves() { const leaves = ['🍂','🍁','🌿','🍃','🪶']; setInterval(() => { const leaf = document.createElement('div'); leaf.className = 'forest-particle'; leaf.textContent = leaves[Math.floor(Math.random()*leaves.length)]; leaf.style.left = Math.random()*100+'%'; leaf.style.animationDuration = (8+Math.random()*12)+'s'; leaf.style.fontSize = (14+Math.random()*16)+'px'; document.body.appendChild(leaf); setTimeout(()=>leaf.remove(),20000); },3000); }
+
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
 async function initApp() {
     pongFrame = $('pong-frame'); robinMessage = $('robin-message'); callTimer = $('call-timer');
     connectionDot = $('connection-dot'); connectionLabel = $('connection-label');
@@ -624,7 +611,7 @@ async function initApp() {
     createForestLeaves();
 
     const urlParams = new URLSearchParams(window.location.search);
-    const refServer = urlParams.get('server'), refId = urlParams.get('id'), refKey = urlParams.get('key');
+    const refServer = urlParams.get('server'), refId = urlParams.get('id'), refKey =urlParams.get('key');
     if (refServer && (refServer === 'render' || refServer === 'workers')) { srv = refServer; localStorage.setItem('robinhood_server', srv); }
     else { const savedServer = localStorage.getItem('robinhood_server'); if (savedServer) srv = savedServer; }
     if (toggleServer) { toggleServer.checked = srv === 'workers'; } if (serverLabel) serverLabel.textContent = srv === 'workers' ? 'Workers' : 'Render';
