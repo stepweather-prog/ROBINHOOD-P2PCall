@@ -371,6 +371,42 @@ document.getElementById('lock-reset')?.addEventListener('click', () => { tempPin
 document.getElementById('lock-skip')?.addEventListener('click', () => { isSettingUp = false; tempPinHash = ''; tempPatternHash = ''; unlock(); });
 document.getElementById('lock-forgot')?.addEventListener('click', forgotPassword);
 
+// ========== МАСТЕР-ПАРОЛЬ UI ==========
+async function showMasterPasswordPrompt(isSetup = false) {
+    return new Promise((resolve) => {
+        const overlayEl = document.createElement('div');
+        overlayEl.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:10000;display:flex;align-items:center;justify-content:center;';
+        const dialog = document.createElement('div');
+        dialog.style.cssText = 'background:var(--sheet-bg);border:2px solid var(--border);border-radius:20px;padding:24px;width:85%;max-width:360px;text-align:center;color:var(--text);';
+        dialog.innerHTML = `
+            <h3 style="color:var(--accent-light);margin-bottom:12px;">${isSetup ? '🔐 Задайте мастер-пароль' : '🔐 Введите мастер-пароль'}</h3>
+            <p style="font-size:0.75em;color:var(--text-dim);margin-bottom:16px;">${isSetup ? 'Пароль защищает ключи шифрования.<br>Без него сообщения не расшифровать.' : 'Введите пароль для расшифровки.'}</p>
+            <input type="password" id="kek-password-input" placeholder="Мастер-пароль" style="width:100%;padding:12px;margin-bottom:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;outline:none;text-align:center;">
+            ${isSetup ? '<input type="password" id="kek-password-confirm" placeholder="Повторите пароль" style="width:100%;padding:12px;margin-bottom:16px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;outline:none;text-align:center;">' : ''}
+            <div id="kek-error" style="color:#f44336;font-size:0.75em;min-height:20px;margin-bottom:8px;"></div>
+            <button id="kek-submit" style="width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),#b8903a);color:#1a1f0f;border:none;border-radius:12px;font-size:16px;font-weight:bold;cursor:pointer;">${isSetup ? '✓ Установить' : '🔓 Разблокировать'}</button>
+            ${!isSetup ? '<button id="kek-skip" style="width:100%;padding:8px;margin-top:8px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text-dim);font-size:13px;cursor:pointer;">⏭ Пропустить</button>' : ''}
+        `;
+        overlayEl.appendChild(dialog); document.body.appendChild(overlayEl);
+        const passwordInput = dialog.querySelector('#kek-password-input');
+        const errorEl = dialog.querySelector('#kek-error');
+        dialog.querySelector('#kek-submit').addEventListener('click', async () => {
+            const password = passwordInput.value;
+            if (isSetup) {
+                const confirmInput = dialog.querySelector('#kek-password-confirm');
+                if (password !== confirmInput.value) { errorEl.textContent = 'Пароли не совпадают'; return; }
+                if (password.length < 4) { errorEl.textContent = 'Минимум 4 символа'; return; }
+                try { const key = await CRYPTO.getMsgEncryptKey(); const success = await CRYPTO.wrapMsgKey(key, password); if (success) { overlayEl.remove(); resolve(password); } else { errorEl.textContent = 'Ошибка шифрования'; } } catch (e) { errorEl.textContent = 'Ошибка: ' + e.message; }
+            } else {
+                const isValid = await CRYPTO.verifyPassword(password);
+                if (isValid) { const key = await CRYPTO.unwrapMsgKey(password); if (key) { CRYPTO.setMsgEncryptKey(key); overlayEl.remove(); resolve(password); } else { errorEl.textContent = 'Неверный пароль'; } } else { errorEl.textContent = 'Неверный пароль'; }
+            }
+        });
+        if (!isSetup) { dialog.querySelector('#kek-skip')?.addEventListener('click', () => { overlayEl.remove(); resolve(null); }); }
+        passwordInput.focus();
+    });
+}
+
 // ========== УТИЛИТЫ ==========
 function $(s) { return document.getElementById(s); }
 function log(m) { console.log('[RC]', m); }
@@ -406,6 +442,22 @@ function showSafety(pc) {
         const fp = pc.remoteDescription.sdp.match(/a=fingerprint:sha-256\s+([A-F0-9:]+)/i);
         if (fp && fp[1]) { const nums = fp[1].replace(/[^0-9]/g, '').slice(0, 6); code.textContent = nums.slice(0, 3) + ' ' + nums.slice(3, 6); el.style.display = 'block'; setTimeout(() => { el.style.display = 'none'; }, 8000); }
     }
+}
+
+async function showCallSafetyNumber(channelId) {
+    try {
+        const key = await CRYPTO.getMsgEncryptKey(); if (!key) return;
+        const exported = await crypto.subtle.exportKey('raw', key);
+        const hash = await crypto.subtle.digest('SHA-256', exported);
+        const hashArray = Array.from(new Uint8Array(hash));
+        const digits = hashArray.map(b => Math.abs(b) % 10).join('').slice(0, 12);
+        const formatted = digits.match(/.{1,4}/g).join(' ');
+        const safetyEl = $('safety-number'); const safetyCode = $('safety-code');
+        if (safetyEl && safetyCode) { safetyCode.textContent = formatted; safetyEl.style.display = 'block'; }
+        const saved = localStorage.getItem('robincall_safety_' + channelId);
+        if (saved && saved !== formatted) { rMsg('⚠️ Ключ безопасности изменился! Возможна подмена.'); if (safetyEl) safetyEl.style.border = '2px solid #f44336'; }
+        else if (!saved) { localStorage.setItem('robincall_safety_' + channelId, formatted); rMsg('🔒 Код безопасности: ' + formatted + ' | Сверьте голосом'); }
+    } catch (e) {}
 }
 
 function mkPC() {
@@ -483,6 +535,13 @@ function initApp() {
     if (toggleServer) { toggleServer.checked = srv === 'workers'; toggleServer.addEventListener('change', () => { srv = toggleServer.checked ? 'workers' : 'render'; localStorage.setItem('robinhood_server', srv); if (serverLabel) serverLabel.textContent = srv === 'workers' ? 'Workers' : 'Render'; rMsg('🌐 Сервер: ' + (srv === 'workers' ? 'Workers' : 'Render')); }); }
     const lockStatusEl = $('lock-status'); if (lockStatusEl) lockStatusEl.textContent = lockType === 'pin' ? 'Пин-код' : (lockType === 'pattern' ? 'Граф. ключ' : 'Не задан');
 
+    // Инициализация мастер-пароля
+    if (CRYPTO.isKEKSetup()) {
+        const password = await showMasterPasswordPrompt(false);
+        if (password) { rMsg('🔒 Ключи расшифрованы'); }
+        else { rMsg('⚠ Работа без расшифровки сообщений'); }
+    }
+
     $('btn-avatar-menu').addEventListener('click', () => { avatarSelector.classList.toggle('show'); overlay.classList.toggle('show'); if (avatarSelector.classList.contains('show')) loadAvatars(); });
     overlay.addEventListener('click', () => { avatarSelector.classList.remove('show'); contactsSheet.classList.remove('open'); settingsSheet.classList.remove('open'); overlay.classList.remove('show'); });
     nickLabel.addEventListener('click', () => { nickInput.value = nickLabel.textContent; nickModal.classList.add('active'); });
@@ -496,7 +555,7 @@ function initApp() {
     $('setting-contacts').addEventListener('click', () => { settingsSheet.classList.remove('open'); loadContacts(); contactsSheet.classList.add('open'); overlay.classList.add('show'); });
     $('setting-theme').addEventListener('click', () => { const themes = THEMES.getThemes(); const idx = themes.findIndex(t => t.id === currentTheme); THEMES.applyTheme(themes[(idx + 1) % themes.length].id, themeIcon, themeName); currentTheme = localStorage.getItem('robinhood_theme') || 'forest'; });
     $('setting-lock').addEventListener('click', () => { isSettingUp = true; tempPinHash = ''; tempPatternHash = ''; lockScreen.style.display = 'flex'; appContainer.style.display = 'none'; setupLockUI(); });
-    $('setting-clear').addEventListener('click', () => { if (confirm('⚠ Все данные чата будут удалены!\nНик и аватар сохранены.\n\nПродолжить?')) { resetSession(); CRYPTO.secureRemoveItem('robinhood_contacts'); CRYPTO.secureRemoveItem('robinhood_channels_state'); if (contactsListInner) contactsListInner.innerHTML = ''; rMsg('🚬 Всё сожжено!'); } });
+    $('setting-clear').addEventListener('click', () => { if (confirm('⚠ Все данные чата будут удалены!\nНик и аватар сохранены.\n\nПродолжить?')) { resetSession(); CRYPTO.secureRemoveItem('robinhood_contacts'); CRYPTO.secureRemoveItem('robinhood_channels_state'); if (contactsListInner) contactsListInner.innerHTML = ''; rMsg('🚬 Всё сжожено!'); } });
 
     btnMainAction.addEventListener('click', () => { if (!ready) mkQ(); else call(); });
     btnCallMain.addEventListener('click', call);
@@ -529,7 +588,7 @@ function initApp() {
         else if (d.type === 'session-created') { chId = d.sessionId; sec = d.secret; link = d.fullLink; ready = true; rMsg('✅ Стрела!'); conn('online'); if (refLinkDisplay) refLinkDisplay.textContent = d.fullLink; refModal.classList.add('active'); ui('ready'); navigator.clipboard.writeText(link).catch(() => { }); }
         else if (d.type === 'channel-open') {
             chId = d.channelId; sec = d.secret; ready = true;
-            CRYPTO.performECDHHandshake(d.channelId, send);
+            CRYPTO.performECDHHandshake(d.channelId, send).then(() => { showCallSafetyNumber(d.channelId); });
             (async () => { const contacts = await CRYPTO.secureGetItem('robinhood_contacts') || []; if (!contacts.find(c => c.pubkey === d.channelId)) { contacts.push({ pubkey: d.channelId, name: 'Лучник', avatar: 'assets/avatars/001-.png', status: 'confirmed' }); await CRYPTO.secureSetItem('robinhood_contacts', contacts); } })();
             rMsg('✅ Подключено!'); conn('online'); ui('ready'); contactOnlineStatus[d.channelId] = true;
         }
@@ -546,6 +605,16 @@ function initApp() {
     const secWarning = $('setting-security-info');
     if (secWarning) { secWarning.addEventListener('click', function (e) { e.stopPropagation(); this.style.display = 'none'; localStorage.setItem('robincall_security_hidden', 'true'); }); }
     if (localStorage.getItem('robincall_security_hidden') === 'true' && secWarning) secWarning.style.display = 'none';
+
+    // Пункт "Мастер-пароль" в настройках
+    const kekItem = document.createElement('div'); kekItem.className = 'contact-item'; kekItem.id = 'setting-kek';
+    kekItem.innerHTML = `<div class="contact-info"><span style="font-size:20px;">🔐</span><div><div class="contact-name">Мастер-пароль</div><div style="font-size:0.55em;color:var(--text-dim);" id="kek-status">${CRYPTO.isKEKSetup() ? 'Установлен' : 'Не задан'}</div></div></div><span style="color:var(--text-dim);">→</span>`;
+    kekItem.addEventListener('click', async () => {
+        settingsSheet.classList.remove('open'); overlay.classList.remove('show');
+        if (CRYPTO.isKEKSetup()) { const password = await showMasterPasswordPrompt(true); if (password) { document.getElementById('kek-status').textContent = 'Установлен'; rMsg('🔒 Мастер-пароль обновлён'); } }
+        else { const password = await showMasterPasswordPrompt(true); if (password) { document.getElementById('kek-status').textContent = 'Установлен'; rMsg('🔒 Мастер-пароль установлен'); } }
+    });
+    const lockSetting = $('setting-lock'); if (lockSetting) lockSetting.after(kekItem);
 
     // ========== АВТООБНОВЛЕНИЕ ==========
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(() => { }); navigator.serviceWorker.addEventListener('message', (event) => { if (event.data && event.data.type === 'update-available') { showUpdateButton(); } }); }
