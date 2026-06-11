@@ -222,7 +222,6 @@ const THEMES = (() => {
     videoCirclePlayer = $('video-circle-player'); 
     videoCircleVideo = $('video-circle-video'); videoCircleClose = $('video-circle-close');
 
-    // Исправленный парсинг URL
     const urlParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
     const refServer = urlParams.get('server');
@@ -245,18 +244,14 @@ const THEMES = (() => {
     const savedNick = localStorage.getItem('robinhood_nick'); 
     if (savedNick) nickLabel.textContent = savedNick.substring(0, 12);
     
-    if (toggleServer) { 
-        toggleServer.checked = (srv === 'workers'); 
-    }
-    if (serverLabel) { 
-        serverLabel.textContent = (srv === 'workers') ? 'Workers' : 'Render'; 
-    }
+    if (toggleServer) { toggleServer.checked = (srv === 'workers'); }
+    if (serverLabel) { serverLabel.textContent = (srv === 'workers') ? 'Workers' : 'Render'; }
     
     peerHelpEnabled = localStorage.getItem('sherwood_peer_help') === 'true';
     if (togglePeerHelp) { togglePeerHelp.checked = peerHelpEnabled; }
     if (peerHelpEnabled) { $('seeding-indicator').style.display = 'flex'; }
 
-    // Обработчики
+    // Обработчики переключателей (только ОДИН раз!)
     if (toggleSound) {
         toggleSound.checked = toggleSoundState;
         toggleSound.addEventListener('change', function() { 
@@ -280,62 +275,56 @@ const THEMES = (() => {
         });
     }
 
-    // ... остальной код initApp (обработчики кнопок, message listener)
-    // ВАЖНО: убедитесь что нет синтаксических ошибок в закрывающих скобках
+    // Кнопки
+    btnMainAction.addEventListener('click', () => { if (!ready) { const tk = crypto.randomUUID?.() || Math.random().toString(36).substring(2)+Date.now().toString(36); send({ action: 'create', tempKey: tk }); } else call(); });
+    btnCallMain.addEventListener('click', call);
+    btnVideoCircle.addEventListener('click', startVideoCircle);
+    btnAnswer.addEventListener('click', accept);
+    btnReject.addEventListener('click', () => { send({ action: 'send', text: '__HANGUP__', channelId: chId }); offer = null; ui('ready'); });
+    btnEndCall.addEventListener('click', () => hang(true));
+    btnMic.addEventListener('click', () => { if (stream) { mic = !mic; stream.getAudioTracks().forEach(t => t.enabled = mic); btnMic.textContent = mic ? '🎤' : '🔇'; } });
+    btnSpeaker.addEventListener('click', () => { spk = !spk; btnSpeaker.textContent = spk ? '🔊' : '🔈'; });
+    if (btnVoice) { btnVoice.addEventListener('pointerdown', e => { e.preventDefault(); startVoiceRecording(); }); btnVoice.addEventListener('pointerup', e => { e.preventDefault(); stopVoiceRecording(); }); btnVoice.addEventListener('pointerleave', stopVoiceRecording); }
+    if (videoCircleClose) videoCircleClose.addEventListener('click', () => { videoCirclePlayer.style.display = 'none'; if (videoCircleVideo) videoCircleVideo.pause(); });
 
-        toggleSound.addEventListener('change', () => { toggleSoundState = toggleSound.checked; localStorage.setItem('robinhood_sound', toggleSoundState); });
-        toggleServer.addEventListener('change', () => { srv = toggleServer.checked ? 'workers' : 'render'; localStorage.setItem('robinhood_server', srv); if (serverLabel) serverLabel.textContent = srv === 'workers' ? 'Workers' : 'Render'; send({ action: 'server-switch', server: srv }); });
-        togglePeerHelp?.addEventListener('change', () => { peerHelpEnabled = togglePeerHelp.checked; localStorage.setItem('sherwood_peer_help', peerHelpEnabled); $('seeding-indicator').style.display = peerHelpEnabled ? 'flex' : 'none'; });
+    $('btn-avatar-menu').addEventListener('click', () => { avatarSelector.classList.toggle('show'); overlay.classList.toggle('show'); if (avatarSelector.classList.contains('show')) loadAvatars(); });
+    overlay.addEventListener('click', () => { avatarSelector.classList.remove('show'); contactsSheet.classList.remove('open'); settingsSheet.classList.remove('open'); overlay.classList.remove('show'); });
+    nickLabel.addEventListener('click', () => { nickInput.value = nickLabel.textContent; nickModal.classList.add('active'); });
+    $('btn-nick-cancel').addEventListener('click', () => nickModal.classList.remove('active'));
+    $('btn-nick-save').addEventListener('click', () => { const nick = nickInput.value.trim().substring(0, 12); if (nick) { nickLabel.textContent = nick; localStorage.setItem('robinhood_nick', nick); } nickModal.classList.remove('active'); });
+    $('btn-settings').addEventListener('click', () => { settingsSheet.classList.toggle('open'); overlay.classList.toggle('show'); });
+    $('settings-close').addEventListener('click', () => { settingsSheet.classList.remove('open'); overlay.classList.remove('show'); });
+    $('setting-contacts').addEventListener('click', () => { settingsSheet.classList.remove('open'); loadContacts(); contactsSheet.classList.add('open'); });
+    $('setting-theme').addEventListener('click', () => { const ts = THEMES.getThemes(); const ct = localStorage.getItem('robinhood_theme') || 'forest'; const i = ts.findIndex(t => t.id === ct); THEMES.apply(ts[(i+1)%ts.length].id, themeIcon, themeName); });
+    $('setting-clear').addEventListener('click', () => { if (confirm('⚠ Все данные будут удалены!')) { hang(true); channels = {}; chId = null; ready = false; rMsg('🚬 Всё сжожено!'); } });
+    $('contacts-close').addEventListener('click', () => { contactsSheet.classList.remove('open'); overlay.classList.remove('show'); });
+    $('btn-copy-link-modal')?.addEventListener('click', () => { if (link) navigator.clipboard.writeText(link).catch(() => {}); });
+    $('btn-share-link')?.addEventListener('click', () => { if (link && navigator.share) navigator.share({ title: 'RobinCall', text: 'Звонок!', url: link }).catch(() => {}); });
+    $('btn-close-modal')?.addEventListener('click', () => refModal.classList.remove('active'));
 
-        btnMainAction.addEventListener('click', () => { if (!ready) { const tk = crypto.randomUUID?.() || Math.random().toString(36).substring(2)+Date.now().toString(36); send({ action: 'create', tempKey: tk }); } else call(); });
-        btnCallMain.addEventListener('click', call);
-        btnVideoCircle.addEventListener('click', startVideoCircle);
-        btnAnswer.addEventListener('click', accept);
-        btnReject.addEventListener('click', () => { send({ action: 'send', text: '__HANGUP__', channelId: chId }); offer = null; ui('ready'); });
-        btnEndCall.addEventListener('click', () => hang(true));
-        btnMic.addEventListener('click', () => { if (stream) { mic = !mic; stream.getAudioTracks().forEach(t => t.enabled = mic); btnMic.textContent = mic ? '🎤' : '🔇'; } });
-        btnSpeaker.addEventListener('click', () => { spk = !spk; btnSpeaker.textContent = spk ? '🔊' : '🔈'; });
-        if (btnVoice) { btnVoice.addEventListener('pointerdown', e => { e.preventDefault(); startVoiceRecording(); }); btnVoice.addEventListener('pointerup', e => { e.preventDefault(); stopVoiceRecording(); }); btnVoice.addEventListener('pointerleave', stopVoiceRecording); }
-        if (videoCircleClose) videoCircleClose.addEventListener('click', () => { videoCirclePlayer.style.display = 'none'; if (videoCircleVideo) videoCircleVideo.pause(); });
+    // Message listener
+    window.addEventListener('message', async e => {
+        if (e.source !== pongFrame.contentWindow) return; const d = e.data;
+        if (d.type === 'pong-ready') { handshake = d.handshake; send({ action: 'handshake' }); conn('online'); if (!autoConnectDone) { ui('idle'); rMsg('🏹 Готов!'); } }
+        else if (d.type === 'handshake-ok') { if (!autoConnectDone && window._pendingRef) { const { id, key } = window._pendingRef; autoConnectDone = true; window._pendingRef = null; send({ action: 'accept', id, key }); } }
+        else if (d.type === 'session-created') { chId = d.sessionId; sec = d.secret; link = d.fullLink; ready = true; rMsg('✅ Стрела!'); conn('online'); if (refLinkDisplay) refLinkDisplay.textContent = d.fullLink; refModal.classList.add('active'); ui('ready'); navigator.clipboard.writeText(link).catch(() => {}); }
+        else if (d.type === 'channel-open') { chId = d.channelId; sec = d.secret; ready = true; rMsg('✅ Подключено!'); conn('online'); ui('ready'); channels[d.channelId] = { secret: d.secret, role: d.role }; activeChannelId = d.channelId; }
+        else if (d.type === 'restored-channels') { if (d.channels) { d.channels.forEach(ch => { channels[ch.channelId] = { secret: ch.secret, role: ch.role }; if (!activeChannelId) activeChannelId = ch.channelId; }); ui('ready'); rMsg('🔄 Колчаны восстановлены!'); conn('online', Object.keys(channels).length); } }
+        else if (d.type === 'server-status') { const pc = d.channels || 0; conn(d.status === 'online' ? 'online' : 'offline', pc); if (serverLabel) serverLabel.textContent = d.server === 'workers' ? 'Workers' : 'Render'; if (toggleServer) toggleServer.checked = d.server === 'workers'; }
+        else if (d.type === 'server-switched') { srv = d.server || srv; localStorage.setItem('robinhood_server', srv); if (serverLabel) serverLabel.textContent = srv === 'workers' ? 'Workers' : 'Render'; }
+        else if (d.type === 'message' && d.text) {
+            if (d.text.startsWith('__OFFER__')) { if (active || pc) { send({ action: 'send', text: '__HANGUP__', channelId: chId }); return; } try { offer = JSON.parse(d.text.replace('__OFFER__', '')); ui('incoming'); playSound('melodi.mp3'); } catch (e) {} }
+            else if (d.text.startsWith('__ANSWER__') && pc) { try { pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(d.text.replace('__ANSWER__', '')))); active = true; tStart = Date.now(); startTimer(); ui('active'); } catch (e) {} }
+            else if (d.text.startsWith('__ICE__') && pc) { try { pc.addIceCandidate(new RTCIceCandidate(JSON.parse(d.text.replace('__ICE__', '')))); } catch (e) {} }
+            else if (d.text === '__HANGUP__') { if (active || pc) { rMsg('📞 Собеседник завершил'); hang(false); } }
+            else if (d.text.startsWith('__FILE__')) { try { const fd = JSON.parse(d.text.replace('__FILE__', '')); if (fd.type === 'video-circle' && fd.data) { if (videoCirclePlayer && videoCircleVideo) { videoCircleVideo.src = 'data:video/webm;base64,' + fd.data; videoCirclePlayer.style.display = 'flex'; videoCircleVideo.play().catch(() => {}); } rMsg('📹 Видео-кружок получен'); } } catch (e) {} }
+        }
+        else if (d.type === 'error') { rMsg('⚠ ' + (d.text || 'Ошибка')); }
+    });
 
-        $('btn-avatar-menu').addEventListener('click', () => { avatarSelector.classList.toggle('show'); overlay.classList.toggle('show'); if (avatarSelector.classList.contains('show')) loadAvatars(); });
-        overlay.addEventListener('click', () => { avatarSelector.classList.remove('show'); contactsSheet.classList.remove('open'); settingsSheet.classList.remove('open'); overlay.classList.remove('show'); });
-        nickLabel.addEventListener('click', () => { nickInput.value = nickLabel.textContent; nickModal.classList.add('active'); });
-        $('btn-nick-cancel').addEventListener('click', () => nickModal.classList.remove('active'));
-        $('btn-nick-save').addEventListener('click', () => { const nick = nickInput.value.trim().substring(0, 12); if (nick) { nickLabel.textContent = nick; localStorage.setItem('robinhood_nick', nick); } nickModal.classList.remove('active'); });
-        $('btn-settings').addEventListener('click', () => { settingsSheet.classList.toggle('open'); overlay.classList.toggle('show'); });
-        $('settings-close').addEventListener('click', () => { settingsSheet.classList.remove('open'); overlay.classList.remove('show'); });
-        $('setting-contacts').addEventListener('click', () => { settingsSheet.classList.remove('open'); loadContacts(); contactsSheet.classList.add('open'); });
-        $('setting-theme').addEventListener('click', () => { const ts = THEMES.getThemes(); const ct = localStorage.getItem('robinhood_theme') || 'forest'; const i = ts.findIndex(t => t.id === ct); THEMES.apply(ts[(i+1)%ts.length].id, themeIcon, themeName); });
-        $('setting-clear').addEventListener('click', () => { if (confirm('⚠ Все данные будут удалены!')) { hang(true); channels = {}; chId = null; ready = false; rMsg('🚬 Всё сжожено!'); } });
-        $('contacts-close').addEventListener('click', () => { contactsSheet.classList.remove('open'); overlay.classList.remove('show'); });
-        $('btn-copy-link-modal')?.addEventListener('click', () => { if (link) navigator.clipboard.writeText(link).catch(() => {}); });
-        $('btn-share-link')?.addEventListener('click', () => { if (link && navigator.share) navigator.share({ title: 'RobinCall', text: 'Звонок!', url: link }).catch(() => {}); });
-        $('btn-close-modal')?.addEventListener('click', () => refModal.classList.remove('active'));
-
-        window.addEventListener('message', async e => {
-            if (e.source !== pongFrame.contentWindow) return; const d = e.data;
-            if (d.type === 'pong-ready') { handshake = d.handshake; send({ action: 'handshake' }); conn('online'); if (!autoConnectDone) { ui('idle'); rMsg('🏹 Готов!'); } }
-            else if (d.type === 'handshake-ok') { if (!autoConnectDone && window._pendingRef) { const { id, key } = window._pendingRef; autoConnectDone = true; window._pendingRef = null; send({ action: 'accept', id, key }); } }
-            else if (d.type === 'session-created') { chId = d.sessionId; sec = d.secret; link = d.fullLink; ready = true; rMsg('✅ Стрела!'); conn('online'); if (refLinkDisplay) refLinkDisplay.textContent = d.fullLink; refModal.classList.add('active'); ui('ready'); navigator.clipboard.writeText(link).catch(() => {}); }
-            else if (d.type === 'channel-open') { chId = d.channelId; sec = d.secret; ready = true; rMsg('✅ Подключено!'); conn('online'); ui('ready'); channels[d.channelId] = { secret: d.secret, role: d.role }; activeChannelId = d.channelId; }
-            else if (d.type === 'restored-channels') { if (d.channels) { d.channels.forEach(ch => { channels[ch.channelId] = { secret: ch.secret, role: ch.role }; if (!activeChannelId) activeChannelId = ch.channelId; }); ui('ready'); rMsg('🔄 Колчаны восстановлены!'); conn('online', Object.keys(channels).length); } }
-            else if (d.type === 'server-status') { const pc = d.channels || 0; conn(d.status === 'online' ? 'online' : 'offline', pc); if (serverLabel) serverLabel.textContent = d.server === 'workers' ? 'Workers' : 'Render'; if (toggleServer) toggleServer.checked = d.server === 'workers'; }
-            else if (d.type === 'server-switched') { srv = d.server || srv; localStorage.setItem('robinhood_server', srv); if (serverLabel) serverLabel.textContent = srv === 'workers' ? 'Workers' : 'Render'; }
-            else if (d.type === 'message' && d.text) {
-                if (d.text.startsWith('__OFFER__')) { if (active || pc) { send({ action: 'send', text: '__HANGUP__', channelId: chId }); return; } try { offer = JSON.parse(d.text.replace('__OFFER__', '')); ui('incoming'); playSound('melodi.mp3'); } catch (e) {} }
-                else if (d.text.startsWith('__ANSWER__') && pc) { try { pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(d.text.replace('__ANSWER__', '')))); active = true; tStart = Date.now(); startTimer(); ui('active'); } catch (e) {} }
-                else if (d.text.startsWith('__ICE__') && pc) { try { pc.addIceCandidate(new RTCIceCandidate(JSON.parse(d.text.replace('__ICE__', '')))); } catch (e) {} }
-                else if (d.text === '__HANGUP__') { if (active || pc) { rMsg('📞 Собеседник завершил'); hang(false); } }
-                else if (d.text.startsWith('__FILE__')) { try { const fd = JSON.parse(d.text.replace('__FILE__', '')); if (fd.type === 'video-circle' && fd.data) { if (videoCirclePlayer && videoCircleVideo) { videoCircleVideo.src = 'data:video/webm;base64,' + fd.data; videoCirclePlayer.style.display = 'flex'; videoCircleVideo.play().catch(() => {}); } rMsg('📹 Видео-кружок получен'); } } catch (e) {} }
-            }
-            else if (d.type === 'error') { rMsg('⚠ ' + (d.text || 'Ошибка')); }
-        });
-
-        try { srv = localStorage.getItem('robinhood_server') || 'render'; } catch (e) {}
-        send({ action: 'get-status' });
-        ui('idle'); rMsg('🏹 Готов!');
-    }
+    send({ action: 'get-status' });
+    ui('idle'); rMsg('🏹 Готов!');
+}
 
     initApp();
 })();
