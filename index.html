@@ -203,33 +203,85 @@ const THEMES = (() => {
     async function loadContacts() { if (!contactsListInner) return; const contacts = JSON.parse(localStorage.getItem('robinhood_contacts') || '[]'); contactsListInner.innerHTML = ''; if (contacts.length) { contacts.forEach(c => { const div = document.createElement('div'); div.className = 'contact-item'; div.innerHTML = `<div class="contact-info"><span class="online-dot offline"></span><img src="${c.avatar || 'assets/avatars/001-.png'}" class="contact-avatar" onerror="this.src='assets/avatars/001-.png'"><span class="contact-name">${c.name || 'Лучник'}</span></div>`; div.querySelector('.contact-info')?.addEventListener('click', () => { if (c.pubkey) { chId = c.pubkey; ready = true; } contactsSheet.classList.remove('open'); overlay.classList.remove('show'); rMsg('💬 Чат с ' + c.name); }); contactsListInner.appendChild(div); }); } else { rMsg('🏹 Лучников нет!'); } }
 
     async function initApp() {
-        pongFrame = $('pong-frame'); robinMessage = $('robin-message'); callTimer = $('call-timer'); connectionDot = $('connection-dot'); connectionLabel = $('connection-label');
-        btnMainAction = $('btn-main-action'); btnAnswer = $('btn-answer'); btnReject = $('btn-reject'); btnEndCall = $('btn-end-call'); btnMic = $('btn-mic'); btnSpeaker = $('btn-speaker');
-        btnCallMain = $('btn-call-main'); btnVideoCircle = $('btn-video-circle'); btnVoice = $('btn-voice');
-        incomingRow = $('incoming-row'); activeRow = $('active-row'); audioControls = $('audio-controls');
-        refModal = $('ref-modal'); refLinkDisplay = $('ref-link-display');
-        avatarSelector = $('avatar-selector'); avatarList = $('avatar-list'); overlay = $('overlay');
-        profileAvatarSmall = $('profile-avatar-small'); nickLabel = $('nick-label'); nickModal = $('nick-modal'); nickInput = $('nick-input');
-        contactsSheet = $('contacts-sheet'); contactsListInner = $('contacts-list-inner'); settingsSheet = $('settings-sheet');
-        toggleSound = $('toggle-sound'); toggleServer = $('toggle-server'); togglePeerHelp = $('toggle-peer-help');
-        themeIcon = $('theme-icon'); themeName = $('theme-name'); serverLabel = $('server-label');
-        voiceTimerOverlay = $('voice-timer-overlay'); videoCirclePlayer = $('video-circle-player'); videoCircleVideo = $('video-circle-video'); videoCircleClose = $('video-circle-close');
+    pongFrame = $('pong-frame'); robinMessage = $('robin-message'); callTimer = $('call-timer'); 
+    connectionDot = $('connection-dot'); connectionLabel = $('connection-label');
+    btnMainAction = $('btn-main-action'); btnAnswer = $('btn-answer'); btnReject = $('btn-reject'); 
+    btnEndCall = $('btn-end-call'); btnMic = $('btn-mic'); btnSpeaker = $('btn-speaker');
+    btnCallMain = $('btn-call-main'); btnVideoCircle = $('btn-video-circle'); btnVoice = $('btn-voice');
+    incomingRow = $('incoming-row'); activeRow = $('active-row'); audioControls = $('audio-controls');
+    refModal = $('ref-modal'); refLinkDisplay = $('ref-link-display');
+    avatarSelector = $('avatar-selector'); avatarList = $('avatar-list'); overlay = $('overlay');
+    profileAvatarSmall = $('profile-avatar-small'); nickLabel = $('nick-label'); 
+    nickModal = $('nick-modal'); nickInput = $('nick-input');
+    contactsSheet = $('contacts-sheet'); contactsListInner = $('contacts-list-inner'); 
+    settingsSheet = $('settings-sheet');
+    toggleSound = $('toggle-sound'); toggleServer = $('toggle-server'); 
+    togglePeerHelp = $('toggle-peer-help');
+    themeIcon = $('theme-icon'); themeName = $('theme-name'); serverLabel = $('server-label');
+    voiceTimerOverlay = $('voice-timer-overlay'); 
+    videoCirclePlayer = $('video-circle-player'); 
+    videoCircleVideo = $('video-circle-video'); videoCircleClose = $('video-circle-close');
 
-        const urlParams = new URLSearchParams(window.location.search);
-const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
-const refKey = hashParams.get('key') || urlParams.get('key');
-        if (refServer && (refServer === 'render' || refServer === 'workers')) { srv = refServer; localStorage.setItem('robinhood_server', srv); }
-        else { const saved = localStorage.getItem('robinhood_server'); if (saved) srv = saved; }
-        window._pendingRef = refId && refKey ? { id: refId, key: refKey } : null;
+    // Исправленный парсинг URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+    const refServer = urlParams.get('server');
+    const refId = urlParams.get('id');
+    const refKey = hashParams.get('key') || urlParams.get('key');
 
-        THEMES.apply(localStorage.getItem('robinhood_theme') || 'forest', themeIcon, themeName);
-        pongFrame.src = P2PPONG_URL + '?v=' + Date.now(); pongFrame.style.display = 'none';
-        const savedAvatar = localStorage.getItem('robinhood_avatar'); if (savedAvatar) { profileAvatarSmall.src = savedAvatar; $('robin-avatar').src = savedAvatar; }
-        const savedNick = localStorage.getItem('robinhood_nick'); if (savedNick) nickLabel.textContent = savedNick.substring(0, 12);
-        if (toggleServer) { toggleServer.checked = srv === 'workers'; if (serverLabel) serverLabel.textContent = srv === 'workers' ? 'Workers' : 'Render'; }
-        peerHelpEnabled = localStorage.getItem('sherwood_peer_help') === 'true';
-        if (togglePeerHelp) togglePeerHelp.checked = peerHelpEnabled;
-        if (peerHelpEnabled) $('seeding-indicator').style.display = 'flex';
+    try { srv = localStorage.getItem('robinhood_server') || 'render'; } catch (e) { srv = 'render'; }
+    
+    if (refServer && (refServer === 'render' || refServer === 'workers')) { 
+        srv = refServer; 
+        localStorage.setItem('robinhood_server', srv); 
+    }
+    window._pendingRef = refId && refKey ? { id: refId, key: refKey } : null;
+
+    THEMES.apply(localStorage.getItem('robinhood_theme') || 'forest', themeIcon, themeName);
+    pongFrame.src = P2PPONG_URL + '?v=' + Date.now(); pongFrame.style.display = 'none';
+    
+    const savedAvatar = localStorage.getItem('robinhood_avatar'); 
+    if (savedAvatar) { profileAvatarSmall.src = savedAvatar; $('robin-avatar').src = savedAvatar; }
+    const savedNick = localStorage.getItem('robinhood_nick'); 
+    if (savedNick) nickLabel.textContent = savedNick.substring(0, 12);
+    
+    if (toggleServer) { 
+        toggleServer.checked = (srv === 'workers'); 
+    }
+    if (serverLabel) { 
+        serverLabel.textContent = (srv === 'workers') ? 'Workers' : 'Render'; 
+    }
+    
+    peerHelpEnabled = localStorage.getItem('sherwood_peer_help') === 'true';
+    if (togglePeerHelp) { togglePeerHelp.checked = peerHelpEnabled; }
+    if (peerHelpEnabled) { $('seeding-indicator').style.display = 'flex'; }
+
+    // Обработчики
+    if (toggleSound) {
+        toggleSound.checked = toggleSoundState;
+        toggleSound.addEventListener('change', function() { 
+            toggleSoundState = this.checked; 
+            localStorage.setItem('robinhood_sound', toggleSoundState); 
+        });
+    }
+    if (toggleServer) {
+        toggleServer.addEventListener('change', function() { 
+            srv = this.checked ? 'workers' : 'render'; 
+            localStorage.setItem('robinhood_server', srv); 
+            if (serverLabel) serverLabel.textContent = srv === 'workers' ? 'Workers' : 'Render'; 
+            send({ action: 'server-switch', server: srv }); 
+        });
+    }
+    if (togglePeerHelp) {
+        togglePeerHelp.addEventListener('change', function() { 
+            peerHelpEnabled = this.checked; 
+            localStorage.setItem('sherwood_peer_help', peerHelpEnabled); 
+            $('seeding-indicator').style.display = peerHelpEnabled ? 'flex' : 'none'; 
+        });
+    }
+
+    // ... остальной код initApp (обработчики кнопок, message listener)
+    // ВАЖНО: убедитесь что нет синтаксических ошибок в закрывающих скобках
 
         toggleSound.addEventListener('change', () => { toggleSoundState = toggleSound.checked; localStorage.setItem('robinhood_sound', toggleSoundState); });
         toggleServer.addEventListener('change', () => { srv = toggleServer.checked ? 'workers' : 'render'; localStorage.setItem('robinhood_server', srv); if (serverLabel) serverLabel.textContent = srv === 'workers' ? 'Workers' : 'Render'; send({ action: 'server-switch', server: srv }); });
