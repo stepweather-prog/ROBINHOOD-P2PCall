@@ -155,7 +155,7 @@
 
 <div id="app-container" style="display:none;flex-direction:column;height:100%;">
 <div class="header">
-    <div class="header-top"><span class="header-title">RobinCall</span><div class="header-status"><span class="connection-dot checking" id="connection-dot"></span><span id="connection-label">Проверка...</span></div></div>
+    <div class="header-top"><span class="header-title">RobinCall</span><div class="header-status"><span class="connection-dot checking" id="connection-dot"></span><span id="connection-label">Проверка...</span><span style="margin-left:8px;font-size:0.8em;" id="peer-indicator"></span></div></div>
     <div class="header-btns">
         <div class="header-btn" id="btn-avatar-menu"><img src="assets/avatars/001-.png" class="header-avatar" id="profile-avatar-small" alt="avatar"></div>
         <div class="header-btn" id="btn-call-main"><span>📞</span></div>
@@ -476,7 +476,13 @@ async function showMasterPasswordPrompt(isSetup = false) {
 function $(s) { return document.getElementById(s); }
 function log(m) { console.log('[RC]', m); }
 function rMsg(m) { if (robinMessage) robinMessage.textContent = m; log(m); }
-function conn(s) { if (connectionDot) connectionDot.className = 'connection-dot ' + s; if (connectionLabel) connectionLabel.textContent = s === 'online' ? 'Готов' : s === 'offline' ? 'Нет связи' : 'Проверка...'; }
+function conn(s, peerCount) { 
+    if (connectionDot) connectionDot.className = 'connection-dot ' + s; 
+    if (connectionLabel) connectionLabel.textContent = s === 'online' ? 'Готов' : s === 'offline' ? 'Нет связи' : 'Проверка...'; 
+    if (document.getElementById('peer-indicator') && peerCount !== undefined) {
+        document.getElementById('peer-indicator').textContent = '🏹×' + peerCount;
+    }
+}
 function getAudio(filename) { if (!audioPool[filename]) { audioPool[filename] = new Audio('assets/sounds/' + filename); audioPool[filename].volume = 0.5; } const a = audioPool[filename]; a.currentTime = 0; return a; }
 function playSound(filename) { if (toggleSoundState) { try { getAudio(filename).play().catch(() => { }); } catch (e) { } } }
 function playCallStart() { getAudio('open.mp3').volume = 0.7; getAudio('open.mp3').play().catch(() => { }); }
@@ -597,8 +603,16 @@ async function initApp() {
     const savedAvatar = localStorage.getItem('robinhood_avatar'); if (savedAvatar && profileAvatarSmall) { profileAvatarSmall.src = savedAvatar; const ra = $('robin-avatar'); if (ra) ra.src = savedAvatar; }
     const savedNick = localStorage.getItem('robinhood_nick'); if (savedNick && nickLabel) nickLabel.textContent = savedNick.substring(0, MAX_NICK_LENGTH);
     if (toggleSound) { toggleSound.checked = toggleSoundState; toggleSound.addEventListener('change', () => { toggleSoundState = toggleSound.checked; localStorage.setItem('robinhood_sound', toggleSoundState); }); }
-    if (toggleServer) { toggleServer.checked = srv === 'workers'; toggleServer.addEventListener('change', () => { srv = toggleServer.checked ? 'workers' : 'render'; localStorage.setItem('robinhood_server', srv); if (serverLabel) serverLabel.textContent = srv === 'workers' ? 'Workers' : 'Render'; rMsg('🌐 Сервер: ' + (srv === 'workers' ? 'Workers' : 'Render')); }); }
-    const lockStatusEl = $('lock-status'); if (lockStatusEl) lockStatusEl.textContent = lockType === 'pin' ? 'Пин-код' : (lockType === 'pattern' ? 'Граф. ключ' : 'Не задан');
+        if (toggleServer) { 
+        toggleServer.checked = srv === 'workers'; 
+        toggleServer.addEventListener('change', () => { 
+            srv = toggleServer.checked ? 'workers' : 'render'; 
+            localStorage.setItem('robinhood_server', srv); 
+            if (serverLabel) serverLabel.textContent = srv === 'workers' ? 'Workers' : 'Render'; 
+            send({ action: 'server-switch', server: srv });
+            rMsg('🌐 Сервер: ' + (srv === 'workers' ? 'Workers' : 'Render')); 
+        }); 
+    }
 
     // Инициализация мастер-пароля
     if (CRYPTO.isKEKSetup()) {
@@ -657,6 +671,22 @@ async function initApp() {
             (async () => { const contacts = await CRYPTO.secureGetItem('robinhood_contacts') || []; if (!contacts.find(c => c.pubkey === d.channelId)) { contacts.push({ pubkey: d.channelId, name: 'Лучник', avatar: 'assets/avatars/001-.png', status: 'confirmed' }); await CRYPTO.secureSetItem('robinhood_contacts', contacts); } })();
             rMsg('✅ Подключено!'); conn('online'); ui('ready'); contactOnlineStatus[d.channelId] = true;
         }
+               else if (d.type === 'restored-channels') {
+            if (d.channels) {
+                d.channels.forEach(ch => {
+                    channels[ch.channelId] = { secret: ch.secret, role: ch.role };
+                    if (!activeChannelId) activeChannelId = ch.channelId;
+                });
+                ui('ready');
+                rMsg('🔄 Колчаны восстановлены!');
+                conn('online');
+            }
+        }
+        else if (d.type === 'server-status') {
+            conn(d.status === 'online' ? 'online' : 'offline');
+            if (serverLabel) serverLabel.textContent = d.server === 'workers' ? 'Workers' : 'Render';
+            if (toggleServer) toggleServer.checked = d.server === 'workers';
+        }
         else if (d.type === 'message' && d.text) {
             if (d.text.startsWith('__ECDH__')) { return; }
             if (d.text.startsWith('__OFFER__')) { if (active || pc) { send({ action: 'send', text: '__HANGUP__', channelId: chId }); return; } try { offer = JSON.parse(d.text.replace('__OFFER__', '')); ui('incoming'); playSound('melodi.mp3'); } catch (e) { } }
@@ -698,7 +728,12 @@ async function initApp() {
     document.addEventListener('visibilitychange', () => { if (document.hidden) { localStorage.removeItem(CRYPTO.STORAGE_KEY + '_backup'); if (voiceTimerInterval) { clearInterval(voiceTimerInterval); voiceTimerInterval = null; } } });
     window.addEventListener('pagehide', () => { localStorage.removeItem(CRYPTO.STORAGE_KEY + '_backup'); });
 
-    chkSrv().then(() => { if (online) { ui('idle'); rMsg('🏹 Готов!'); } else { rMsg('⚠ Сервер офлайн'); } });
+       chkSrv().then(() => { 
+        if (online) { ui('idle'); rMsg('🏹 Готов!'); } 
+        else { rMsg('⚠ Сервер офлайн'); }
+        // Запрашиваем полный статус у P2PPong
+        send({ action: 'get-status' });
+    });
     window.addEventListener('beforeunload', () => { if (active) send({ action: 'send', text: '__HANGUP__', channelId: chId }); if (pc) pc.close(); if (stream) stream.getTracks().forEach(t => t.stop()); });
 }
 
