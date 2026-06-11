@@ -216,7 +216,9 @@ const THEMES = (() => {
         voiceTimerOverlay = $('voice-timer-overlay'); videoCirclePlayer = $('video-circle-player'); videoCircleVideo = $('video-circle-video'); videoCircleClose = $('video-circle-close');
 
         const urlParams = new URLSearchParams(window.location.search);
-        const refServer = urlParams.get('server'), refId = urlParams.get('id'), refKey = urlParams.get('key');
+const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+const refServer = urlParams.get('server'), refId = urlParams.get('id');
+const refKey = hashParams.get('key') || urlParams.get('key');
         if (refServer && (refServer === 'render' || refServer === 'workers')) { srv = refServer; localStorage.setItem('robinhood_server', srv); }
         else { const saved = localStorage.getItem('robinhood_server'); if (saved) srv = saved; }
         window._pendingRef = refId && refKey ? { id: refId, key: refKey } : null;
