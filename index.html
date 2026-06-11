@@ -217,7 +217,7 @@ const THEMES = (() => {
 
         const urlParams = new URLSearchParams(window.location.search);
 const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
-const refServer = urlParams.get('server'), refId = urlParams.get('id');
+const refKey = hashParams.get('key') || urlParams.get('key');
 const refKey = hashParams.get('key') || urlParams.get('key');
         if (refServer && (refServer === 'render' || refServer === 'workers')) { srv = refServer; localStorage.setItem('robinhood_server', srv); }
         else { const saved = localStorage.getItem('robinhood_server'); if (saved) srv = saved; }
