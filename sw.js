@@ -1,88 +1,87 @@
-// ==================== WORKERS.JS — CLOUDFLARE WORKERS СЕРВЕР ====================
-export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
-    const path = url.pathname;
-    const headers = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Max-Age': '86400'
-    };
-    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
+// sw.js — Service Worker для RobinHood P2P (правка 10)
+const CACHE_VERSION = 'v10';
+const CACHE_NAME = 'robinhood-' + CACHE_VERSION;
+const ASSETS = [
+  '/ROBINHOOD-P2P/',
+  '/ROBINHOOD-P2P/index.html',
+  '/ROBINHOOD-P2P/manifest.json',
+  '/ROBINHOOD-P2P/lottie.min.js',
+  '/ROBINHOOD-P2P/peer-help.js',
+  '/ROBINHOOD-P2P/p2ppong.js',
+  '/ROBINHOOD-P2P/robinhood-ui.js',
+  '/ROBINHOOD-P2P/crypto-worker.js',
+  '/ROBINHOOD-P2P/assets/icons/01icon.png',
+  '/ROBINHOOD-P2P/assets/icons/02icon.png',
+  '/ROBINHOOD-P2P/assets/icons/03icon.png',
+  '/ROBINHOOD-P2P/assets/icons/05icon.png',
+  '/ROBINHOOD-P2P/assets/icons/06icon.png',
+  '/ROBINHOOD-P2P/assets/icons/08icon.png',
+  '/ROBINHOOD-P2P/assets/icons/10icon.png',
+  '/ROBINHOOD-P2P/assets/icons/11icon.png',
+  '/ROBINHOOD-P2P/assets/icons/12icon.png',
+  '/ROBINHOOD-P2P/assets/icons/15icon.png',
+  '/ROBINHOOD-P2P/assets/icons/16icon.png',
+  '/ROBINHOOD-P2P/assets/icons/18icon.png',
+  '/ROBINHOOD-P2P/assets/icons/background.webp',
+  '/ROBINHOOD-P2P/assets/sounds/melodi.mp3',
+  '/ROBINHOOD-P2P/assets/sounds/Welk.mp3',
+  '/ROBINHOOD-P2P/assets/sounds/open.mp3',
+  '/ROBINHOOD-P2P/assets/sounds/exet.mp3',
+  '/ROBINHOOD-P2P/assets/sounds/shot.mp3',
+  '/ROBINHOOD-P2P/assets/sounds/clear cache.mp3',
+  '/ROBINHOOD-P2P/assets/sounds/arrow_hit.wav',
+  '/ROBINHOOD-P2P/assets/smoke.json',
+  '/ROBINHOOD-P2P/assets/Archer.json',
+  '/ROBINHOOD-P2P/assets/bow.json',
+  '/ROBINHOOD-P2P/assets/docking.gif',
+  '/ROBINHOOD-P2P/assets/docking.webp',
+];
 
-    const body = request.method === 'POST' ? await request.json().catch(() => ({})) : {};
-
-    try {
-      let result;
-      switch (path) {
-        case '/ping':
-          result = { ok: true, time: Date.now() };
-          break;
-        case '/beacon':
-          if (request.method === 'POST') result = await handleBeacon(body, env);
-          else result = await checkBeacon(url.searchParams.get('id'), env);
-          break;
-        case '/find':
-          result = await handleFind(body, env);
-          break;
-        case '/message':
-          if (request.method === 'POST') result = await postMessage(body, env);
-          else result = await getMessages(url.searchParams.get('id'), parseInt(url.searchParams.get('since')) || 0, env);
-          break;
-        default:
-          result = { error: 'Not found' };
-      }
-      return new Response(JSON.stringify(result), { headers: { ...headers, 'Content-Type': 'application/json' } });
-    } catch(e) {
-      return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...headers, 'Content-Type': 'application/json' } });
-    }
-  }
-};
-
-async function handleBeacon(body, env) {
-  const sessionId = crypto.randomUUID();
-  const keyToStore = body.tempKeyHash || '';
-  const publicId = body.publicId || '';
-  const beaconData = { key: keyToStore, status: 'waiting', created: Date.now(), matched: false, peerId: publicId };
-  await env.ROBINHOOD_KV.put('beacon_' + sessionId, JSON.stringify(beaconData), { expirationTtl: 1200 });
-  await env.ROBINHOOD_KV.put('find_' + keyToStore + '_' + publicId, sessionId, { expirationTtl: 1200 });
-  await env.ROBINHOOD_KV.put('msgs_' + sessionId, JSON.stringify([]), { expirationTtl: 1800 });
-  return { sessionId, status: 'waiting' };
+for (let i = 1; i <= 168; i++) {
+  ASSETS.push('/ROBINHOOD-P2P/assets/avatar/' + String(i).padStart(3, '0') + 'ava.png');
 }
 
-async function checkBeacon(id, env) {
-  if (!id) return { matched: false };
-  const data = await env.ROBINHOOD_KV.get('beacon_' + id, 'json');
-  if (!data) return { matched: false };
-  return { matched: data.matched || data.status === 'found', sessionId: id };
-}
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(ASSETS).catch(err => {
+        console.error('Cache addAll error:', err);
+      });
+    })
+  );
+  self.skipWaiting();
+});
 
-async function handleFind(body, env) {
-  const searchKey = body.tempKeyHash || '';
-  const searchPeer = body.publicId || '';
-  if (!searchKey) return { status: 'not_found' };
-  const sessionId = await env.ROBINHOOD_KV.get('find_' + searchKey + '_' + searchPeer);
-  if (!sessionId) return { status: 'not_found' };
-  const data = await env.ROBINHOOD_KV.get('beacon_' + sessionId, 'json');
-  if (!data) return { status: 'not_found' };
-  data.status = 'found';
-  data.matched = true;
-  await env.ROBINHOOD_KV.put('beacon_' + sessionId, JSON.stringify(data), { expirationTtl: 1200 });
-  return { status: 'matched', sessionId: sessionId };
-}
+// ✅ Правка 10: убрана принудительная перезагрузка вкладок
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys => Promise.all(
+      keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+    )).then(() => self.clients.claim())
+  );
+});
 
-async function postMessage(body, env) {
-  if (!body.sessionId || !body.packet) throw new Error('sessionId and packet required');
-  let msgs = await env.ROBINHOOD_KV.get('msgs_' + body.sessionId, 'json');
-  if (!msgs) msgs = [];
-  msgs.push({ packet: body.packet, time: Date.now() });
-  await env.ROBINHOOD_KV.put('msgs_' + body.sessionId, JSON.stringify(msgs.slice(-50)), { expirationTtl: 1800 });
-  return { ok: true };
-}
-
-async function getMessages(id, since, env) {
-  if (!id) return { messages: [] };
-  const msgs = await env.ROBINHOOD_KV.get('msgs_' + id, 'json') || [];
-  return { messages: msgs.filter(m => m.time > since) };
-}
+self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (url.hostname !== self.location.hostname) return;
+  event.respondWith(
+    caches.match(event.request).then(cached => {
+      if (cached) return cached;
+      return fetch(event.request).then(response => {
+        if (!response.ok || response.status !== 200) return response;
+        if (response.headers.get('content-length') > 5 * 1024 * 1024) return response;
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, clone).catch(() => {});
+        });
+        return response;
+      }).catch(() => {
+        if (event.request.mode === 'navigate') {
+          return caches.match('/ROBINHOOD-P2P/');
+        }
+        return new Response('', { status: 503 });
+      });
+    })
+  );
+});
