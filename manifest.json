@@ -1,15 +1,20 @@
 {
     "name": "RobinCall",
     "short_name": "RobinCall",
-    "description": "P2P звонки RobinHood",
+    "description": "P2P звонки RobinHood — маяки, голос, видео",
     "start_url": "index.html",
     "display": "standalone",
     "background_color": "#1a2a1f",
     "theme_color": "#c4a24b",
     "icons": [
         {
-            "src": "assets/avatars/001-.png",
+            "src": "001-.png",
             "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "001-.png",
+            "sizes": "512x512",
             "type": "image/png"
         }
     ]
