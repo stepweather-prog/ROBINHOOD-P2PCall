@@ -204,18 +204,78 @@ function ui(s){
     else if(s==='incoming'){$('incoming-row')?.classList.remove('hidden');$('btn-main-action')?.classList.add('ringing','hidden')}
 }
 
+// ФИКС: добавил проверку на существование pc.signalingState, чтобы избежать "InvalidStateError"
+function safeSetRemote(sdp){
+    if(!pc) return Promise.reject('no pc');
+    if(pc.signalingState === 'stable') {
+        return pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    } else if(pc.signalingState === 'have-local-offer' && sdp.type === 'answer') {
+        return pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    } else {
+        console.warn('[WebRTC] Неожиданное состояние:', pc.signalingState, 'для', sdp.type);
+        return Promise.resolve();
+    }
+}
+
 async function getMediaStream(){try{return await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:!0,noiseSuppression:!0}})}catch(e){rMsg('❌ Нет микрофона',4000);return null}}
-function createPC(){if(pc){pc.close();pc=null}pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});if(stream)stream.getTracks().forEach(t=>pc.addTrack(t,stream));pc.ontrack=e=>{if(e.streams[0]){const a=new Audio();a.srcObject=e.streams[0];a.play().catch(()=>{})}};pc.onicecandidate=e=>{if(e.candidate&&activeChannelId)P2PPong.sendMessage(activeChannelId,JSON.stringify({webrtc:'webrtc-ice',sdp:JSON.stringify(e.candidate)}))};pc.onconnectionstatechange=()=>{if(pc.connectionState==='connected'){callActive=!0;callStartTime=Date.now();startCallTimer();ui('active');playSound('open.mp3')}if(pc.connectionState==='disconnected'||pc.connectionState==='failed')hang(!1)};return pc}
+function createPC(){if(pc){try{pc.close()}catch(e){};pc=null}pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]});if(stream)stream.getTracks().forEach(t=>{if(pc)pc.addTrack(t,stream)});pc.ontrack=e=>{if(e.streams[0]){const a=new Audio();a.srcObject=e.streams[0];a.play().catch(()=>{})}};pc.onicecandidate=e=>{if(e.candidate&&activeChannelId)P2PPong.sendMessage(activeChannelId,JSON.stringify({webrtc:'webrtc-ice',sdp:JSON.stringify(e.candidate)}))};pc.onconnectionstatechange=()=>{if(pc.connectionState==='connected'){callActive=!0;callStartTime=Date.now();startCallTimer();ui('active');playSound('open.mp3')}if(pc.connectionState==='disconnected'||pc.connectionState==='failed'||pc.connectionState==='closed'){hang(!1)}};return pc}
 function startCallTimer(){$('call-timer').classList.remove('hidden');callTimerInterval=setInterval(()=>{const e=Math.floor((Date.now()-callStartTime)/1000);$('call-timer').textContent=Math.floor(e/60).toString().padStart(2,'0')+':'+(e%60).toString().padStart(2,'0')},1000)}
 function stopCallTimer(){if(callTimerInterval)clearInterval(callTimerInterval);$('call-timer').classList.add('hidden')}
-async function startCall(){if(callActive||!activeChannelId){rMsg('⚠ Сначала подключитесь',4000);return}ui('calling');const s=await getMediaStream();if(!s){ui('ready');return}stream=s;createPC();try{const o=await pc.createOffer();await pc.setLocalDescription(o);P2PPong.sendMessage(activeChannelId,JSON.stringify({webrtc:'webrtc-offer',sdp:JSON.stringify(o)}))}catch(e){hang(!0)}}
-async function acceptCall(){if(!incomingOffer)return;ui('active');const s=await getMediaStream();if(!s){ui('ready');return}stream=s;createPC();try{await pc.setRemoteDescription(new RTCSessionDescription(incomingOffer));const a=await pc.createAnswer();await pc.setLocalDescription(a);P2PPong.sendMessage(activeChannelId,JSON.stringify({webrtc:'webrtc-answer',sdp:JSON.stringify(a)}));incomingOffer=null;callActive=!0;callStartTime=Date.now();startCallTimer();playSound('open.mp3')}catch(e){hang(!0)}}
-function hang(sig=!0){callActive=!1;stopCallTimer();if(sig&&activeChannelId)P2PPong.sendMessage(activeChannelId,JSON.stringify({webrtc:'webrtc-hangup',sdp:''}));if(pc){pc.close();pc=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}incomingOffer=null;ui('ready');playSound('exet.mp3')}
+async function startCall(){if(callActive||!activeChannelId){rMsg('⚠ Сначала подключитесь',4000);return}const s=await getMediaStream();if(!s){ui('ready');return}stream=s;createPC();try{const o=await pc.createOffer();await pc.setLocalDescription(o);P2PPong.sendMessage(activeChannelId,JSON.stringify({webrtc:'webrtc-offer',sdp:JSON.stringify(o)}))}catch(e){hang(!0)}}
+async function acceptCall(){if(!incomingOffer)return;ui('active');const s=await getMediaStream();if(!s){ui('ready');return}stream=s;createPC();try{
+    // ФИКС: правильный порядок — сначала remote, потом answer
+    await safeSetRemote(incomingOffer);
+    const a=await pc.createAnswer();await pc.setLocalDescription(a);
+    P2PPong.sendMessage(activeChannelId,JSON.stringify({webrtc:'webrtc-answer',sdp:JSON.stringify(a)}));incomingOffer=null;callActive=!0;callStartTime=Date.now();startCallTimer();playSound('open.mp3')
+}catch(e){hang(!0)}}
+function hang(sig=!0){
+    callActive=!1;stopCallTimer();
+    // ФИКС: всегда шлём hangup при активном канале, даже если !sig — чтобы собеседник узнал
+    if(activeChannelId) {
+        try { P2PPong.sendMessage(activeChannelId,JSON.stringify({webrtc:'webrtc-hangup',sdp:''})) } catch(e){}
+    }
+    if(pc){try{pc.close()}catch(e){};pc=null}
+    if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+    incomingOffer=null;ui('ready');playSound('exet.mp3')
+}
 function startVoiceTimer(){voiceSeconds=0;$('voice-timer-overlay').style.display='block';voiceTimerInterval=setInterval(()=>{voiceSeconds++;const m=Math.floor(voiceSeconds/60),s=(voiceSeconds%60).toString().padStart(2,'0');$('voice-timer-overlay').textContent='🎤 '+m+':'+s;if(voiceSeconds>=MAX_VOICE_DURATION)stopVoiceRecording()},1000)}
 function stopVoiceTimer(){if(voiceTimerInterval)clearInterval(voiceTimerInterval);$('voice-timer-overlay').style.display='none'}
-function startVoiceRecording(){if(voiceRecording)return;navigator.mediaDevices.getUserMedia({audio:!0}).then(st=>{voiceStream=st;voiceRecorder=new MediaRecorder(st,{mimeType:'audio/webm',audioBitsPerSecond:16000});voiceChunks=[];voiceRecorder.ondataavailable=e=>voiceChunks.push(e.data);voiceRecorder.onstop=()=>{const blob=new Blob(voiceChunks,{type:'audio/webm'});stopVoiceTimer();if(blob.size>100&&blob.size<50000&&activeChannelId){const r=new FileReader();r.onload=()=>P2PPong.sendVoiceMessage(activeChannelId,r.result.split(',')[1]);r.readAsDataURL(blob)}if(voiceStream){voiceStream.getTracks().forEach(t=>t.stop());voiceStream=null}voiceRecorder=null;voiceRecording=!1;$('btn-voice').style.background=''};voiceRecorder.start();voiceRecording=!0;startVoiceTimer();$('btn-voice').style.background='#f44336'}).catch(()=>rMsg('❌ Нет микрофона',3000))}
-function stopVoiceRecording(){if(voiceRecorder?.state==='recording'){voiceRecorder.stop();stopVoiceTimer()}}
-function startVideoCircle(){if(videoCircleRecorder?.state==='recording'){videoCircleRecorder.stop();$('btn-video-circle').style.background='';return}navigator.mediaDevices.getUserMedia({video:!0,audio:!0}).then(st=>{videoCircleRecorder=new MediaRecorder(st,{mimeType:'video/webm; codecs=vp8,opus',videoBitsPerSecond:50000});videoCircleChunks=[];videoCircleRecorder.ondataavailable=e=>videoCircleChunks.push(e.data);videoCircleRecorder.onstop=()=>{const blob=new Blob(videoCircleChunks,{type:'video/webm'});if(blob.size<50000&&activeChannelId)P2PPong.sendVoiceMessage(activeChannelId,btoa(String.fromCharCode(...new Uint8Array(blob)))).catch(()=>{});st.getTracks().forEach(t=>t.stop());videoCircleRecorder=null;$('btn-video-circle').style.background=''};videoCircleRecorder.start();$('btn-video-circle').style.background='#f44336';setTimeout(()=>{if(videoCircleRecorder?.state==='recording')videoCircleRecorder.stop()},30000)}).catch(()=>rMsg('❌ Нет камеры',3000))}
+function startVoiceRecording(){
+    if(voiceRecording)return;
+    // ФИКС: останавливаем старый stream если есть
+    if(voiceStream){voiceStream.getTracks().forEach(t=>t.stop());voiceStream=null}
+    navigator.mediaDevices.getUserMedia({audio:!0}).then(st=>{voiceStream=st;voiceRecorder=new MediaRecorder(st,{mimeType:'audio/webm',audioBitsPerSecond:16000});voiceChunks=[];voiceRecorder.ondataavailable=e=>{if(e.data.size>0)voiceChunks.push(e.data)};voiceRecorder.onstop=()=>{const blob=new Blob(voiceChunks,{type:'audio/webm'});stopVoiceTimer();if(blob.size>100&&blob.size<100000&&activeChannelId){const r=new FileReader();r.onload=()=>{const b64=r.result.split(',')[1];if(b64)P2PPong.sendVoiceMessage(activeChannelId,b64)};r.readAsDataURL(blob)}if(voiceStream){voiceStream.getTracks().forEach(t=>t.stop());voiceStream=null}voiceRecorder=null;voiceRecording=!1;$('btn-voice').style.background=''};voiceRecorder.start(100);voiceRecording=!0;startVoiceTimer();$('btn-voice').style.background='#f44336'}).catch(()=>rMsg('❌ Нет микрофона',3000))
+}
+function stopVoiceRecording(){if(voiceRecorder?.state==='recording'){voiceRecorder.stop()} else {stopVoiceTimer()}}
+function startVideoCircle(){
+    if(videoCircleRecorder?.state==='recording'){videoCircleRecorder.stop();$('btn-video-circle').style.background='';return}
+    navigator.mediaDevices.getUserMedia({video:!0,audio:!0}).then(st=>{
+        // ФИКС: показываем видео в плеере
+        const vp=$('video-circle-player');const vv=$('video-circle-video');
+        if(vp)vp.style.display='flex';
+        if(vv){vv.srcObject=st;vv.play().catch(()=>{})}
+        videoCircleRecorder=new MediaRecorder(st,{mimeType:'video/webm; codecs=vp8,opus',videoBitsPerSecond:50000});
+        videoCircleChunks=[];
+        videoCircleRecorder.ondataavailable=e=>{if(e.data.size>0)videoCircleChunks.push(e.data)};
+        videoCircleRecorder.onstop=()=>{
+            const blob=new Blob(videoCircleChunks,{type:'video/webm'});
+            const vp2=$('video-circle-player');const vv2=$('video-circle-video');
+            if(vp2)vp2.style.display='none';
+            if(vv2)vv2.srcObject=null;
+            if(blob.size>100&&blob.size<500000&&activeChannelId){
+                const r=new FileReader();
+                r.onload=()=>{const b64=r.result.split(',')[1];if(b64)P2PPong.sendVoiceMessage(activeChannelId,b64)};
+                r.readAsDataURL(blob)
+            }
+            st.getTracks().forEach(t=>t.stop());
+            videoCircleRecorder=null;
+            $('btn-video-circle').style.background=''
+        };
+        videoCircleRecorder.start(500);
+        $('btn-video-circle').style.background='#f44336';
+        setTimeout(()=>{if(videoCircleRecorder?.state==='recording')videoCircleRecorder.stop()},30000)
+    }).catch(()=>rMsg('❌ Нет камеры',3000))
+}
 
 const avatars=[];for(let i=1;i<=168;i++)avatars.push('assets/avatar/'+String(i).padStart(3,'0')+'ava.png');
 function loadAvatars(){const al=$('avatar-list');if(!al)return;al.innerHTML='';avatars.forEach(src=>{const img=document.createElement('img');img.src=src;img.className='avatar-option';img.onerror=()=>img.src='assets/avatar/001ava.png';img.onclick=()=>{const pa=$('profile-avatar-small');if(pa)pa.src=src;$('robin-avatar').src=src;localStorage.setItem('robinhood_avatar',src);closeSheets()};al.appendChild(img)})}
@@ -239,10 +299,32 @@ function initApp(){
     P2PPong.on('peer-id-generated',d=>{$('craft-beacon-display').style.display='block';$('craft-beacon-display').textContent=d.beaconId;const cd=$('craft-code-display');if(cd){cd.style.display='block';cd.textContent=d.code}$('btn-copy-link').style.display='block';rMsg('✅ Стрела создана!',3000);navigator.clipboard.writeText(d.beaconId+'\n'+d.code).catch(()=>{})});
     P2PPong.on('verification-needed',d=>{showVerifyModal(d.code)});
     P2PPong.on('channel-opened',d=>{activeChannelId=d.channelId;ui('ready');rMsg('✅ Колчан открыт!',3000);$('verify-modal')?.classList.remove('active');$('craft-modal')?.classList.remove('active')});
-    P2PPong.on('message-received',d=>{if(!d.text)return;try{const p=JSON.parse(d.text);if(p.webrtc){handleWebRTCSignal(p.webrtc,p.sdp);return}}catch(e){}activeChannelId=d.channelId;addMsg('Друг',d.text);playSound('arrow_hit.wav')});
+    P2PPong.on('message-received',d=>{
+        if(d.voiceData) {
+            // ФИКС: голосовое — показываем, но НЕ парсим как JSON
+            addMsg('Друг','[🎤 Голосовое сообщение]');
+            return;
+        }
+        if(!d.text)return;
+        // ФИКС: проверяем что это наш WebRTC-сигнал
+        if(d.text.startsWith('{') && d.text.indexOf('"webrtc"') > -1) {
+            try{const p=JSON.parse(d.text);if(p.webrtc){handleWebRTCSignal(p.webrtc,p.sdp);return}}catch(e){}
+        }
+        activeChannelId=d.channelId;addMsg('Друг',d.text);playSound('arrow_hit.wav')
+    });
     P2PPong.on('error',d=>{rMsg('⚠ '+(d.message||'Ошибка'),4000);conn('offline')});
 
-    function handleWebRTCSignal(type,sdp){if(type==='webrtc-offer'&&!callActive){try{incomingOffer=JSON.parse(sdp);ui('incoming');playSound('melodi.mp3');rMsg('📞 Входящий!',0)}catch(e){}return}if(type==='webrtc-answer'&&pc){try{pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp)));callActive=!0;callStartTime=Date.now();startCallTimer();ui('active');playSound('open.mp3')}catch(e){}return}if(type==='webrtc-ice'&&pc){try{pc.addIceCandidate(new RTCIceCandidate(JSON.parse(sdp))).catch(()=>{})}catch(e){}return}if(type==='webrtc-hangup'){if(callActive||pc){rMsg('📞 Собеседник завершил',3000);hang(!1)}return}}
+    function handleWebRTCSignal(type,sdp){
+        if(type==='webrtc-offer'&&!callActive){try{incomingOffer=JSON.parse(sdp);ui('incoming');playSound('melodi.mp3');rMsg('📞 Входящий!',0)}catch(e){}return}
+        if(type==='webrtc-answer'&&pc){try{
+            // ФИКС: используем safeSetRemote
+            safeSetRemote(JSON.parse(sdp)).then(()=>{
+                callActive=!0;callStartTime=Date.now();startCallTimer();ui('active');playSound('open.mp3')
+            }).catch(()=>{})
+        }catch(e){}return}
+        if(type==='webrtc-ice'&&pc){try{pc.addIceCandidate(new RTCIceCandidate(JSON.parse(sdp))).catch(()=>{})}catch(e){}return}
+        if(type==='webrtc-hangup'){if(callActive||pc){rMsg('📞 Собеседник завершил',3000);hang(!1)}return}
+    }
 
     $('btn-main-action')?.addEventListener('click',()=>{if(!activeChannelId)$('craft-modal')?.classList.add('active');else if(callActive)hang(!0);else startCall()});
     $('btn-arrow')?.addEventListener('click',()=>$('craft-modal')?.classList.add('active'));
@@ -264,7 +346,11 @@ function initApp(){
     $('btn-voice')?.addEventListener('pointerup',e=>{e.preventDefault();stopVoiceRecording()});
     $('btn-voice')?.addEventListener('pointerleave',stopVoiceRecording);
     $('btn-video-circle')?.addEventListener('click',startVideoCircle);
-    $('video-circle-close')?.addEventListener('click',()=>{$('video-circle-player').style.display='none';$('video-circle-video')?.pause()});
+    $('video-circle-close')?.addEventListener('click',()=>{
+        if(videoCircleRecorder?.state==='recording')videoCircleRecorder.stop();
+        $('video-circle-player').style.display='none';
+        const vv=$('video-circle-video');if(vv){vv.pause();vv.srcObject=null}
+    });
     $('btn-verify-confirm')?.addEventListener('click',()=>{if(verifyInput.length!==7){$('verify-error').style.display='block';$('verify-error').textContent='Введи ровно 7 цифр';return}if(verifyInput===verifyCode){$('verify-error').style.display='none';$('verify-modal')?.classList.remove('active');P2PPong.confirmVerification()}else{$('verify-error').style.display='block';$('verify-error').textContent='❌ Неверный код';verifyInput='';$('verify-code-display').textContent='_______'}});
     $('btn-verify-reset')?.addEventListener('click',()=>{verifyInput='';$('verify-code-display').textContent='_______'});
     $('btn-avatar-menu')?.addEventListener('click',()=>{$('avatar-selector')?.classList.toggle('show');$('overlay')?.classList.toggle('show');if($('avatar-selector')?.classList.contains('show'))loadAvatars()});
