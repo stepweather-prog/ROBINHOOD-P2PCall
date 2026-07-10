@@ -24,27 +24,18 @@ const videoBackgrounds = [
     { type: 'video', src: 'assets/icons/background2.webm', name: 'Робин' },
     { type: 'video', src: 'assets/icons/background3.webm', name: 'Листва' },
 ];
-let currentBgIndex = 1;
+let currentBgIndex = 0;
 
 const themes = [
-    { id: 'forest', name: 'Лес' },
-    { id: 'sunset', name: 'Закат' },
-    { id: 'ocean', name: 'Океан' },
-    { id: 'rose', name: 'Роза' },
-    { id: 'amber', name: 'Янтарь' },
-    { id: 'mint', name: 'Мята' },
-    { id: 'lavender', name: 'Лаванда' },
-    { id: 'cherry', name: 'Вишня' },
-    { id: 'emerald', name: 'Изумруд' },
-    { id: 'slate', name: 'Сланец' },
-    { id: 'coral', name: 'Коралл' },
-    { id: 'plum', name: 'Слива' }
+    { id: 'forest', name: 'Лес' }, { id: 'sunset', name: 'Закат' }, { id: 'ocean', name: 'Океан' },
+    { id: 'rose', name: 'Роза' }, { id: 'amber', name: 'Янтарь' }, { id: 'mint', name: 'Мята' },
+    { id: 'lavender', name: 'Лаванда' }, { id: 'cherry', name: 'Вишня' }, { id: 'emerald', name: 'Изумруд' },
+    { id: 'slate', name: 'Сланец' }, { id: 'coral', name: 'Коралл' }, { id: 'plum', name: 'Слива' }
 ];
 
 function $(s) { return document.getElementById(s); }
 function rMsg(m, t = 0) {
-    const rm = $('robin-text');
-    if (!rm) return;
+    const rm = $('robin-text'); if (!rm) return;
     rm.textContent = m;
     if (t > 0) setTimeout(() => { if (rm.textContent === m) rm.textContent = 'Святые сокеты стабильны!'; }, t);
 }
@@ -61,8 +52,7 @@ function closeSheets() {
 
 function playSmokeAnimation() {
     if (!toggleAnimations) return;
-    const smoke = document.createElement('div');
-    smoke.className = 'smoke-anim';
+    const smoke = document.createElement('div'); smoke.className = 'smoke-anim';
     document.body.appendChild(smoke);
     if (typeof lottie !== 'undefined') {
         try { lottie.loadAnimation({ container: smoke, renderer: 'canvas', loop: false, autoplay: true, path: 'assets/smoke.json' }); } catch (e) {}
@@ -72,8 +62,7 @@ function playSmokeAnimation() {
 
 function playArcherAnimation() {
     if (!toggleAnimations) return;
-    const c = $('call-archer-container');
-    if (!c) return;
+    const c = $('call-archer-container'); if (!c) return;
     c.innerHTML = '';
     if (typeof lottie !== 'undefined') {
         archerAnim = lottie.loadAnimation({ container: c, renderer: 'canvas', loop: true, autoplay: true, path: 'assets/Archer.json' });
@@ -92,7 +81,6 @@ function showIdleScreen() {
     $('call-status-text').textContent = '';
     if (archerAnim) { archerAnim.destroy(); archerAnim = null; }
     $('call-archer-container').innerHTML = '';
-    $('btn-call-main').classList.remove('ringing');
 }
 
 function showCallScreen(type) {
@@ -102,26 +90,17 @@ function showCallScreen(type) {
     $('call-peer-avatar').src = getAvatarUrl(theirAvatar);
 
     if (type === 'outgoing') {
-        $('incoming-row').classList.add('hidden');
-        $('active-row').classList.add('hidden');
-        $('call-timer').classList.add('hidden');
-        $('call-status-text').textContent = 'Вызов...';
+        $('incoming-row').classList.add('hidden'); $('active-row').classList.add('hidden');
+        $('call-timer').classList.add('hidden'); $('call-status-text').textContent = 'Вызов...';
         playArcherAnimation();
     } else if (type === 'incoming') {
-        $('incoming-row').classList.remove('hidden');
-        $('active-row').classList.add('hidden');
-        $('call-timer').classList.add('hidden');
-        $('call-status-text').textContent = 'Входящий звонок...';
-        $('btn-call-main').classList.add('ringing');
-        playArcherAnimation();
-        playSound('melodi.mp3');
+        $('incoming-row').classList.remove('hidden'); $('active-row').classList.add('hidden');
+        $('call-timer').classList.add('hidden'); $('call-status-text').textContent = 'Входящий звонок...';
+        playArcherAnimation(); playSound('melodi.mp3');
     } else if (type === 'active') {
-        $('incoming-row').classList.add('hidden');
-        $('active-row').classList.remove('hidden');
-        $('call-timer').classList.remove('hidden');
-        $('call-status-text').textContent = 'Разговор';
-        playArcherAnimation();
-        playSound('open.mp3');
+        $('incoming-row').classList.add('hidden'); $('active-row').classList.remove('hidden');
+        $('call-timer').classList.remove('hidden'); $('call-status-text').textContent = 'Разговор';
+        playArcherAnimation(); playSound('open.mp3');
     }
 }
 
@@ -134,8 +113,7 @@ async function getMediaStream() {
 function createPC() {
     if (pc) { try { pc.close(); } catch (e) {}; pc = null; }
     pc = new RTCPeerConnection({ iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' },
         { urls: 'stun:stun.cloudflare.com:3478' },
         { urls: 'turn:robinhoodp2p.metered.live:80?transport=tcp', username: '466624d8364bb4660ed45c7d', credential: 'mpODzmBDhwG/b+VL' },
         { urls: 'turn:robinhoodp2p.metered.live:443?transport=tcp', username: '466624d8364bb4660ed45c7d', credential: 'mpODzmBDhwG/b+VL' }
@@ -153,18 +131,14 @@ function createPC() {
 }
 
 function startCallTimer() {
-    callStartTime = Date.now();
-    $('call-timer').classList.remove('hidden');
+    callStartTime = Date.now(); $('call-timer').classList.remove('hidden');
     callTimerInterval = setInterval(() => {
         const e = Math.floor((Date.now() - callStartTime) / 1000);
         $('call-timer').textContent = Math.floor(e / 60).toString().padStart(2, '0') + ':' + (e % 60).toString().padStart(2, '0');
     }, 1000);
 }
 
-function stopCallTimer() {
-    if (callTimerInterval) clearInterval(callTimerInterval);
-    $('call-timer').classList.add('hidden');
-}
+function stopCallTimer() { if (callTimerInterval) clearInterval(callTimerInterval); $('call-timer').classList.add('hidden'); }
 
 async function startCall() {
     if (callActive || !activeChannelId) { rMsg('⚠ Сначала подключись', 4000); return; }
@@ -204,11 +178,7 @@ function handleWebRTCSignal(type, sdp) {
         return;
     }
     if (type === 'webrtc-answer' && pc) {
-        try {
-            pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp)))
-              .then(() => { callActive = true; startCallTimer(); showCallScreen('active'); })
-              .catch(() => {});
-        } catch (e) {}
+        try { pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp))).then(() => { callActive = true; startCallTimer(); showCallScreen('active'); }).catch(() => {}); } catch (e) {}
         return;
     }
     if (type === 'webrtc-ice' && pc) {
@@ -227,8 +197,7 @@ const avatars = avatarList.map(id => 'assets/avatar/' + id + 'ava.png');
 
 function getAvatarUrl(src) {
     if (!src || src === '001' || src === 'icons/01icon.png') return 'assets/icons/01icon.png';
-    if (src.startsWith('assets/')) return src.endsWith('.png') ? src : src + 'ava.png';
-    if (src.includes('/')) return src.endsWith('.png') ? src : src + 'ava.png';
+    if (src.startsWith('assets/')) return src;
     return 'assets/avatar/' + src + 'ava.png';
 }
 
@@ -277,24 +246,15 @@ function applyBackground(index) {
     const bg = videoBackgrounds[index];
     $('videobg-name').textContent = bg.name;
     if (bg.type === 'image') {
-        vbg.pause();
-        vbg.removeAttribute('src');
-        vbg.querySelector('source')?.removeAttribute('src');
-        vbg.load();
+        vbg.pause(); vbg.removeAttribute('src');
+        vbg.querySelector('source')?.removeAttribute('src'); vbg.load();
         vbg.style.backgroundImage = `url('${bg.src}')`;
-        vbg.style.backgroundSize = 'cover';
-        vbg.style.backgroundPosition = 'center';
-        vbg.style.display = 'block';
-        vbg.style.opacity = '1';
+        vbg.style.backgroundSize = 'cover'; vbg.style.backgroundPosition = 'center';
+        vbg.style.display = 'block'; vbg.style.opacity = '1';
     } else {
-        vbg.style.backgroundImage = '';
-        vbg.style.backgroundSize = '';
-        vbg.style.backgroundPosition = '';
-        vbg.querySelector('source').src = bg.src;
-        vbg.load();
-        vbg.play();
-        vbg.style.display = '';
-        vbg.style.opacity = '0.35';
+        vbg.style.backgroundImage = ''; vbg.style.backgroundSize = ''; vbg.style.backgroundPosition = '';
+        vbg.querySelector('source').src = bg.src; vbg.load(); vbg.play();
+        vbg.style.display = ''; vbg.style.opacity = '0.35';
     }
 }
 
@@ -328,8 +288,7 @@ function generateQR(text, size) {
     const bytes = new TextEncoder().encode(text);
     const moduleCount = 21; const moduleSize = Math.floor(size / (moduleCount + 8));
     const offset = Math.floor((size - moduleCount * moduleSize) / 2);
-    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, size, size);
-    ctx.fillStyle = '#000000';
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, size, size); ctx.fillStyle = '#000000';
     function drawModule(row, col) { ctx.fillRect(offset + col * moduleSize, offset + row * moduleSize, moduleSize, moduleSize); }
     function drawFinderPattern(startRow, startCol) {
         for (let r = 0; r < 7; r++) { for (let c = 0; c < 7; c++) { if (r === 0 || r === 6 || c === 0 || c === 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4)) drawModule(startRow + r, startCol + c); } }
@@ -341,8 +300,7 @@ function generateQR(text, size) {
             if ((row < 7 && col < 7) || (row < 7 && col >= moduleCount - 7) || (row >= moduleCount - 7 && col < 7)) continue;
             const byteIndex = Math.floor(bitIndex / 8); const bitInByte = 7 - (bitIndex % 8);
             const bit = (bytes[byteIndex] >> bitInByte) & 1;
-            if (bit === 1) drawModule(row, col);
-            bitIndex++;
+            if (bit === 1) drawModule(row, col); bitIndex++;
         }
     }
     return canvas.toDataURL('image/png');
@@ -350,11 +308,7 @@ function generateQR(text, size) {
 
 // === Инициализация ===
 function initUI() {
-    P2PPong.on('ready', () => {
-        rMsg('🏹 Колчан готов!', 0);
-        showIdleScreen();
-    });
-
+    P2PPong.on('ready', () => { rMsg('🏹 Колчан готов!', 0); showIdleScreen(); });
     P2PPong.on('peer-id-generated', d => {
         $('craft-peer-id-display').textContent = d.beaconId || 'Не создана';
         const code = d.code;
@@ -368,28 +322,21 @@ function initUI() {
         rMsg('✅ Стрела создана!', 3000);
         navigator.clipboard.writeText(d.beaconId + '\n' + (d.code || '')).catch(() => {});
     });
-
     P2PPong.on('verification-needed', d => { showVerifyModal(d.code); });
-
     P2PPong.on('channel-opened', d => {
         activeChannelId = d.channelId;
-        if (d.nick) theirNick = d.nick;
-        if (d.avatar) theirAvatar = d.avatar;
+        if (d.nick) theirNick = d.nick; if (d.avatar) theirAvatar = d.avatar;
         $('robin-bar-sender').textContent = theirNick;
-        showIdleScreen();
-        rMsg('✅ Колчан открыт! Тетива натянута!', 3000);
-        $('verify-modal')?.classList.remove('active');
-        $('craft-modal')?.classList.remove('active');
+        showIdleScreen(); rMsg('✅ Колчан открыт! Тетива натянута!', 3000);
+        $('verify-modal')?.classList.remove('active'); $('craft-modal')?.classList.remove('active');
         verificationModalShown = false;
     });
-
     P2PPong.on('message-received', d => {
         if (!d.text) return;
         if (d.text.indexOf('"webrtc"') > -1) {
             try { const p = JSON.parse(d.text); if (p.webrtc) handleWebRTCSignal(p.webrtc, p.sdp); } catch (e) {}
         }
     });
-
     P2PPong.on('error', d => { rMsg('❌ ' + (d.message || 'Ошибка'), 5000); });
     P2PPong.on('channel-expired', d => { if (d.channelId === activeChannelId) { hang(false); activeChannelId = null; showIdleScreen(); } });
 }
@@ -398,7 +345,7 @@ function initApp() {
     const savedTheme = localStorage.getItem('robinhood_theme');
     if (savedTheme) applyTheme(savedTheme); else applyTheme('slate');
 
-    currentBgIndex = 1;
+    currentBgIndex = 0;
     applyBackground(currentBgIndex);
 
     const savedAvatar = localStorage.getItem('robinhood_avatar');
@@ -417,16 +364,30 @@ function initApp() {
 
     toggleAnimations = localStorage.getItem('robinhood_animations') !== 'false';
 
+    // Скрытие шапки по клику на робин-бар
+    let headerVisible = true;
+    $('robin-bar')?.addEventListener('click', () => {
+        const h1 = document.querySelector('.header-row-1');
+        const h2 = document.querySelector('.header-row-2');
+        const h3 = document.querySelector('.header-row-3');
+        if (headerVisible) { h1.style.display = 'none'; h2.style.display = 'none'; h3.style.display = 'none'; headerVisible = false; }
+        else { h1.style.display = ''; h2.style.display = ''; h3.style.display = ''; headerVisible = true; }
+    });
+
     // Кнопки шапки
     $('btn-avatar')?.addEventListener('click', () => { closeSheets(); loadAvatars(); $('avatar-selector')?.classList.add('show'); $('overlay')?.classList.add('show'); });
     $('btn-craft')?.addEventListener('click', () => { $('craft-peer-id-display').textContent = P2PPong._beaconId || 'Не создана'; $('craft-modal')?.classList.add('active'); });
+    $('btn-call-main')?.addEventListener('click', () => {
+        if (!activeChannelId) { rMsg('⚠ Сначала подключись', 3000); return; }
+        if (callActive) { hang(true); } else { startCall(); }
+    });
     $('btn-clear')?.addEventListener('click', async () => {
         const confirmed = await showConfirm('🔥 Скурить колчан?', 'Вся переписка будет уничтожена безвозвратно.');
         if (!confirmed) return;
         hang(false); activeChannelId = null; showIdleScreen();
         playSmokeAnimation(); playSound('clear cache.mp3');
         rMsg('🚬 Всё сожжено!', 5000); localStorage.clear();
-        $('robin-bar-sender').textContent = 'RobinHood P2P';
+        $('robin-bar-sender').textContent = 'RobinCall';
     });
     $('btn-settings')?.addEventListener('click', () => { closeSheets(); $('settings-sheet')?.classList.add('open'); $('overlay')?.classList.add('show'); });
     $('settings-close')?.addEventListener('click', closeSheets);
@@ -441,16 +402,19 @@ function initApp() {
     });
     $('close-nick-modal')?.addEventListener('click', () => $('nick-modal')?.classList.remove('active'));
 
+    // Главная кнопка — открыть колчан
+    $('btn-main-action')?.addEventListener('click', () => {
+        $('craft-peer-id-display').textContent = P2PPong._beaconId || 'Не создана';
+        $('craft-modal')?.classList.add('active');
+    });
+
     // Крафт
     $('btn-craft-arrow')?.addEventListener('click', () => P2PPong.craftArrow());
     $('btn-scan-qr')?.addEventListener('click', async () => {
         const text = await showInput('Вставь данные из QR', '');
         if (text) {
-            try {
-                const qrData = JSON.parse(text);
-                const ok = await P2PPong.joinBeacon(qrData.beaconId);
-                if (ok) { rMsg('📷 QR принят!', 3000); $('craft-modal')?.classList.remove('active'); }
-            } catch(e) { rMsg('❌ Неверный формат', 3000); }
+            try { const qrData = JSON.parse(text); const ok = await P2PPong.joinBeacon(qrData.beaconId); if (ok) { rMsg('📷 QR принят!', 3000); $('craft-modal')?.classList.remove('active'); } }
+            catch(e) { rMsg('❌ Неверный формат', 3000); }
         }
     });
     $('btn-copy-peer-id')?.addEventListener('click', () => {
@@ -472,10 +436,6 @@ function initApp() {
     $('main-join-input')?.addEventListener('keypress', e => { if (e.key === 'Enter') $('btn-main-join')?.click(); });
 
     // Вызов
-    $('btn-call-main')?.addEventListener('click', () => {
-        if (!activeChannelId) { $('craft-modal')?.classList.add('active'); return; }
-        if (callActive) { hang(true); } else { startCall(); }
-    });
     $('btn-answer')?.addEventListener('click', acceptCall);
     $('btn-reject')?.addEventListener('click', () => {
         if (incomingOffer) { P2PPong.sendMessage(activeChannelId, JSON.stringify({ webrtc: 'webrtc-hangup', sdp: '' })); incomingOffer = null; }
@@ -490,10 +450,8 @@ function initApp() {
     // Верификация
     $('btn-verify-confirm')?.addEventListener('click', () => {
         if (verifyInput.length !== 7) { $('verify-error').style.display = 'block'; $('verify-error').textContent = 'Введи ровно 7 цифр'; return; }
-        if (verifyInput === verifyCode) {
-            $('verify-error').style.display = 'none'; verificationModalShown = false;
-            $('verify-modal')?.classList.remove('active'); P2PPong.confirmVerification();
-        } else { $('verify-error').style.display = 'block'; $('verify-error').textContent = '❌ Неверный код'; verifyInput = ''; $('verify-code-display').textContent = '_______'; }
+        if (verifyInput === verifyCode) { $('verify-error').style.display = 'none'; verificationModalShown = false; $('verify-modal')?.classList.remove('active'); P2PPong.confirmVerification(); }
+        else { $('verify-error').style.display = 'block'; $('verify-error').textContent = '❌ Неверный код'; verifyInput = ''; $('verify-code-display').textContent = '_______'; }
     });
     $('btn-verify-reset')?.addEventListener('click', () => { verifyInput = ''; $('verify-code-display').textContent = '_______'; });
     $('close-verify-modal')?.addEventListener('click', () => { $('verify-modal')?.classList.remove('active'); verificationModalShown = false; });
@@ -509,30 +467,25 @@ function initApp() {
 // === Модалки ===
 function showInput(title, placeholder = '') {
     return new Promise((resolve) => {
-        $('input-modal-title').textContent = title;
-        $('input-modal-field').value = ''; $('input-modal-field').placeholder = placeholder;
+        $('input-modal-title').textContent = title; $('input-modal-field').value = ''; $('input-modal-field').placeholder = placeholder;
         $('input-modal')?.classList.add('active');
         const ok = () => { const val = $('input-modal-field').value.trim(); $('input-modal')?.classList.remove('active'); cleanup(); resolve(val); };
         const cancel = () => { $('input-modal')?.classList.remove('active'); cleanup(); resolve(null); };
         const cleanup = () => { $('input-modal-ok').removeEventListener('click', ok); $('input-modal-cancel').removeEventListener('click', cancel); $('input-modal-field').removeEventListener('keypress', onKey); };
         const onKey = (e) => { if (e.key === 'Enter') ok(); };
-        $('input-modal-ok').addEventListener('click', ok);
-        $('input-modal-cancel').addEventListener('click', cancel);
-        $('input-modal-field').addEventListener('keypress', onKey);
-        $('input-modal-field').focus();
+        $('input-modal-ok').addEventListener('click', ok); $('input-modal-cancel').addEventListener('click', cancel);
+        $('input-modal-field').addEventListener('keypress', onKey); $('input-modal-field').focus();
     });
 }
 
 function showConfirm(title, text) {
     return new Promise((resolve) => {
-        $('confirm-modal-title').textContent = title;
-        $('confirm-modal-text').textContent = text;
+        $('confirm-modal-title').textContent = title; $('confirm-modal-text').textContent = text;
         $('confirm-modal')?.classList.add('active');
         const yes = () => { $('confirm-modal')?.classList.remove('active'); cleanup(); resolve(true); };
         const no = () => { $('confirm-modal')?.classList.remove('active'); cleanup(); resolve(false); };
         const cleanup = () => { $('confirm-modal-yes').removeEventListener('click', yes); $('confirm-modal-no').removeEventListener('click', no); };
-        $('confirm-modal-yes').addEventListener('click', yes);
-        $('confirm-modal-no').addEventListener('click', no);
+        $('confirm-modal-yes').addEventListener('click', yes); $('confirm-modal-no').addEventListener('click', no);
     });
 }
 
