@@ -243,7 +243,8 @@ const P2PPong = {
         setTimeout(() => this._cleanupBeaconKeys(this._beaconId), 10000);
         this._ephemeralKeyPair = null; this._stats.channelsOpened++; this._pending = null;
         this._emit('channel-opened', { channelId: this._chId, peerId: peerId||'unknown', nick: this._theirNick, avatar: this._theirAvatar });
-        this._startMsgPoll(this._chId); this._startWebRTC(this._chId, true);
+        this._startMsgPoll(this._chId);
+        // this._startWebRTC(this._chId, true);
     },
 
     async _dhRatchetStep(ch) { if (!ch?.rootKey||!ch.dhKeyPair||!ch.dhRemotePubKey) return null; const r = await workerDHRatchetStep(ch.rootKey,ch.dhKeyPair.privateKey,ch.dhRemotePubKey); ch.rootKey=r.newRootKey; ch.dhKeyPair={publicKey:r.newPubKey,privateKey:r.newPrivKey}; ch.sendKey=r.newSendKey; ch.sendIndex=0; ch.recvKey=r.newRecvKey; ch.recvIndex=0; ch.dhSendCount=0; ch.oldRecvKeys=[]; return r; },
