@@ -44,12 +44,14 @@
         .call-peer-name { font-size:1.2em; color:var(--accent-light); font-weight:bold; }
         .call-peer-avatar { width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid var(--accent); }
         .call-status-text { font-size:0.9em; color:var(--text-dim); }
-        .btn-round { width:65px; height:65px; border-radius:50%; border:3px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.3s; background:var(--btn-bg); font-size:26px; backdrop-filter:blur(8px); }
+        .btn-round { width:65px; height:65px; border-radius:50%; border:3px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.3s; background:var(--btn-bg); backdrop-filter:blur(8px); }
         .btn-round:active { background:var(--btn-hover); box-shadow:0 0 30px var(--accent-glow); transform:scale(0.92); }
+        .btn-round img { width:55%; height:55%; object-fit:contain; }
         .btn-call { border-color:var(--seeding-color); background:rgba(76,175,80,0.2); }
         .btn-hangup { border-color:var(--danger); background:rgba(244,67,54,0.2); }
-        .btn-main { width:90px; height:90px; border-radius:50%; border:3px solid var(--accent); cursor:pointer; background:var(--btn-bg); display:flex; align-items:center; justify-content:center; transition:all 0.3s; font-size:36px; backdrop-filter:blur(8px); }
+        .btn-main { width:90px; height:90px; border-radius:50%; border:3px solid var(--accent); cursor:pointer; background:var(--btn-bg); display:flex; align-items:center; justify-content:center; transition:all 0.3s; backdrop-filter:blur(8px); }
         .btn-main:active { background:var(--btn-hover); box-shadow:0 0 35px var(--accent-glow); transform:scale(0.92); }
+        .btn-main img { width:50%; height:50%; object-fit:contain; }
         .btn-main.ringing { animation: ringPulse 0.8s ease-in-out infinite; border-color:var(--seeding-color); }
         @keyframes ringPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08);box-shadow:0 0 40px var(--accent-glow)} }
         .hidden { display:none!important; }
@@ -117,7 +119,7 @@
             <input type="text" id="main-join-input" placeholder="Beacon ID друга..." autocomplete="off">
             <button id="btn-main-join">🔗</button>
         </div>
-        <button class="btn-main" id="btn-call-main"><span>📞</span></button>
+        <button class="btn-main" id="btn-call-main"><img src="assets/icons/16icon.png" alt="call"></button>
     </div>
     
     <div id="call-screen" class="hidden" style="display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;">
@@ -127,12 +129,12 @@
         <div class="call-timer hidden" id="call-timer">00:00</div>
         <div class="call-status-text" id="call-status-text">Соединение...</div>
         <div class="controls-row hidden" id="incoming-row">
-            <button class="btn-round btn-call" id="btn-answer">📞</button>
-            <button class="btn-round btn-hangup" id="btn-reject">✕</button>
+            <button class="btn-round btn-call" id="btn-answer"><img src="assets/icons/16icon.png" alt="accept"></button>
+            <button class="btn-round btn-hangup" id="btn-reject"><img src="assets/icons/17icon.png" alt="reject"></button>
         </div>
         <div class="controls-row hidden" id="active-row">
             <button class="btn-round" id="btn-mic">🎤</button>
-            <button class="btn-round btn-hangup" id="btn-end-call">✕</button>
+            <button class="btn-round btn-hangup" id="btn-end-call"><img src="assets/icons/17icon.png" alt="end"></button>
             <button class="btn-round" id="btn-speaker">🔊</button>
         </div>
     </div>
