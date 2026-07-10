@@ -94,6 +94,8 @@
         .lock-num{width:65px;height:65px;font-size:1.8em;border-radius:50%;border:2px solid var(--border);background:var(--btn-bg);color:var(--text);cursor:pointer}
         .lock-num:active{background:var(--accent)}
         .verify-code-display{font-size:2em;font-family:monospace;letter-spacing:8px;margin:12px 0;color:var(--accent-light);min-height:40px}
+        .smoke-anim{position:fixed;bottom:50%;left:50%;transform:translate(-50%,50%);width:280px;height:280px;z-index:500;pointer-events:none;animation:smokeRise 3s ease-out forwards}
+        @keyframes smokeRise{0%{opacity:1;transform:translate(-50%,50%) scale(0.5)}100%{opacity:0;transform:translate(-50%,-100%) scale(1.5)}}
     </style>
 </head>
 <body>
@@ -102,8 +104,8 @@
 </video>
 
 <div id="app-container" style="display:flex;flex-direction:column;height:100%;">
-<div class="header">
-    <div class="header-row-1"><span class="header-title-text">RobinHood P2P</span><span class="header-shield">🏹</span></div>
+<div class="header" id="robin-bar-header">
+    <div class="header-row-1"><span class="header-title-text">RobinCall</span><span class="header-shield">🏹</span></div>
     <div class="header-row-2">
         <div class="header-btn" id="btn-avatar"><img src="assets/icons/01icon.png" class="header-avatar" id="profile-avatar-small" alt="avatar"></div>
         <div class="header-btn" id="btn-craft"><img src="assets/icons/08icon.png" alt="craft"></div>        
@@ -111,7 +113,7 @@
         <div class="header-btn" id="btn-settings"><img src="assets/icons/11icon.png" alt="settings"></div>
     </div>
     <div class="header-row-3"><span class="header-label" id="nick-label">Твой ник</span><span class="header-label">Открыть колчан</span><span class="header-label">Скурить чат</span><span class="header-label">Опции Шервуда</span></div>
-    <div class="robin-bar" id="robin-bar"><img src="assets/icons/01icon.png" class="robin-bar-avatar" id="robin-avatar"><div class="robin-bar-text"><div class="robin-bar-sender" id="robin-bar-sender">RobinHood P2P</div><div class="robin-bar-msg" id="robin-text">Святые сокеты стабильны!</div></div></div>
+    <div class="robin-bar" id="robin-bar"><img src="assets/icons/01icon.png" class="robin-bar-avatar" id="robin-avatar"><div class="robin-bar-text"><div class="robin-bar-sender" id="robin-bar-sender">RobinCall</div><div class="robin-bar-msg" id="robin-text">Святые сокеты стабильны!</div></div></div>
 </div>
 
 <div class="main-area">
@@ -168,6 +170,8 @@
 <div class="verify-code-display" id="verify-code-display">_______</div><div id="verify-code-grid"></div><div id="verify-error" style="color:var(--danger);font-size:0.8em;margin-top:6px;display:none;"></div><button class="btn-dark" id="btn-verify-reset" style="width:auto;display:inline-block;margin:8px auto;">↩ Сбросить</button><button class="btn-primary" id="btn-verify-confirm">✅ Подтвердить</button><button class="btn-dark" id="close-verify-modal">Закрыть</button></div></div>
 
 <div class="modal-overlay" id="nick-modal"><div class="modal-dialog"><h3>🏷 Придумай ник</h3><input type="text" id="nick-input" placeholder="Введи ник (макс 12 символов)..." style="width:100%;margin:8px 0;padding:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--input-text);border-radius:8px;font-size:0.9em;font-family:monospace;"><button class="btn-primary" id="btn-save-nick">💾 Сохранить</button><button class="btn-dark" id="close-nick-modal">Закрыть</button></div></div>
+
+<div class="modal-overlay" id="input-modal"><div class="modal-dialog"><h3 id="input-modal-title">Ввод</h3><input type="text" id="input-modal-field" placeholder="..." style="width:100%;margin:8px 0;padding:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--input-text);border-radius:8px;"><button class="btn-primary" id="input-modal-ok">✅ ОК</button><button class="btn-dark" id="input-modal-cancel">Отмена</button></div></div>
 
 <div class="modal-overlay" id="confirm-modal"><div class="modal-dialog"><h3 id="confirm-modal-title">Подтверждение</h3><div id="confirm-modal-text"></div><button class="btn-primary" id="confirm-modal-yes">✅ Да</button><button class="btn-dark" id="confirm-modal-no">Нет</button></div></div>
 </div>
