@@ -5,6 +5,7 @@ let myNick = 'Лучник';
 let theirNick = 'Незнакомец';
 let theirAvatar = '001';
 let toggleSoundState = true;
+let toggleAnimations = true;
 
 // WebRTC
 let pc = null, stream = null, callActive = false, callStartTime = null, callTimerInterval = null;
@@ -13,14 +14,31 @@ let archerAnim = null;
 
 // Модалки
 let verifyCode = '', verifyInput = '';
+let verificationModalShown = false;
 
 const audioPool = {};
+
+const videoBackgrounds = [
+    { type: 'image', src: 'assets/icons/background.webp', name: 'Статика' },
+    { type: 'video', src: 'assets/icons/background.webm', name: 'Неон' },
+    { type: 'video', src: 'assets/icons/background2.webm', name: 'Робин' },
+    { type: 'video', src: 'assets/icons/background3.webm', name: 'Листва' },
+];
+let currentBgIndex = 1;
+
 const themes = [
-    { id: 'forest', icon: '🌲', name: 'Лес' },
-    { id: 'sunset', icon: '🌅', name: 'Закат' },
-    { id: 'ocean', icon: '🌊', name: 'Океан' },
-    { id: 'night-ember', icon: '🔥', name: 'Костёр' },
-    { id: 'morning-mist', icon: '🌫️', name: 'Туман' }
+    { id: 'forest', name: 'Лес' },
+    { id: 'sunset', name: 'Закат' },
+    { id: 'ocean', name: 'Океан' },
+    { id: 'rose', name: 'Роза' },
+    { id: 'amber', name: 'Янтарь' },
+    { id: 'mint', name: 'Мята' },
+    { id: 'lavender', name: 'Лаванда' },
+    { id: 'cherry', name: 'Вишня' },
+    { id: 'emerald', name: 'Изумруд' },
+    { id: 'slate', name: 'Сланец' },
+    { id: 'coral', name: 'Коралл' },
+    { id: 'plum', name: 'Слива' }
 ];
 
 function $(s) { return document.getElementById(s); }
@@ -41,49 +59,19 @@ function closeSheets() {
     $('overlay')?.classList.remove('show');
 }
 
-// === Экраны ===
-function showIdleScreen() {
-    $('call-screen')?.classList.add('hidden');
-    $('idle-screen')?.style.display = 'flex';
-    $('incoming-row')?.classList.add('hidden');
-    $('active-row')?.classList.add('hidden');
-    $('call-timer')?.classList.add('hidden');
-    if (archerAnim) { archerAnim.destroy(); archerAnim = null; }
-    $('call-archer-container').innerHTML = '';
-    $('btn-call-main')?.classList.remove('ringing');
-}
-
-function showCallScreen(type) {
-    $('idle-screen').style.display = 'none';
-    $('call-screen')?.classList.remove('hidden');
-    $('call-peer-name').textContent = theirNick;
-    $('call-peer-avatar').src = getAvatarUrl(theirAvatar);
-
-    if (type === 'outgoing') {
-        $('incoming-row')?.classList.add('hidden');
-        $('active-row')?.classList.add('hidden');
-        $('call-timer')?.classList.add('hidden');
-        $('call-status-text').textContent = 'Вызов...';
-        playArcherAnimation();
-    } else if (type === 'incoming') {
-        $('incoming-row')?.classList.remove('hidden');
-        $('active-row')?.classList.add('hidden');
-        $('call-timer')?.classList.add('hidden');
-        $('call-status-text').textContent = 'Входящий звонок...';
-        $('btn-call-main')?.classList.add('ringing');
-        playArcherAnimation();
-        playSound('melodi.mp3');
-    } else if (type === 'active') {
-        $('incoming-row')?.classList.add('hidden');
-        $('active-row')?.classList.remove('hidden');
-        $('call-timer')?.classList.remove('hidden');
-        $('call-status-text').textContent = 'Разговор';
-        playArcherAnimation();
-        playSound('open.mp3');
+function playSmokeAnimation() {
+    if (!toggleAnimations) return;
+    const smoke = document.createElement('div');
+    smoke.className = 'smoke-anim';
+    document.body.appendChild(smoke);
+    if (typeof lottie !== 'undefined') {
+        try { lottie.loadAnimation({ container: smoke, renderer: 'canvas', loop: false, autoplay: true, path: 'assets/smoke.json' }); } catch (e) {}
     }
+    setTimeout(() => { if (smoke.parentNode) smoke.remove(); }, 5000);
 }
 
 function playArcherAnimation() {
+    if (!toggleAnimations) return;
     const c = $('call-archer-container');
     if (!c) return;
     c.innerHTML = '';
@@ -91,6 +79,49 @@ function playArcherAnimation() {
         archerAnim = lottie.loadAnimation({ container: c, renderer: 'canvas', loop: true, autoplay: true, path: 'assets/Archer.json' });
     } else {
         c.innerHTML = '<span style="font-size:100px;">🏹</span>';
+    }
+}
+
+// === Экраны ===
+function showIdleScreen() {
+    $('idle-screen').style.display = 'flex';
+    $('call-screen').classList.add('hidden');
+    $('incoming-row').classList.add('hidden');
+    $('active-row').classList.add('hidden');
+    $('call-timer').classList.add('hidden');
+    $('call-status-text').textContent = '';
+    if (archerAnim) { archerAnim.destroy(); archerAnim = null; }
+    $('call-archer-container').innerHTML = '';
+    $('btn-call-main').classList.remove('ringing');
+}
+
+function showCallScreen(type) {
+    $('idle-screen').style.display = 'none';
+    $('call-screen').classList.remove('hidden');
+    $('call-peer-name').textContent = theirNick;
+    $('call-peer-avatar').src = getAvatarUrl(theirAvatar);
+
+    if (type === 'outgoing') {
+        $('incoming-row').classList.add('hidden');
+        $('active-row').classList.add('hidden');
+        $('call-timer').classList.add('hidden');
+        $('call-status-text').textContent = 'Вызов...';
+        playArcherAnimation();
+    } else if (type === 'incoming') {
+        $('incoming-row').classList.remove('hidden');
+        $('active-row').classList.add('hidden');
+        $('call-timer').classList.add('hidden');
+        $('call-status-text').textContent = 'Входящий звонок...';
+        $('btn-call-main').classList.add('ringing');
+        playArcherAnimation();
+        playSound('melodi.mp3');
+    } else if (type === 'active') {
+        $('incoming-row').classList.add('hidden');
+        $('active-row').classList.remove('hidden');
+        $('call-timer').classList.remove('hidden');
+        $('call-status-text').textContent = 'Разговор';
+        playArcherAnimation();
+        playSound('open.mp3');
     }
 }
 
@@ -102,7 +133,13 @@ async function getMediaStream() {
 
 function createPC() {
     if (pc) { try { pc.close(); } catch (e) {}; pc = null; }
-    pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] });
+    pc = new RTCPeerConnection({ iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun.cloudflare.com:3478' },
+        { urls: 'turn:robinhoodp2p.metered.live:80?transport=tcp', username: '466624d8364bb4660ed45c7d', credential: 'mpODzmBDhwG/b+VL' },
+        { urls: 'turn:robinhoodp2p.metered.live:443?transport=tcp', username: '466624d8364bb4660ed45c7d', credential: 'mpODzmBDhwG/b+VL' }
+    ]});
     if (stream) stream.getTracks().forEach(t => pc.addTrack(t, stream));
     pc.ontrack = e => { if (e.streams[0]) { const a = new Audio(); a.srcObject = e.streams[0]; a.play().catch(() => {}); } };
     pc.onicecandidate = e => {
@@ -189,50 +226,88 @@ const avatarList = ['002','004','006','007','023','025','028','031','033','037',
 const avatars = avatarList.map(id => 'assets/avatar/' + id + 'ava.png');
 
 function getAvatarUrl(src) {
-    if (!src || src === '001') return 'assets/avatar/001ava.png';
-    if (src.startsWith('assets/')) return src;
+    if (!src || src === '001' || src === 'icons/01icon.png') return 'assets/icons/01icon.png';
+    if (src.startsWith('assets/')) return src.endsWith('.png') ? src : src + 'ava.png';
+    if (src.includes('/')) return src.endsWith('.png') ? src : src + 'ava.png';
     return 'assets/avatar/' + src + 'ava.png';
 }
 
 function loadAvatars() {
     const list = $('avatar-list'); if (!list) return; list.innerHTML = '';
+    const fragment = document.createDocumentFragment();
     avatars.forEach(src => {
         const img = document.createElement('img'); img.src = src; img.className = 'avatar-option';
-        img.loading = 'lazy'; img.onerror = () => img.src = 'assets/avatar/001ava.png';
+        img.loading = 'lazy'; img.onerror = () => img.src = 'assets/icons/01icon.png';
         img.onclick = () => {
-            $('profile-avatar-small').src = src;
+            const pas = $('profile-avatar-small'); if (pas) pas.src = src;
             $('robin-avatar').src = src;
             selectedAvatar = src.split('/').pop().replace('ava.png', '') || '001';
             localStorage.setItem('robinhood_avatar', src);
             P2PPong.setMyProfile(myNick, selectedAvatar);
             closeSheets(); rMsg('🖼 Аватар обновлён');
         };
-        list.appendChild(img);
+        fragment.appendChild(img);
     });
+    list.appendChild(fragment);
 }
 
 // === Темы ===
+function applyTheme(id) {
+    document.documentElement.setAttribute('data-theme', id);
+    localStorage.setItem('robinhood_theme', id);
+    const tn = $('theme-name');
+    if (tn) tn.textContent = (themes.find(t => t.id === id) || themes[0]).name;
+}
+
 function generateRandomTheme() {
     const hue = Math.floor(Math.random() * 360), sat = 40 + Math.floor(Math.random() * 50),
           bgLight = 5 + Math.floor(Math.random() * 15), bgDark = 2 + Math.floor(Math.random() * 8),
           id = 'random_' + Date.now();
-    const s = `[data-theme="${id}"]{--bg-primary:hsl(${hue},${sat}%,${bgLight}%);--bg-secondary:hsl(${hue},${sat-10}%,${bgDark}%);--accent:hsl(${(hue+30)%360},${sat+10}%,50%);--accent-light:hsl(${(hue+30)%360},${sat+20}%,70%);--text:hsl(${hue},20%,85%);--text-bright:hsl(${hue},25%,92%);--text-dim:hsl(${hue},15%,60%);--border:hsl(${(hue+30)%360},${sat+10}%,50%);--robin-accent:hsl(${(hue+30)%360},${sat+20}%,65%);--seeding-color:#4caf50}`;
+    const s = `[data-theme="${id}"]{--bg-primary:hsl(${hue},${sat}%,${bgLight}%);--bg-secondary:hsl(${hue},${sat-10}%,${bgDark}%);--accent:hsl(${(hue+30)%360},${sat+10}%,50%);--accent-light:hsl(${(hue+30)%360},${sat+20}%,70%);--text:hsl(${hue},20%,85%);--text-bright:hsl(${hue},25%,92%);--text-dim:hsl(${hue},15%,60%);--border:hsl(${(hue+30)%360},${sat+10}%,50%);--btn-bg:hsla(${(hue+30)%360},${sat+10}%,50%,0.1);--btn-border:hsla(${(hue+30)%360},${sat+10}%,50%,0.3);--btn-hover:hsla(${(hue+30)%360},${sat+10}%,50%,0.25);--sheet-bg:linear-gradient(145deg,hsl(${hue},${sat}%,${bgLight}%)0%,hsl(${hue},${sat-10}%,${bgDark}%)100%);--input-bg:hsla(${hue},${sat-10}%,${bgLight+2}%,0.9);--robin-bg:hsla(${hue},${sat}%,${bgLight+8}%,0.9);--robin-accent:hsl(${(hue+30)%360},${sat+20}%,65%);--overlay-bg:rgba(0,0,0,0.6);--call-bg:linear-gradient(180deg,hsl(${hue},${sat}%,${bgLight}%)0%,hsl(${hue},${sat-10}%,${bgDark}%)100%);--call-btn-bg:hsla(${(hue+30)%360},${sat+10}%,50%,0.1);--call-btn-border:hsla(${(hue+30)%360},${sat+10}%,50%,0.3);--input-text:hsl(${hue},20%,85%);--msg-bg:hsla(${hue},${sat-5}%,${bgLight+3}%,0.85);--msg-accent:hsl(${(hue+30)%360},${sat+10}%,50%)}`;
     let el = document.getElementById('gen-theme'); if (!el) { el = document.createElement('style'); el.id = 'gen-theme'; document.head.appendChild(el); }
     el.textContent = s; document.documentElement.setAttribute('data-theme', id);
-    $('theme-name').textContent = 'Авто'; $('theme-icon').textContent = '🎲';
+    const tn = $('theme-name'); if (tn) tn.textContent = 'Авто';
     localStorage.setItem('robinhood_theme', id);
 }
 
-function applyTheme(id) {
-    document.documentElement.setAttribute('data-theme', id); localStorage.setItem('robinhood_theme', id);
-    const t = themes.find(t => t.id === id);
-    if (t) { $('theme-icon').textContent = t.icon; $('theme-name').textContent = t.name; }
-    else { $('theme-icon').textContent = '🎲'; $('theme-name').textContent = 'Авто'; }
+// === Фоны ===
+function applyBackground(index) {
+    const vbg = document.querySelector('.video-bg');
+    if (!vbg) return;
+    const bg = videoBackgrounds[index];
+    $('videobg-name').textContent = bg.name;
+    if (bg.type === 'image') {
+        vbg.pause();
+        vbg.removeAttribute('src');
+        vbg.querySelector('source')?.removeAttribute('src');
+        vbg.load();
+        vbg.style.backgroundImage = `url('${bg.src}')`;
+        vbg.style.backgroundSize = 'cover';
+        vbg.style.backgroundPosition = 'center';
+        vbg.style.display = 'block';
+        vbg.style.opacity = '1';
+    } else {
+        vbg.style.backgroundImage = '';
+        vbg.style.backgroundSize = '';
+        vbg.style.backgroundPosition = '';
+        vbg.querySelector('source').src = bg.src;
+        vbg.load();
+        vbg.play();
+        vbg.style.display = '';
+        vbg.style.opacity = '0.35';
+    }
+}
+
+function cycleBackground() {
+    currentBgIndex = (currentBgIndex + 1) % videoBackgrounds.length;
+    applyBackground(currentBgIndex);
 }
 
 // === Верификация ===
 function showVerifyModal(expectedCode) {
+    verificationModalShown = true;
     verifyCode = expectedCode; verifyInput = '';
+    $('verify-instruction').textContent = 'Введи 7-значный код';
     $('verify-code-display').textContent = '_______'; $('verify-error').style.display = 'none';
     const grid = $('verify-code-grid'); grid.innerHTML = '';
     for (let i = 1; i <= 9; i++) { const btn = document.createElement('button'); btn.textContent = i; btn.className = 'lock-num'; btn.onclick = () => addVerifyDigit(i.toString()); grid.appendChild(btn); }
@@ -247,6 +322,32 @@ function addVerifyDigit(d) {
     if (verifyInput.length === 7) setTimeout(() => $('btn-verify-confirm')?.click(), 300);
 }
 
+function generateQR(text, size) {
+    const canvas = document.createElement('canvas'); canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const bytes = new TextEncoder().encode(text);
+    const moduleCount = 21; const moduleSize = Math.floor(size / (moduleCount + 8));
+    const offset = Math.floor((size - moduleCount * moduleSize) / 2);
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#000000';
+    function drawModule(row, col) { ctx.fillRect(offset + col * moduleSize, offset + row * moduleSize, moduleSize, moduleSize); }
+    function drawFinderPattern(startRow, startCol) {
+        for (let r = 0; r < 7; r++) { for (let c = 0; c < 7; c++) { if (r === 0 || r === 6 || c === 0 || c === 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4)) drawModule(startRow + r, startCol + c); } }
+    }
+    drawFinderPattern(0, 0); drawFinderPattern(0, moduleCount - 7); drawFinderPattern(moduleCount - 7, 0);
+    let bitIndex = 0; const totalBits = bytes.length * 8;
+    for (let row = 0; row < moduleCount && bitIndex < totalBits; row++) {
+        for (let col = 0; col < moduleCount && bitIndex < totalBits; col++) {
+            if ((row < 7 && col < 7) || (row < 7 && col >= moduleCount - 7) || (row >= moduleCount - 7 && col < 7)) continue;
+            const byteIndex = Math.floor(bitIndex / 8); const bitInByte = 7 - (bitIndex % 8);
+            const bit = (bytes[byteIndex] >> bitInByte) & 1;
+            if (bit === 1) drawModule(row, col);
+            bitIndex++;
+        }
+    }
+    return canvas.toDataURL('image/png');
+}
+
 // === Инициализация ===
 function initUI() {
     P2PPong.on('ready', () => {
@@ -255,13 +356,17 @@ function initUI() {
     });
 
     P2PPong.on('peer-id-generated', d => {
-        $('craft-beacon-display').style.display = 'block';
-        $('craft-beacon-display').textContent = d.beaconId;
-        $('craft-code-display').style.display = 'block';
-        $('craft-code-display').textContent = d.code;
-        $('btn-copy-link').style.display = 'block';
+        $('craft-peer-id-display').textContent = d.beaconId || 'Не создана';
+        const code = d.code;
+        if (code) {
+            const cd = $('craft-code-display'); cd.style.display = 'block'; cd.textContent = code;
+            const qr = $('craft-qr-code'); qr.innerHTML = '';
+            const qrDataUrl = generateQR(JSON.stringify({ beaconId: d.beaconId, code, pubKey: d.pubKey }), 200);
+            const img = document.createElement('img'); img.src = qrDataUrl; img.style.cssText = 'width:200px;height:200px;margin:8px auto;display:block;'; img.loading = 'lazy';
+            qr.appendChild(img); qr.style.display = 'block';
+        }
         rMsg('✅ Стрела создана!', 3000);
-        navigator.clipboard.writeText(d.beaconId + '\n' + d.code).catch(() => {});
+        navigator.clipboard.writeText(d.beaconId + '\n' + (d.code || '')).catch(() => {});
     });
 
     P2PPong.on('verification-needed', d => { showVerifyModal(d.code); });
@@ -270,10 +375,12 @@ function initUI() {
         activeChannelId = d.channelId;
         if (d.nick) theirNick = d.nick;
         if (d.avatar) theirAvatar = d.avatar;
+        $('robin-bar-sender').textContent = theirNick;
         showIdleScreen();
         rMsg('✅ Колчан открыт! Тетива натянута!', 3000);
         $('verify-modal')?.classList.remove('active');
         $('craft-modal')?.classList.remove('active');
+        verificationModalShown = false;
     });
 
     P2PPong.on('message-received', d => {
@@ -284,17 +391,21 @@ function initUI() {
     });
 
     P2PPong.on('error', d => { rMsg('❌ ' + (d.message || 'Ошибка'), 5000); });
+    P2PPong.on('channel-expired', d => { if (d.channelId === activeChannelId) { hang(false); activeChannelId = null; showIdleScreen(); } });
 }
 
 function initApp() {
     const savedTheme = localStorage.getItem('robinhood_theme');
-    if (savedTheme && themes.find(t => t.id === savedTheme)) applyTheme(savedTheme); else generateRandomTheme();
+    if (savedTheme) applyTheme(savedTheme); else applyTheme('slate');
+
+    currentBgIndex = 1;
+    applyBackground(currentBgIndex);
 
     const savedAvatar = localStorage.getItem('robinhood_avatar');
     if (savedAvatar) {
-        $('profile-avatar-small').src = savedAvatar;
-        $('robin-avatar').src = savedAvatar;
-        selectedAvatar = savedAvatar.split('/').pop()?.replace('ava.png', '') || '001';
+        const pas = $('profile-avatar-small'); if (pas) pas.src = getAvatarUrl(savedAvatar);
+        $('robin-avatar').src = getAvatarUrl(savedAvatar);
+        selectedAvatar = savedAvatar.includes('/') ? savedAvatar.split('/').pop()?.replace('ava.png', '') || '001' : savedAvatar;
     }
 
     const savedNick = localStorage.getItem('robinhood_nick');
@@ -304,12 +415,18 @@ function initApp() {
     toggleSoundState = localStorage.getItem('robinhood_sound') !== 'false';
     $('toggle-sound').checked = toggleSoundState;
 
+    toggleAnimations = localStorage.getItem('robinhood_animations') !== 'false';
+
     // Кнопки шапки
     $('btn-avatar')?.addEventListener('click', () => { closeSheets(); loadAvatars(); $('avatar-selector')?.classList.add('show'); $('overlay')?.classList.add('show'); });
-    $('btn-craft')?.addEventListener('click', () => $('craft-modal')?.classList.add('active'));
-    $('btn-clear')?.addEventListener('click', () => {
+    $('btn-craft')?.addEventListener('click', () => { $('craft-peer-id-display').textContent = P2PPong._beaconId || 'Не создана'; $('craft-modal')?.classList.add('active'); });
+    $('btn-clear')?.addEventListener('click', async () => {
+        const confirmed = await showConfirm('🔥 Скурить колчан?', 'Вся переписка будет уничтожена безвозвратно.');
+        if (!confirmed) return;
         hang(false); activeChannelId = null; showIdleScreen();
+        playSmokeAnimation(); playSound('clear cache.mp3');
         rMsg('🚬 Всё сожжено!', 5000); localStorage.clear();
+        $('robin-bar-sender').textContent = 'RobinHood P2P';
     });
     $('btn-settings')?.addEventListener('click', () => { closeSheets(); $('settings-sheet')?.classList.add('open'); $('overlay')?.classList.add('show'); });
     $('settings-close')?.addEventListener('click', closeSheets);
@@ -317,24 +434,35 @@ function initApp() {
 
     // Ник
     $('nick-label')?.addEventListener('click', () => { $('nick-input').value = myNick; $('nick-modal')?.classList.add('active'); });
-    $('btn-nick-cancel')?.addEventListener('click', () => $('nick-modal')?.classList.remove('active'));
-    $('btn-nick-save')?.addEventListener('click', () => {
+    $('btn-save-nick')?.addEventListener('click', () => {
         const n = $('nick-input').value.trim().substring(0, 12);
         if (n) { myNick = n; $('nick-label').textContent = n; localStorage.setItem('robinhood_nick', n); P2PPong.setMyProfile(n, selectedAvatar); }
         $('nick-modal')?.classList.remove('active');
     });
+    $('close-nick-modal')?.addEventListener('click', () => $('nick-modal')?.classList.remove('active'));
 
     // Крафт
     $('btn-craft-arrow')?.addEventListener('click', () => P2PPong.craftArrow());
-    $('btn-copy-link')?.addEventListener('click', () => {
-        const bid = $('craft-beacon-display')?.textContent, code = $('craft-code-display')?.textContent;
-        if (bid) navigator.clipboard.writeText(bid + '\n' + code).then(() => rMsg('📋 Скопировано!', 2000));
+    $('btn-scan-qr')?.addEventListener('click', async () => {
+        const text = await showInput('Вставь данные из QR', '');
+        if (text) {
+            try {
+                const qrData = JSON.parse(text);
+                const ok = await P2PPong.joinBeacon(qrData.beaconId);
+                if (ok) { rMsg('📷 QR принят!', 3000); $('craft-modal')?.classList.remove('active'); }
+            } catch(e) { rMsg('❌ Неверный формат', 3000); }
+        }
     });
-    $('btn-join')?.addEventListener('click', () => {
-        const raw = $('join-input')?.value.trim(); if (!raw) { rMsg('⚠ Вставь Beacon ID', 3000); return; }
-        P2PPong.joinBeacon(raw.split('\n')[0]?.trim()); $('craft-modal')?.classList.remove('active');
+    $('btn-copy-peer-id')?.addEventListener('click', () => {
+        const bid = P2PPong._beaconId; const code = $('craft-code-display')?.textContent;
+        let copyText = bid || ''; if (code) copyText += '\n' + code;
+        if (bid) navigator.clipboard.writeText(copyText).then(() => rMsg('📋 Скопировано!', 2000));
     });
-    $('btn-close-craft')?.addEventListener('click', () => $('craft-modal')?.classList.remove('active'));
+    $('btn-create-beacon')?.addEventListener('click', async () => {
+        const targetId = $('peer-id-input')?.value.trim();
+        if (targetId) { const ok = await P2PPong.joinBeacon(targetId); if (ok) { rMsg('🏹 Тетива натянута...', 3000); $('craft-modal')?.classList.remove('active'); } }
+    });
+    $('close-craft-modal')?.addEventListener('click', () => $('craft-modal')?.classList.remove('active'));
 
     // Поле ввода на главном экране
     $('btn-main-join')?.addEventListener('click', () => {
@@ -344,7 +472,10 @@ function initApp() {
     $('main-join-input')?.addEventListener('keypress', e => { if (e.key === 'Enter') $('btn-main-join')?.click(); });
 
     // Вызов
-    $('btn-call-main')?.addEventListener('click', () => callActive ? hang(true) : startCall());
+    $('btn-call-main')?.addEventListener('click', () => {
+        if (!activeChannelId) { $('craft-modal')?.classList.add('active'); return; }
+        if (callActive) { hang(true); } else { startCall(); }
+    });
     $('btn-answer')?.addEventListener('click', acceptCall);
     $('btn-reject')?.addEventListener('click', () => {
         if (incomingOffer) { P2PPong.sendMessage(activeChannelId, JSON.stringify({ webrtc: 'webrtc-hangup', sdp: '' })); incomingOffer = null; }
@@ -352,24 +483,57 @@ function initApp() {
     });
     $('btn-end-call')?.addEventListener('click', () => hang(true));
     $('btn-mic')?.addEventListener('click', () => {
-        if (stream) { micOn = !micOn; stream.getAudioTracks().forEach(t => t.enabled = micOn); $('btn-mic').textContent = micOn ? '🎤' : '🔇'; }
+        if (stream) { micOn = !micOn; stream.getAudioTracks().forEach(t => t.enabled = micOn); $('btn-mic').textContent = micOn ? '🎤' : '🔇'; $('btn-mic').classList.toggle('muted', !micOn); }
     });
     $('btn-speaker')?.addEventListener('click', () => { $('btn-speaker').textContent = $('btn-speaker').textContent === '🔊' ? '🔈' : '🔊'; });
 
     // Верификация
     $('btn-verify-confirm')?.addEventListener('click', () => {
         if (verifyInput.length !== 7) { $('verify-error').style.display = 'block'; $('verify-error').textContent = 'Введи ровно 7 цифр'; return; }
-        if (verifyInput === verifyCode) { $('verify-error').style.display = 'none'; $('verify-modal')?.classList.remove('active'); P2PPong.confirmVerification(); }
-        else { $('verify-error').style.display = 'block'; $('verify-error').textContent = '❌ Неверный код'; verifyInput = ''; $('verify-code-display').textContent = '_______'; }
+        if (verifyInput === verifyCode) {
+            $('verify-error').style.display = 'none'; verificationModalShown = false;
+            $('verify-modal')?.classList.remove('active'); P2PPong.confirmVerification();
+        } else { $('verify-error').style.display = 'block'; $('verify-error').textContent = '❌ Неверный код'; verifyInput = ''; $('verify-code-display').textContent = '_______'; }
     });
     $('btn-verify-reset')?.addEventListener('click', () => { verifyInput = ''; $('verify-code-display').textContent = '_______'; });
-    $('btn-close-verify')?.addEventListener('click', () => $('verify-modal')?.classList.remove('active'));
+    $('close-verify-modal')?.addEventListener('click', () => { $('verify-modal')?.classList.remove('active'); verificationModalShown = false; });
 
     // Настройки
+    $('setting-videobg')?.addEventListener('click', () => { cycleBackground(); playSound('shot.mp3'); rMsg('🎬 Фон: ' + videoBackgrounds[currentBgIndex].name, 2000); });
     $('setting-theme')?.addEventListener('click', generateRandomTheme);
-    $('setting-sound')?.querySelector('input')?.addEventListener('change', function () { toggleSoundState = this.checked; localStorage.setItem('robinhood_sound', toggleSoundState); });
+    $('toggle-sound')?.addEventListener('change', function () { toggleSoundState = this.checked; localStorage.setItem('robinhood_sound', toggleSoundState); });
 
     showIdleScreen(); rMsg('🏹 Колчан готов!', 3000);
+}
+
+// === Модалки ===
+function showInput(title, placeholder = '') {
+    return new Promise((resolve) => {
+        $('input-modal-title').textContent = title;
+        $('input-modal-field').value = ''; $('input-modal-field').placeholder = placeholder;
+        $('input-modal')?.classList.add('active');
+        const ok = () => { const val = $('input-modal-field').value.trim(); $('input-modal')?.classList.remove('active'); cleanup(); resolve(val); };
+        const cancel = () => { $('input-modal')?.classList.remove('active'); cleanup(); resolve(null); };
+        const cleanup = () => { $('input-modal-ok').removeEventListener('click', ok); $('input-modal-cancel').removeEventListener('click', cancel); $('input-modal-field').removeEventListener('keypress', onKey); };
+        const onKey = (e) => { if (e.key === 'Enter') ok(); };
+        $('input-modal-ok').addEventListener('click', ok);
+        $('input-modal-cancel').addEventListener('click', cancel);
+        $('input-modal-field').addEventListener('keypress', onKey);
+        $('input-modal-field').focus();
+    });
+}
+
+function showConfirm(title, text) {
+    return new Promise((resolve) => {
+        $('confirm-modal-title').textContent = title;
+        $('confirm-modal-text').textContent = text;
+        $('confirm-modal')?.classList.add('active');
+        const yes = () => { $('confirm-modal')?.classList.remove('active'); cleanup(); resolve(true); };
+        const no = () => { $('confirm-modal')?.classList.remove('active'); cleanup(); resolve(false); };
+        const cleanup = () => { $('confirm-modal-yes').removeEventListener('click', yes); $('confirm-modal-no').removeEventListener('click', no); };
+        $('confirm-modal-yes').addEventListener('click', yes);
+        $('confirm-modal-no').addEventListener('click', no);
+    });
 }
 
 P2PPong.on('ready', () => { initUI(); initApp(); });
