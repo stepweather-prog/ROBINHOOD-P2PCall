@@ -8,7 +8,6 @@ let toggleSoundState = true;
 let toggleAnimations = true;
 let archerAnimation = null;
 let quiverAnim = null;
-let bowAnim = null;
 let currentArrowContainer = null;
 
 // WebRTC
@@ -165,7 +164,7 @@ function createPC() {
         if (e.candidate && activeChannelId) P2PPong.sendMessage(activeChannelId, JSON.stringify({ webrtc: 'webrtc-ice', sdp: JSON.stringify(e.candidate) }));
     };
     pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'connected') { callActive = true; startCallTimer(); showCallScreen('active'); }
+        if (pc.connectionState === 'connected') { callActive = true; startCallTimer(); showCallScreen('active'); playSound('open.mp3'); }
         if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') { hang(false); }
     };
     return pc;
@@ -185,6 +184,7 @@ async function startCall() {
     if (callActive || !activeChannelId) { rMsg('⚠ Сначала подключись', 4000); return; }
     const s = await getMediaStream(); if (!s) { showIdleScreen(); return; }
     stream = s; createPC(); showCallScreen('outgoing');
+    playSound('Welk.mp3');
     try {
         const o = await pc.createOffer(); await pc.setLocalDescription(o);
         P2PPong.sendMessage(activeChannelId, JSON.stringify({ webrtc: 'webrtc-offer', sdp: JSON.stringify(o) }));
@@ -199,7 +199,7 @@ async function acceptCall() {
         await pc.setRemoteDescription(new RTCSessionDescription(incomingOffer));
         const a = await pc.createAnswer(); await pc.setLocalDescription(a);
         P2PPong.sendMessage(activeChannelId, JSON.stringify({ webrtc: 'webrtc-answer', sdp: JSON.stringify(a) }));
-        incomingOffer = null; callActive = true; startCallTimer();
+        incomingOffer = null; callActive = true; startCallTimer(); playSound('open.mp3');
     } catch (e) { hang(true); }
 }
 
@@ -215,11 +215,11 @@ function hang(sig = true) {
 
 function handleWebRTCSignal(type, sdp) {
     if (type === 'webrtc-offer' && !callActive) {
-        try { incomingOffer = JSON.parse(sdp); showCallScreen('incoming'); rMsg('📞 Входящий!', 0); } catch (e) {}
+        try { incomingOffer = JSON.parse(sdp); showCallScreen('incoming'); rMsg('📞 Входящий!', 0); playSound('melodi.mp3'); } catch (e) {}
         return;
     }
     if (type === 'webrtc-answer' && pc) {
-        try { pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp))).then(() => { callActive = true; startCallTimer(); showCallScreen('active'); }).catch(() => {}); } catch (e) {}
+        try { pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp))).then(() => { callActive = true; startCallTimer(); showCallScreen('active'); playSound('open.mp3'); }).catch(() => {}); } catch (e) {}
         return;
     }
     if (type === 'webrtc-ice' && pc) {
@@ -350,6 +350,7 @@ function generateQR(text, size) {
 // === Инициализация ===
 function initUI() {
     P2PPong.on('ready', () => { rMsg('🏹 Колчан готов!', 0); showIdleScreen(); });
+
     P2PPong.on('peer-id-generated', d => {
         $('craft-peer-id-display').textContent = d.beaconId || 'Не создана';
         const code = d.code;
@@ -363,7 +364,9 @@ function initUI() {
         rMsg('✅ Стрела создана!', 3000);
         navigator.clipboard.writeText(d.beaconId + '\n' + (d.code || '')).catch(() => {});
     });
+
     P2PPong.on('verification-needed', d => { showVerifyModal(d.code); });
+
     P2PPong.on('channel-opened', d => {
         activeChannelId = d.channelId;
         if (d.nick) theirNick = d.nick; if (d.avatar) theirAvatar = d.avatar;
@@ -374,12 +377,37 @@ function initUI() {
         $('verify-modal')?.classList.remove('active'); $('craft-modal')?.classList.remove('active');
         verificationModalShown = false;
     });
+
     P2PPong.on('message-received', d => {
         if (!d.text) return;
+
+        // Проверяем сигнал уничтожения
+        try {
+            const p = JSON.parse(d.text);
+            if (p.type === 'channel-destroyed') {
+                playSmokeAnimation();
+                playSound('clear cache.mp3');
+                rMsg('🚬 Робин Гуд скурил аудио вещание!', 5000);
+
+                if (callActive || pc) {
+                    callActive = false; stopCallTimer(); stopCallArcherAnimation();
+                    if (pc) { try { pc.close(); } catch (e) {}; pc = null; }
+                    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+                    incomingOffer = null;
+                }
+
+                activeChannelId = null;
+                showIdleScreen();
+                $('robin-bar-sender').textContent = 'RobinCall';
+                return;
+            }
+        } catch (e) {}
+
         if (d.text.indexOf('"webrtc"') > -1) {
             try { const p = JSON.parse(d.text); if (p.webrtc) handleWebRTCSignal(p.webrtc, p.sdp); } catch (e) {}
         }
     });
+
     P2PPong.on('error', d => { rMsg('❌ ' + (d.message || 'Ошибка'), 5000); });
     P2PPong.on('channel-expired', d => { if (d.channelId === activeChannelId) { hang(false); activeChannelId = null; showIdleScreen(); } });
 }
@@ -388,7 +416,6 @@ function initApp() {
     const savedTheme = localStorage.getItem('robinhood_theme');
     if (savedTheme) applyTheme(savedTheme); else applyTheme('slate');
 
-    // Сразу статика
     currentBgIndex = 0;
     applyBackground(currentBgIndex);
 
@@ -405,7 +432,6 @@ function initApp() {
 
     toggleSoundState = localStorage.getItem('robinhood_sound') !== 'false';
     $('toggle-sound').checked = toggleSoundState;
-
     toggleAnimations = localStorage.getItem('robinhood_animations') !== 'false';
 
     // Скрытие шапки по клику на робин-бар
@@ -426,11 +452,31 @@ function initApp() {
         if (callActive) { hang(true); } else { startCall(); }
     });
     $('btn-clear')?.addEventListener('click', async () => {
-        const confirmed = await showConfirm('🔥 Скурить колчан?', 'Вся переписка будет уничтожена безвозвратно.');
+        const confirmed = await showConfirm('Робин Гуд скурил аудио вещание!', '');
         if (!confirmed) return;
-        hang(false); activeChannelId = null; showIdleScreen();
-        playSmokeAnimation(); playSound('clear cache.mp3');
-        rMsg('🚬 Всё сожжено!', 5000); localStorage.clear();
+
+        // Отправляем сигнал собеседнику
+        if (activeChannelId) {
+            try { P2PPong.sendMessage(activeChannelId, JSON.stringify({ type: 'channel-destroyed', channelId: activeChannelId })); } catch (e) {}
+        }
+
+        // Задержка чтобы собеседник успел обработать
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Чистим у себя
+        if (callActive || pc) {
+            callActive = false; stopCallTimer(); stopCallArcherAnimation();
+            if (pc) { try { pc.close(); } catch (e) {}; pc = null; }
+            if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+            incomingOffer = null;
+        }
+
+        activeChannelId = null;
+        showIdleScreen();
+        playSmokeAnimation();
+        playSound('clear cache.mp3');
+        rMsg('🚬 Робин Гуд скурил аудио вещание!', 5000);
+        localStorage.clear();
         $('robin-bar-sender').textContent = 'RobinCall';
     });
     $('btn-settings')?.addEventListener('click', () => { closeSheets(); $('settings-sheet')?.classList.add('open'); $('overlay')?.classList.add('show'); });
