@@ -1,4 +1,4 @@
-// robincall-ui.js — финал: все правки
+// robincall-ui.js 
 let activeChannelId = null;
 let selectedAvatar = 'icons/01icon.png';
 let myNick = 'Лучник';
@@ -74,7 +74,7 @@ function stopCallArcherAnimation() { if (callArcherAnim) { callArcherAnim.destro
 function updateMainButton() { const btn = $('btn-main-action'); if (!btn) return; if (activeChannelId) { btn.querySelector('img').src = 'assets/icons/16icon.png'; btn.style.borderColor = 'var(--seeding-color)'; } else { btn.querySelector('img').src = 'assets/icons/08icon.png'; btn.style.borderColor = 'var(--accent)'; } }
 
 function showIdleScreen() {
-    $('idle-screen').style.display = 'flex'; $('call-screen').classList.add('hidden'); $('outgoing-end-row').classList.add('hidden'); $('incoming-row').classList.add('hidden'); $('active-row').classList.add('hidden'); $('volume-controls').classList.add('hidden'); $('call-timer').classList.add('hidden'); $('call-status-text').textContent = ''; stopCallArcherAnimation(); updateMainButton(); $('robin-bar-sender').textContent = theirNick || 'RobinCall';
+    $('idle-screen').style.display = 'flex'; $('call-screen').classList.add('hidden'); $('outgoing-end-row').classList.add('hidden'); $('incoming-row').classList.add('hidden'); $('active-row').classList.add('hidden'); $('volume-controls').classList.add('hidden'); $('call-timer').classList.add('hidden'); $('call-status-text').textContent = ''; stopCallArcherAnimation(); updateMainButton(); $('robin-bar-sender').textContent = activeChannelId ? theirNick : 'RobinCall';
 }
 function showCallScreen(type) {
     $('idle-screen').style.display = 'none'; $('call-screen').classList.remove('hidden'); $('call-peer-name').textContent = theirNick; $('call-peer-avatar').src = getAvatarUrl(theirAvatar);
@@ -101,7 +101,7 @@ function createPC() {
     ]});
     if (stream) stream.getTracks().forEach(t => pc.addTrack(t, stream));
     pc.ontrack = e => { if (e.streams[0]) { const a = new Audio(); a.srcObject = e.streams[0]; a.play().catch(() => {}); } };
-    pc.onicecandidate = e => {};
+    pc.onicecandidate = e => { if (e.candidate) sendSignal('webrtc-ice', e.candidate); };
     pc.onconnectionstatechange = () => {
         if (pc.connectionState === 'connected') { stopAllCallSounds(); callActive = true; startCallTimer(); showCallScreen('active'); playSound('open.mp3'); }
         if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') { hang(false); }
@@ -118,10 +118,8 @@ async function startCall() {
     if (callActive || !activeChannelId) { rMsg('⚠ Сначала подключись', 4000); return; }
     const s = await getMediaStream(); if (!s) return;
     stream = s; createPC(); showCallScreen('outgoing'); startWelk();
-    try {
-        const o = await pc.createOffer(); await pc.setLocalDescription(o);
-        sendSignal('webrtc-offer', pc.localDescription);
-    } catch (e) { hang(true); }
+    try { const o = await pc.createOffer(); await pc.setLocalDescription(o); sendSignal('webrtc-offer', pc.localDescription); }
+    catch (e) { hang(true); }
 }
 
 async function acceptCall() {
@@ -147,6 +145,7 @@ async function handleSignal(type, sdp, from) {
     if (from === P2PPong._peerId) return;
     if (type === 'webrtc-offer' && !callActive) { try { incomingOffer = new RTCSessionDescription(JSON.parse(sdp)); showCallScreen('incoming'); rMsg('📞 Входящий!', 0); startMelodi(); } catch (e) {} return; }
     if (type === 'webrtc-answer' && pc) { try { await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp))); stopAllCallSounds(); callActive = true; startCallTimer(); showCallScreen('active'); playSound('open.mp3'); } catch (e) {} return; }
+    if (type === 'webrtc-ice' && pc) { try { await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(sdp))).catch(()=>{}); } catch (e) {} return; }
     if (type === 'webrtc-hangup') { if (callActive || pc) { rMsg('📞 Собеседник завершил', 3000); hang(false); } return; }
 }
 
