@@ -1,4 +1,4 @@
-// robincall-ui.js — с логом для отладки звонков
+// robincall-ui.js — фикс: оффер + ICE в одном пакете
 let activeChannelId = null;
 let selectedAvatar = 'icons/01icon.png';
 let myNick = 'Лучник';
@@ -134,7 +134,8 @@ function createPC() {
     ]});
     if (stream) stream.getTracks().forEach(t => pc.addTrack(t, stream));
     pc.ontrack = e => { if (e.streams[0]) { const a = new Audio(); a.srcObject = e.streams[0]; a.play().catch(() => {}); } };
-    pc.onicecandidate = e => { if (e.candidate && activeChannelId) P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify({ webrtc: 'webrtc-ice', sdp: JSON.stringify(e.candidate) }) }); };
+    // НЕ отправляем ICE отдельно — они будут в составе оффера/answer
+    pc.onicecandidate = e => {};
     pc.onconnectionstatechange = () => {
         console.log('PC STATE:', pc.connectionState);
         if (pc.connectionState === 'connected') { stopAllCallSounds(); callActive = true; startCallTimer(); showCallScreen('active'); playSound('open.mp3'); }
@@ -151,9 +152,16 @@ async function startCall() {
     const s = await getMediaStream(); if (!s) return;
     stream = s; createPC(); showCallScreen('outgoing'); startWelk();
     try {
-        const o = await pc.createOffer(); await pc.setLocalDescription(o);
-        console.log('SENDING OFFER');
-        P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify({ webrtc: 'webrtc-offer', sdp: JSON.stringify(o) }) });
+        const o = await pc.createOffer();
+        await pc.setLocalDescription(o);
+        // Ждём сбор ICE кандидатов
+        await new Promise(resolve => {
+            if (pc.iceGatheringState === 'complete') resolve();
+            else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') resolve(); };
+        });
+        // Отправляем полный оффер с ICE
+        console.log('SENDING OFFER + ICE');
+        P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify({ webrtc: 'webrtc-offer', sdp: JSON.stringify(pc.localDescription) }) });
     } catch (e) { hang(true); }
 }
 
@@ -164,9 +172,15 @@ async function acceptCall() {
     stream = s; createPC(); showCallScreen('active');
     try {
         await pc.setRemoteDescription(new RTCSessionDescription(incomingOffer));
-        const a = await pc.createAnswer(); await pc.setLocalDescription(a);
-        console.log('SENDING ANSWER');
-        P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify({ webrtc: 'webrtc-answer', sdp: JSON.stringify(a) }) });
+        const a = await pc.createAnswer();
+        await pc.setLocalDescription(a);
+        // Ждём сбор ICE
+        await new Promise(resolve => {
+            if (pc.iceGatheringState === 'complete') resolve();
+            else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') resolve(); };
+        });
+        console.log('SENDING ANSWER + ICE');
+        P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify({ webrtc: 'webrtc-answer', sdp: JSON.stringify(pc.localDescription) }) });
         incomingOffer = null; callActive = true; startCallTimer(); playSound('open.mp3');
     } catch (e) { hang(true); }
 }
@@ -182,17 +196,13 @@ function hang(sig = true) {
 }
 
 function handleSignal(type, sdp) {
-    console.log('HANDLE SIGNAL:', type, sdp ? sdp.substring(0, 50) : '');
+    console.log('HANDLE SIGNAL:', type);
     if (type === 'webrtc-offer' && !callActive) {
         try { incomingOffer = JSON.parse(sdp); showCallScreen('incoming'); rMsg('📞 Входящий!', 0); startMelodi(); } catch (e) {}
         return;
     }
     if (type === 'webrtc-answer' && pc) {
         try { pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp))).then(() => { stopAllCallSounds(); callActive = true; startCallTimer(); showCallScreen('active'); playSound('open.mp3'); }).catch(e => console.error('setRemoteDescription error:', e)); } catch (e) {}
-        return;
-    }
-    if (type === 'webrtc-ice' && pc) {
-        try { pc.addIceCandidate(new RTCIceCandidate(JSON.parse(sdp))).catch(e => console.error('addIceCandidate error:', e)); } catch (e) {}
         return;
     }
     if (type === 'webrtc-hangup') {
