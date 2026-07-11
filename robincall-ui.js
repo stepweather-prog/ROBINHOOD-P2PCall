@@ -1,4 +1,4 @@
-// robincall-ui.js — РАБОЧИЙ WebRTC
+// robincall-ui.js —  UDP TURN добавлен
 let activeChannelId = null;
 let selectedAvatar = 'icons/01icon.png';
 let myNick = 'Лучник';
@@ -97,7 +97,10 @@ function createPC() {
     if (pc) { try { pc.close(); } catch (e) {}; pc = null; }
     pendingIceCandidates = [];
     pc = new RTCPeerConnection({ iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }, { urls: 'stun:stun.cloudflare.com:3478' },
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun.cloudflare.com:3478' },
+        { urls: 'turn:robinhoodp2p.metered.live:3478?transport=udp', username: '466624d8364bb4660ed45c7d', credential: 'mpODzmBDhwG/b+VL' },
         { urls: 'turn:robinhoodp2p.metered.live:80?transport=tcp', username: '466624d8364bb4660ed45c7d', credential: 'mpODzmBDhwG/b+VL' },
         { urls: 'turn:robinhoodp2p.metered.live:443?transport=tcp', username: '466624d8364bb4660ed45c7d', credential: 'mpODzmBDhwG/b+VL' }
     ]});
@@ -129,7 +132,6 @@ async function startCall() {
     stream = s; createPC(); showCallScreen('outgoing'); startWelk();
     try {
         const o = await pc.createOffer(); await pc.setLocalDescription(o);
-        // Ждём сбор ICE
         await new Promise(r => { if (pc.iceGatheringState === 'complete') r(); else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') r(); }; });
         sendSignal('webrtc-offer', pc.localDescription);
     } catch (e) { hang(true); }
@@ -142,7 +144,6 @@ async function acceptCall() {
     stream = s; createPC(); showCallScreen('active');
     try {
         await pc.setRemoteDescription(incomingOffer);
-        // Добавляем ICE из оффера
         if (incomingOffer._ice) { for (const c of incomingOffer._ice) await pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{}); }
         const a = await pc.createAnswer(); await pc.setLocalDescription(a);
         await new Promise(r => { if (pc.iceGatheringState === 'complete') r(); else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') r(); }; });
