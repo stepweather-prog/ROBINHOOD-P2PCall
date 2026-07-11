@@ -1,8 +1,8 @@
-// robincall-ui.js 
+// robincall-ui.js
 let activeChannelId = null;
 let selectedAvatar = 'icons/01icon.png';
 let myNick = 'Лучник';
-let theirNick = 'Незнакомец';
+let theirNick = 'Лучник';
 let theirAvatar = '001';
 let toggleSoundState = true;
 let toggleAnimations = true;
@@ -13,7 +13,6 @@ const audioPool = {};
 const robinDefaultText = 'Святые сокеты стабильны!';
 let robinTimer = null;
 
-// WebRTC
 let pc = null, stream = null, callActive = false, callStartTime = null, callTimerInterval = null;
 let micOn = true, incomingOffer = null;
 let callArcherAnim = null;
