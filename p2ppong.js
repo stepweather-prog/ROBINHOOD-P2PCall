@@ -1,4 +1,4 @@
-// p2ppong.js
+// p2ppong.js — для RobinCall (звонки)
 const DEBUG = true;
 function log(msg, data) { if (DEBUG) console.log(`[P2PPong] ${msg}`, data || ''); }
 
@@ -243,8 +243,7 @@ const P2PPong = {
         setTimeout(() => this._cleanupBeaconKeys(this._beaconId), 10000);
         this._ephemeralKeyPair = null; this._stats.channelsOpened++; this._pending = null;
         this._emit('channel-opened', { channelId: this._chId, peerId: peerId||'unknown', nick: this._theirNick, avatar: this._theirAvatar });
-        this._startMsgPoll(this._chId);
-        // this._startWebRTC(this._chId, true);
+        this._startMsgPoll(this._chId); // this._startWebRTC(this._chId, true);
     },
 
     async _dhRatchetStep(ch) { if (!ch?.rootKey||!ch.dhKeyPair||!ch.dhRemotePubKey) return null; const r = await workerDHRatchetStep(ch.rootKey,ch.dhKeyPair.privateKey,ch.dhRemotePubKey); ch.rootKey=r.newRootKey; ch.dhKeyPair={publicKey:r.newPubKey,privateKey:r.newPrivKey}; ch.sendKey=r.newSendKey; ch.sendIndex=0; ch.recvKey=r.newRecvKey; ch.recvIndex=0; ch.dhSendCount=0; ch.oldRecvKeys=[]; return r; },
@@ -328,6 +327,8 @@ const P2PPong = {
             return;
         }
         if (d.type==='ratchet-resync'&&d.pubKey) { if (ch) { try { const ss=await workerDeriveSecret(this._kp?.privateKey||'',d.pubKey); ch.secret=ss; ch.sendKey=ss; ch.sendIndex=0; ch.recvKey=ss; ch.recvIndex=0; ch.oldRecvKeys=[]; } catch(e) { log('resync error',e.message); } } return; }
+        // Если не расшифровалось и не системное — эмитим как есть
+        this._emit('message-received', { channelId: chId, text: blobData, from: 'them' });
     },
 
     async sendMessage(chId, text) { const ch=this._channels[chId||this._chId]; if (!ch) return false; const nonce=RND(); const md=JSON.stringify({type:'text',d:text,t:Date.now(),n:nonce,from:this._peerId,nick:this._myNick,avatar:this._myAvatar}); return this._sendEncrypted(ch,chId||this._chId,md,text,nonce); },
@@ -335,7 +336,6 @@ const P2PPong = {
 
     async _sendEncrypted(ch, chId, messageData, displayText, nonce) {
         const rtc=this._webRTC[chId||this._chId];
-        
         if (rtc&&rtc.dc&&rtc.dc.readyState==='open') { const result=await workerPackBlob(messageData,ch); ch.sendKey=result.newSendKey; ch.sendIndex=result.newSendIndex; ch.dhSendCount=(ch.dhSendCount||0)+1; if (result.packed.length>CONFIG.MAX_PACKET_SIZE) { this._emit('error',{message:'Сообщение слишком большое.'}); return false; } rtc.dc.send(result.packed); ch.blobs.push({d:displayText,t:Date.now(),n:nonce,from:'me',status:'sent',nick:this._myNick,avatar:this._myAvatar}); ch.expires=Date.now()+CONFIG.CHANNEL_TTL; this._stats.messagesSent++; this._emit('message-sent',{channelId:chId||this._chId,data:displayText,status:'sent',nick:this._myNick,avatar:this._myAvatar}); return true; }
         if (ch.sendKey) { const result=await workerPackBlob(messageData,ch); if (result.packed.length>CONFIG.MAX_PACKET_SIZE) { this._emit('error',{message:'Сообщение слишком большое для сервера.'}); return false; } ch.sendKey=result.newSendKey; ch.sendIndex=result.newSendIndex; ch.dhSendCount=(ch.dhSendCount||0)+1; const keyHash = 'msg_'+(chId||this._chId); const packet = result.packed; for (const s of this._signalServers.filter(s=>s.type==='http')) { fetch(s.url+'/beacon',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keyHash,packet}),signal:AbortSignal.timeout(5000)}).catch(()=>{}); } if (this._firebaseActive) this._firebasePost(keyHash, packet).catch(()=>{}); ch.blobs.push({d:displayText,t:Date.now(),n:nonce,from:'me',status:'sent',nick:this._myNick,avatar:this._myAvatar}); ch.expires=Date.now()+CONFIG.CHANNEL_TTL; this._stats.messagesSent++; this._emit('message-sent',{channelId:chId||this._chId,data:displayText,status:'sent',nick:this._myNick,avatar:this._myAvatar}); return true; }
         return false;
