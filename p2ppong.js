@@ -1,4 +1,4 @@
-// p2ppong.js — для RobinCall (звонки)
+// p2ppong.js — фикс: эмитим webrtc сигналы в UI
 const DEBUG = true;
 function log(msg, data) { if (DEBUG) console.log(`[P2PPong] ${msg}`, data || ''); }
 
@@ -283,7 +283,20 @@ const P2PPong = {
         }
         let d; try { d=JSON.parse(blobData); } catch(e) { return; }
         if (d.peerId===this._peerId) return;
-        if (d.type?.startsWith('webrtc-')) { if (this._chId) { if (!this._webRTC[this._chId]) { if (!this._webRTCSignalBuffer[this._chId]) this._webRTCSignalBuffer[this._chId]=[]; this._webRTCSignalBuffer[this._chId].push(d); } else this._handleWSig(this._chId,d); } return; }
+        // ФИКС: эмитим webrtc сигналы в UI даже если нет _webRTC
+        if (d.type?.startsWith('webrtc-')) {
+            if (this._chId) {
+                if (!this._webRTC[this._chId]) {
+                    if (!this._webRTCSignalBuffer[this._chId]) this._webRTCSignalBuffer[this._chId]=[];
+                    this._webRTCSignalBuffer[this._chId].push(d);
+                } else {
+                    this._handleWSig(this._chId, d);
+                }
+            }
+            // Эмитим в UI всегда
+            this._emit('message-received', { channelId: chId, text: blobData, from: 'them' });
+            return;
+        }
         if (d.type==='beacon-response'&&d.pubKey&&d.channelId) {
             if (this._pending?.type!=='creator') return;
             this._remotePubKey = d.identityPubKey || d.pubKey; this._remotePeerId = d.peerId; this._chId = d.channelId;
@@ -327,7 +340,7 @@ const P2PPong = {
             return;
         }
         if (d.type==='ratchet-resync'&&d.pubKey) { if (ch) { try { const ss=await workerDeriveSecret(this._kp?.privateKey||'',d.pubKey); ch.secret=ss; ch.sendKey=ss; ch.sendIndex=0; ch.recvKey=ss; ch.recvIndex=0; ch.oldRecvKeys=[]; } catch(e) { log('resync error',e.message); } } return; }
-        // Если не расшифровалось и не системное — эмитим как есть
+        // Фолбэк: эмитим всё что не распознано
         this._emit('message-received', { channelId: chId, text: blobData, from: 'them' });
     },
 
