@@ -1,4 +1,4 @@
-// robincall-ui.js —  UDP TURN добавлен
+// robincall-ui.js — финал возможно
 let activeChannelId = null;
 let selectedAvatar = 'icons/01icon.png';
 let myNick = 'Лучник';
@@ -76,6 +76,7 @@ function updateMainButton() { const btn = $('btn-main-action'); if (!btn) return
 
 function showIdleScreen() {
     $('idle-screen').style.display = 'flex'; $('call-screen').classList.add('hidden'); $('outgoing-end-row').classList.add('hidden'); $('incoming-row').classList.add('hidden'); $('active-row').classList.add('hidden'); $('volume-controls').classList.add('hidden'); $('call-timer').classList.add('hidden'); stopCallArcherAnimation(); updateMainButton(); $('robin-bar-sender').textContent = theirNick || 'RobinCall';
+    pendingIceCandidates = [];
 }
 function showCallScreen(type) {
     $('idle-screen').style.display = 'none'; $('call-screen').classList.remove('hidden'); $('call-peer-name').textContent = theirNick; $('call-peer-avatar').src = getAvatarUrl(theirAvatar);
@@ -119,7 +120,7 @@ function stopCallTimer() { if (callTimerInterval) clearInterval(callTimerInterva
 
 function sendSignal(type, sdp) {
     if (!activeChannelId) return;
-    const data = { webrtc: type, sdp: JSON.stringify(sdp) };
+    const data = { webrtc: type, sdp: JSON.stringify(sdp), from: P2PPong._peerId };
     if (type === 'webrtc-offer' || type === 'webrtc-answer') {
         data.ice = JSON.stringify(pendingIceCandidates);
     }
@@ -154,13 +155,14 @@ async function acceptCall() {
 
 function hang(sig = true) {
     stopAllCallSounds(); callActive = false; stopCallTimer(); stopCallArcherAnimation();
-    if (activeChannelId && sig) { P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify({ webrtc: 'webrtc-hangup', sdp: '' }) }); }
+    if (activeChannelId && sig) { P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify({ webrtc: 'webrtc-hangup', sdp: '', from: P2PPong._peerId }) }); }
     if (pc) { try { pc.close(); } catch (e) {}; pc = null; }
     if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-    incomingOffer = null; showIdleScreen(); if (sig) playSound('exet.mp3');
+    incomingOffer = null; pendingIceCandidates = []; showIdleScreen(); if (sig) playSound('exet.mp3');
 }
 
-async function handleSignal(type, sdp, iceStr) {
+async function handleSignal(type, sdp, iceStr, from) {
+    if (from === P2PPong._peerId) return;
     if (type === 'webrtc-offer' && !callActive) {
         try {
             const desc = JSON.parse(sdp);
@@ -210,8 +212,7 @@ function initUI() {
         const raw = d.text || d.voiceData || ''; if (!raw) return;
         try {
             const p = JSON.parse(raw);
-            if (p.type === 'channel-destroyed') { stopAllCallSounds(); playSmokeAnimation(); playSound('clear cache.mp3'); rMsg('🚬 Робин Гуд скурил аудио вещание!', 5000); if (callActive) { callActive = false; stopCallTimer(); stopCallArcherAnimation(); } if (pc) { try { pc.close(); } catch (e) {}; pc = null; } if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } incomingOffer = null; activeChannelId = null; showIdleScreen(); $('robin-bar-sender').textContent = 'RobinCall'; return; }
-            if (p.webrtc) { handleSignal(p.webrtc, p.sdp, p.ice); return; }
+            if (p.webrtc) { handleSignal(p.webrtc, p.sdp, p.ice, p.from); return; }
         } catch (e) {}
     });
     P2PPong.on('error', d => { rMsg('❌ ' + d.message, 5000); });
@@ -244,7 +245,17 @@ function initApp() {
     $('btn-verify-confirm')?.addEventListener('click', async () => { const ic = window._verifyInput || '', ec = window._verifyCode || ''; if (ic.length !== 7) { $('verify-error').style.display = 'block'; $('verify-error').textContent = 'Введи ровно 7 цифр'; return; } if (ic === ec) { $('verify-error').style.display = 'none'; verificationModalShown = false; verificationDone = true; $('verify-modal')?.classList.remove('active'); await P2PPong.confirmVerification(); rMsg('✅ Подтверждено!', 3000); } else { $('verify-error').style.display = 'block'; $('verify-error').textContent = '❌ Неверный код.'; window._verifyInput = ''; $('verify-code-display').textContent = '_______'; } });
     $('close-verify-modal')?.addEventListener('click', () => { $('verify-modal')?.classList.remove('active'); verificationModalShown = false; });
     $('verify-modal')?.addEventListener('click', function(e) { if (e.target === this) { this.classList.remove('active'); verificationModalShown = false; } });
-    $('btn-clear')?.addEventListener('click', async () => { const ok = await showConfirm('Робин Гуд скурил аудио вещание!', ''); if (!ok) return; if (activeChannelId) P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify({ type: 'channel-destroyed', channelId: activeChannelId }) }); await new Promise(r => setTimeout(r, 2000)); stopAllCallSounds(); callActive = false; stopCallTimer(); stopCallArcherAnimation(); if (pc) { try { pc.close(); } catch (e) {}; pc = null; } if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } incomingOffer = null; activeChannelId = null; showIdleScreen(); playSmokeAnimation(); playSound('clear cache.mp3'); rMsg('🚬 Робин Гуд скурил аудио вещание!', 5000); localStorage.clear(); $('robin-bar-sender').textContent = 'RobinCall'; });
+    $('btn-clear')?.addEventListener('click', async () => {
+        const ok = await showConfirm('Робин Гуд скурил аудио вещание!', '');
+        if (!ok) return;
+        stopAllCallSounds(); callActive = false; stopCallTimer(); stopCallArcherAnimation();
+        if (pc) { try { pc.close(); } catch (e) {}; pc = null; }
+        if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+        incomingOffer = null; activeChannelId = null; showIdleScreen();
+        playSmokeAnimation(); playSound('clear cache.mp3');
+        rMsg('🚬 Робин Гуд скурил аудио вещание!', 5000);
+        localStorage.clear(); $('robin-bar-sender').textContent = 'RobinCall';
+    });
     $('btn-settings')?.addEventListener('click', () => { closeSheets(); $('settings-sheet')?.classList.add('open'); $('overlay')?.classList.add('show'); });
     $('settings-close')?.addEventListener('click', closeSheets); $('overlay')?.addEventListener('click', closeSheets);
     $('nick-label')?.addEventListener('click', () => { $('nick-modal')?.classList.add('active'); $('nick-input').value = $('nick-label')?.textContent || ''; });
@@ -256,7 +267,7 @@ function initApp() {
     if (ta) ta.addEventListener('change', function() { toggleAnimations = this.checked; try { localStorage.setItem('robinhood_animations', toggleAnimations); } catch (e) {} });
     $('btn-cancel-call')?.addEventListener('click', () => hang(true));
     $('btn-answer')?.addEventListener('click', acceptCall);
-    $('btn-reject')?.addEventListener('click', () => { stopAllCallSounds(); if (incomingOffer) { P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify({ webrtc: 'webrtc-hangup', sdp: '' }) }); incomingOffer = null; } showIdleScreen(); });
+    $('btn-reject')?.addEventListener('click', () => { stopAllCallSounds(); if (incomingOffer) { P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify({ webrtc: 'webrtc-hangup', sdp: '', from: P2PPong._peerId }) }); incomingOffer = null; } showIdleScreen(); });
     $('btn-end-call')?.addEventListener('click', () => hang(true));
     $('btn-mic')?.addEventListener('click', () => { if (stream) { micOn = !micOn; stream.getAudioTracks().forEach(t => t.enabled = micOn); $('btn-mic').textContent = micOn ? '🎤' : '🔇'; } });
     $('btn-speaker')?.addEventListener('click', () => { $('btn-speaker').textContent = $('btn-speaker').textContent === '🔊' ? '🔈' : '🔊'; });
