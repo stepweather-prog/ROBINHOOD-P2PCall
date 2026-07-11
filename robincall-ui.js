@@ -1,4 +1,4 @@
-// robincall-ui.js — финал: быстрое соединение + скурение с сигналом
+// robincall-ui.js — финал: оффер одним пакетом, быстрое соединение
 let activeChannelId = null;
 let selectedAvatar = 'icons/01icon.png';
 let myNick = 'Лучник';
@@ -104,7 +104,7 @@ function createPC() {
     ]});
     if (stream) stream.getTracks().forEach(t => pc.addTrack(t, stream));
     pc.ontrack = e => { if (e.streams[0]) { const a = new Audio(); a.srcObject = e.streams[0]; a.play().catch(() => {}); } };
-    pc.onicecandidate = e => { if (e.candidate) sendSignal('webrtc-ice', e.candidate); };
+    pc.onicecandidate = e => {};
     pc.onconnectionstatechange = () => {
         if (pc.connectionState === 'connected') { stopAllCallSounds(); callActive = true; startCallTimer(); showCallScreen('active'); playSound('open.mp3'); }
         if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') { hang(false); }
@@ -117,8 +117,7 @@ function stopCallTimer() { if (callTimerInterval) clearInterval(callTimerInterva
 
 function sendSignal(type, sdp) {
     if (!activeChannelId) return;
-    const data = { webrtc: type, sdp: JSON.stringify(sdp), from: P2PPong._peerId };
-    P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify(data) });
+    P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify({ webrtc: type, sdp: JSON.stringify(sdp), from: P2PPong._peerId }) });
 }
 
 async function startCall() {
@@ -128,6 +127,7 @@ async function startCall() {
     try {
         const o = await pc.createOffer();
         await pc.setLocalDescription(o);
+        await new Promise(r => { if (pc.iceGatheringState === 'complete') r(); else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') r(); }; });
         sendSignal('webrtc-offer', pc.localDescription);
     } catch (e) { hang(true); }
 }
@@ -141,6 +141,7 @@ async function acceptCall() {
         await pc.setRemoteDescription(new RTCSessionDescription(incomingOffer));
         const a = await pc.createAnswer();
         await pc.setLocalDescription(a);
+        await new Promise(r => { if (pc.iceGatheringState === 'complete') r(); else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') r(); }; });
         sendSignal('webrtc-answer', pc.localDescription);
         incomingOffer = null; callActive = true; startCallTimer(); playSound('open.mp3');
     } catch (e) { hang(true); }
@@ -158,8 +159,7 @@ async function handleSignal(type, sdp, from) {
     if (from === P2PPong._peerId) return;
     if (type === 'webrtc-offer' && !callActive) {
         try {
-            const desc = JSON.parse(sdp);
-            incomingOffer = new RTCSessionDescription(desc);
+            incomingOffer = new RTCSessionDescription(JSON.parse(sdp));
             showCallScreen('incoming'); rMsg('📞 Входящий!', 0); startMelodi();
         } catch (e) {}
         return;
@@ -169,10 +169,6 @@ async function handleSignal(type, sdp, from) {
             await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp)));
             stopAllCallSounds(); callActive = true; startCallTimer(); showCallScreen('active'); playSound('open.mp3');
         } catch (e) {}
-        return;
-    }
-    if (type === 'webrtc-ice' && pc) {
-        try { pc.addIceCandidate(new RTCIceCandidate(JSON.parse(sdp))).catch(()=>{}); } catch (e) {}
         return;
     }
     if (type === 'webrtc-hangup') { if (callActive || pc) { rMsg('📞 Собеседник завершил', 3000); hang(false); } return; }
