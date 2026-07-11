@@ -1,4 +1,4 @@
-// robincall-ui.js — финал возможно
+// robincall-ui.js — финал: быстрое соединение + скурение с сигналом
 let activeChannelId = null;
 let selectedAvatar = 'icons/01icon.png';
 let myNick = 'Лучник';
@@ -19,7 +19,6 @@ let micOn = true, incomingOffer = null;
 let callArcherAnim = null;
 let welkAudio = null;
 let melodiAudio = null;
-let pendingIceCandidates = [];
 
 const videoBackgrounds = [
     { type: 'image', src: 'assets/icons/background.webp', name: 'Статика' },
@@ -76,7 +75,6 @@ function updateMainButton() { const btn = $('btn-main-action'); if (!btn) return
 
 function showIdleScreen() {
     $('idle-screen').style.display = 'flex'; $('call-screen').classList.add('hidden'); $('outgoing-end-row').classList.add('hidden'); $('incoming-row').classList.add('hidden'); $('active-row').classList.add('hidden'); $('volume-controls').classList.add('hidden'); $('call-timer').classList.add('hidden'); stopCallArcherAnimation(); updateMainButton(); $('robin-bar-sender').textContent = theirNick || 'RobinCall';
-    pendingIceCandidates = [];
 }
 function showCallScreen(type) {
     $('idle-screen').style.display = 'none'; $('call-screen').classList.remove('hidden'); $('call-peer-name').textContent = theirNick; $('call-peer-avatar').src = getAvatarUrl(theirAvatar);
@@ -96,7 +94,6 @@ async function getMediaStream() { try { return await navigator.mediaDevices.getU
 
 function createPC() {
     if (pc) { try { pc.close(); } catch (e) {}; pc = null; }
-    pendingIceCandidates = [];
     pc = new RTCPeerConnection({ iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
@@ -107,7 +104,7 @@ function createPC() {
     ]});
     if (stream) stream.getTracks().forEach(t => pc.addTrack(t, stream));
     pc.ontrack = e => { if (e.streams[0]) { const a = new Audio(); a.srcObject = e.streams[0]; a.play().catch(() => {}); } };
-    pc.onicecandidate = e => { if (e.candidate) pendingIceCandidates.push(e.candidate); };
+    pc.onicecandidate = e => { if (e.candidate) sendSignal('webrtc-ice', e.candidate); };
     pc.onconnectionstatechange = () => {
         if (pc.connectionState === 'connected') { stopAllCallSounds(); callActive = true; startCallTimer(); showCallScreen('active'); playSound('open.mp3'); }
         if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') { hang(false); }
@@ -121,9 +118,6 @@ function stopCallTimer() { if (callTimerInterval) clearInterval(callTimerInterva
 function sendSignal(type, sdp) {
     if (!activeChannelId) return;
     const data = { webrtc: type, sdp: JSON.stringify(sdp), from: P2PPong._peerId };
-    if (type === 'webrtc-offer' || type === 'webrtc-answer') {
-        data.ice = JSON.stringify(pendingIceCandidates);
-    }
     P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify(data) });
 }
 
@@ -132,8 +126,8 @@ async function startCall() {
     const s = await getMediaStream(); if (!s) return;
     stream = s; createPC(); showCallScreen('outgoing'); startWelk();
     try {
-        const o = await pc.createOffer(); await pc.setLocalDescription(o);
-        await new Promise(r => { if (pc.iceGatheringState === 'complete') r(); else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') r(); }; });
+        const o = await pc.createOffer();
+        await pc.setLocalDescription(o);
         sendSignal('webrtc-offer', pc.localDescription);
     } catch (e) { hang(true); }
 }
@@ -144,10 +138,9 @@ async function acceptCall() {
     const s = await getMediaStream(); if (!s) { showIdleScreen(); return; }
     stream = s; createPC(); showCallScreen('active');
     try {
-        await pc.setRemoteDescription(incomingOffer);
-        if (incomingOffer._ice) { for (const c of incomingOffer._ice) await pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{}); }
-        const a = await pc.createAnswer(); await pc.setLocalDescription(a);
-        await new Promise(r => { if (pc.iceGatheringState === 'complete') r(); else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') r(); }; });
+        await pc.setRemoteDescription(new RTCSessionDescription(incomingOffer));
+        const a = await pc.createAnswer();
+        await pc.setLocalDescription(a);
         sendSignal('webrtc-answer', pc.localDescription);
         incomingOffer = null; callActive = true; startCallTimer(); playSound('open.mp3');
     } catch (e) { hang(true); }
@@ -158,27 +151,28 @@ function hang(sig = true) {
     if (activeChannelId && sig) { P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify({ webrtc: 'webrtc-hangup', sdp: '', from: P2PPong._peerId }) }); }
     if (pc) { try { pc.close(); } catch (e) {}; pc = null; }
     if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-    incomingOffer = null; pendingIceCandidates = []; showIdleScreen(); if (sig) playSound('exet.mp3');
+    incomingOffer = null; showIdleScreen(); if (sig) playSound('exet.mp3');
 }
 
-async function handleSignal(type, sdp, iceStr, from) {
+async function handleSignal(type, sdp, from) {
     if (from === P2PPong._peerId) return;
     if (type === 'webrtc-offer' && !callActive) {
         try {
             const desc = JSON.parse(sdp);
             incomingOffer = new RTCSessionDescription(desc);
-            if (iceStr) { incomingOffer._ice = JSON.parse(iceStr); }
             showCallScreen('incoming'); rMsg('📞 Входящий!', 0); startMelodi();
         } catch (e) {}
         return;
     }
     if (type === 'webrtc-answer' && pc) {
         try {
-            const desc = JSON.parse(sdp);
-            await pc.setRemoteDescription(new RTCSessionDescription(desc));
-            if (iceStr) { const iceList = JSON.parse(iceStr); for (const c of iceList) await pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{}); }
+            await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp)));
             stopAllCallSounds(); callActive = true; startCallTimer(); showCallScreen('active'); playSound('open.mp3');
         } catch (e) {}
+        return;
+    }
+    if (type === 'webrtc-ice' && pc) {
+        try { pc.addIceCandidate(new RTCIceCandidate(JSON.parse(sdp))).catch(()=>{}); } catch (e) {}
         return;
     }
     if (type === 'webrtc-hangup') { if (callActive || pc) { rMsg('📞 Собеседник завершил', 3000); hang(false); } return; }
@@ -212,7 +206,17 @@ function initUI() {
         const raw = d.text || d.voiceData || ''; if (!raw) return;
         try {
             const p = JSON.parse(raw);
-            if (p.webrtc) { handleSignal(p.webrtc, p.sdp, p.ice, p.from); return; }
+            if (p.type === 'channel-destroyed' && p.from !== P2PPong._peerId) {
+                stopAllCallSounds(); callActive = false; stopCallTimer(); stopCallArcherAnimation();
+                if (pc) { try { pc.close(); } catch (e) {}; pc = null; }
+                if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+                incomingOffer = null; activeChannelId = null; showIdleScreen();
+                playSmokeAnimation(); playSound('clear cache.mp3');
+                rMsg('🚬 Робин Гуд скурил аудио вещание!', 5000);
+                localStorage.clear(); $('robin-bar-sender').textContent = 'RobinCall';
+                return;
+            }
+            if (p.webrtc) { handleSignal(p.webrtc, p.sdp, p.from); return; }
         } catch (e) {}
     });
     P2PPong.on('error', d => { rMsg('❌ ' + d.message, 5000); });
@@ -248,6 +252,10 @@ function initApp() {
     $('btn-clear')?.addEventListener('click', async () => {
         const ok = await showConfirm('Робин Гуд скурил аудио вещание!', '');
         if (!ok) return;
+        if (activeChannelId) {
+            P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify({ type: 'channel-destroyed', from: P2PPong._peerId }) });
+        }
+        await new Promise(r => setTimeout(r, 1500));
         stopAllCallSounds(); callActive = false; stopCallTimer(); stopCallArcherAnimation();
         if (pc) { try { pc.close(); } catch (e) {}; pc = null; }
         if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
