@@ -1,4 +1,4 @@
-// robincall-ui.js — визуал всё поправлено
+// robincall-ui.js
 let activeChannelId = null;
 let selectedAvatar = 'icons/01icon.png';
 let myNick = 'Лучник';
@@ -68,27 +68,8 @@ function stopMelodi() { if (melodiAudio) { melodiAudio.pause(); melodiAudio.curr
 function startCallTimer() { callStartTime = Date.now(); $('call-timer').classList.remove('hidden'); callTimerInterval = setInterval(() => { const e = Math.floor((Date.now() - callStartTime) / 1000); $('call-timer').textContent = Math.floor(e / 60).toString().padStart(2, '0') + ':' + (e % 60).toString().padStart(2, '0'); }, 1000); }
 function stopCallTimer() { if (callTimerInterval) clearInterval(callTimerInterval); $('call-timer').classList.add('hidden'); }
 
-function sendSignalingMessage(payload) {
-    const chId = activeChannelId || P2PPong._chId; if (!chId) return;
-    const myPeerId = P2PPong._peerId;
-    const keyHash = 'webrtc_' + myPeerId + '_' + chId;
-    let wsSig = { type: payload.type === 'offer' ? 'webrtc-offer' : payload.type === 'answer' ? 'webrtc-answer' : payload.type === 'candidate' ? 'webrtc-ice' : payload.type === 'hangup' ? 'webrtc-hangup' : payload.type, peerId: myPeerId, from: myPeerId, timestamp: Date.now() };
-    if (payload.offer) { wsSig.sdp = JSON.stringify(payload.offer); wsSig.senderNick = myNick; wsSig.senderAvatar = selectedAvatar; }
-    if (payload.answer) wsSig.sdp = JSON.stringify(payload.answer);
-    if (payload.candidate) wsSig.sdp = JSON.stringify(payload.candidate);
-    P2PPong._post('/beacon', { keyHash, packet: JSON.stringify(wsSig) });
-}
-
-function startWebRTCPoll() {
-    stopWebRTCPoll();
-    const chId = activeChannelId || P2PPong._chId; if (!chId) return;
-    const myPeerId = P2PPong._peerId, theirPeerId = P2PPong._remotePeerId;
-    if (!theirPeerId) return;
-    const listenKey = 'webrtc_' + theirPeerId + '_' + chId;
-    let lastTimestamp = 0;
-    const poll = () => { if (!activeChannelId) return; P2PPong._get('/beacon?key=' + listenKey).then(d => { if (d?.packet) { try { const sig = JSON.parse(d.packet); if (sig.peerId !== myPeerId && sig.timestamp > lastTimestamp) { lastTimestamp = sig.timestamp; const conv = { from: sig.peerId, type: sig.type === 'webrtc-offer' ? 'offer' : sig.type === 'webrtc-answer' ? 'answer' : sig.type === 'webrtc-ice' ? 'candidate' : sig.type === 'webrtc-hangup' ? 'hangup' : sig.type }; if (sig.sdp) { const sdp = JSON.parse(sig.sdp); if (conv.type === 'offer') { conv.offer = sdp; conv.senderNick = sig.senderNick; conv.senderAvatar = sig.senderAvatar; } else if (conv.type === 'answer') conv.answer = sdp; else if (conv.type === 'candidate') conv.candidate = sdp; } handleIncomingSignal(conv); } } catch(e) {} } if (activeChannelId) webrtcPollInterval = setTimeout(poll, 800); }).catch(() => { if (activeChannelId) webrtcPollInterval = setTimeout(poll, 800); }); };
-    poll();
-}
+function sendSignalingMessage(payload) { const chId = activeChannelId || P2PPong._chId; if (!chId) return; const myPeerId = P2PPong._peerId; const keyHash = 'webrtc_' + myPeerId + '_' + chId; let wsSig = { type: payload.type === 'offer' ? 'webrtc-offer' : payload.type === 'answer' ? 'webrtc-answer' : payload.type === 'candidate' ? 'webrtc-ice' : payload.type === 'hangup' ? 'webrtc-hangup' : payload.type, peerId: myPeerId, from: myPeerId, timestamp: Date.now() }; if (payload.offer) { wsSig.sdp = JSON.stringify(payload.offer); wsSig.senderNick = myNick; wsSig.senderAvatar = selectedAvatar; } if (payload.answer) wsSig.sdp = JSON.stringify(payload.answer); if (payload.candidate) wsSig.sdp = JSON.stringify(payload.candidate); P2PPong._post('/beacon', { keyHash, packet: JSON.stringify(wsSig) }); }
+function startWebRTCPoll() { stopWebRTCPoll(); const chId = activeChannelId || P2PPong._chId; if (!chId) return; const myPeerId = P2PPong._peerId, theirPeerId = P2PPong._remotePeerId; if (!theirPeerId) return; const listenKey = 'webrtc_' + theirPeerId + '_' + chId; let lastTimestamp = 0; const poll = () => { if (!activeChannelId) return; P2PPong._get('/beacon?key=' + listenKey).then(d => { if (d?.packet) { try { const sig = JSON.parse(d.packet); if (sig.peerId !== myPeerId && sig.timestamp > lastTimestamp) { lastTimestamp = sig.timestamp; const conv = { from: sig.peerId, type: sig.type === 'webrtc-offer' ? 'offer' : sig.type === 'webrtc-answer' ? 'answer' : sig.type === 'webrtc-ice' ? 'candidate' : sig.type === 'webrtc-hangup' ? 'hangup' : sig.type }; if (sig.sdp) { const sdp = JSON.parse(sig.sdp); if (conv.type === 'offer') { conv.offer = sdp; conv.senderNick = sig.senderNick; conv.senderAvatar = sig.senderAvatar; } else if (conv.type === 'answer') conv.answer = sdp; else if (conv.type === 'candidate') conv.candidate = sdp; } handleIncomingSignal(conv); } } catch(e) {} } if (activeChannelId) webrtcPollInterval = setTimeout(poll, 800); }).catch(() => { if (activeChannelId) webrtcPollInterval = setTimeout(poll, 800); }); }; poll(); }
 function stopWebRTCPoll() { if (webrtcPollInterval) { clearTimeout(webrtcPollInterval); webrtcPollInterval = null; } }
 
 async function initWebRTC() { if (pc) { try { pc.close(); } catch(e) {}; pc = null; } try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: false }); } catch (e) { rMsg('Ошибка доступа к микрофону!'); throw e; } pc = new RTCPeerConnection(rtcConfig); stream.getTracks().forEach(track => pc.addTrack(track, stream)); pc.ontrack = (event) => { if (event.streams[0]) { remoteAudio.srcObject = event.streams[0]; remoteAudio.play().catch(() => {}); } }; pc.onicecandidate = (event) => { if (event.candidate) sendSignalingMessage({ type: 'candidate', candidate: event.candidate }); }; pc.oniceconnectionstatechange = () => { if (pc.iceConnectionState === 'failed') handleHangup(false); }; }
@@ -161,7 +142,7 @@ function initApp() {
         const ok = await showConfirm('Робин Гуд скурил аудио вещание!', '');
         if (!ok) return;
         if (activeChannelId) { P2PPong._post('/beacon', { keyHash: 'msg_' + activeChannelId, packet: JSON.stringify({ type: 'channel-destroyed', from: P2PPong._peerId }) }); }
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, 4000));
         stopWebRTCPoll(); handleHangup(false); activeChannelId = null;
         performFullCleanup();
     });
