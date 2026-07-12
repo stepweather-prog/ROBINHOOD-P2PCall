@@ -1,4 +1,4 @@
-// robincall-ui.js — раздельные ключи
+// robincall-ui.js — Firebase + HTTP поллинг для WebRTC сигналов
 let activeChannelId = null;
 let selectedAvatar = 'icons/01icon.png';
 let myNick = 'Лучник';
@@ -18,7 +18,7 @@ let micOn = true, incomingOffer = null;
 let callArcherAnim = null;
 let welkAudio = null, melodiAudio = null;
 let webrtcPollInterval = null;
-let lastSignalTimestamp = 0;
+let firebaseWebRTCRef = null, firebaseWebRTCListener = null;
 
 let audioContext = null, gainNode = null, speakerOn = true;
 const remoteAudio = document.createElement('audio');
@@ -70,53 +70,58 @@ function stopMelodi() { if (melodiAudio) { melodiAudio.pause(); melodiAudio.curr
 function startCallTimer() { callStartTime = Date.now(); $('call-timer').classList.remove('hidden'); callTimerInterval = setInterval(() => { const e = Math.floor((Date.now() - callStartTime) / 1000); $('call-timer').textContent = Math.floor(e / 60).toString().padStart(2, '0') + ':' + (e % 60).toString().padStart(2, '0'); }, 1000); }
 function stopCallTimer() { if (callTimerInterval) clearInterval(callTimerInterval); $('call-timer').classList.add('hidden'); }
 
-// === РАЗДЕЛЬНЫЕ КЛЮЧИ ===
+// === FIREBASE + HTTP СИГНАЛИНГ ===
 function sendSignalingMessage(payload) {
-    if (!activeChannelId) return;
+    const chId = activeChannelId || P2PPong._chId;
+    if (!chId) return;
     const myPeerId = P2PPong._peerId;
     const theirPeerId = P2PPong._remotePeerId;
-    const keyHash = 'webrtc_' + myPeerId + '_to_' + theirPeerId + '_' + activeChannelId;
+    const signalKey = 'webrtc_signals/' + chId + '/' + myPeerId;
     let wsSig = {
         type: payload.type === 'offer' ? 'webrtc-offer' : payload.type === 'answer' ? 'webrtc-answer' : payload.type === 'candidate' ? 'webrtc-ice' : payload.type === 'hangup' ? 'webrtc-hangup' : payload.type,
-        peerId: myPeerId, from: myPeerId, timestamp: Date.now()
+        peerId: myPeerId, from: myPeerId, timestamp: Date.now(), senderNick: myNick, senderAvatar: selectedAvatar
     };
-    if (payload.offer) { wsSig.sdp = JSON.stringify(payload.offer); wsSig.senderNick = payload.senderNick || myNick; wsSig.senderAvatar = payload.senderAvatar || selectedAvatar; }
-    if (payload.answer) { wsSig.sdp = JSON.stringify(payload.answer); }
-    if (payload.candidate) { wsSig.sdp = JSON.stringify(payload.candidate); }
-    const packet = JSON.stringify(wsSig);
-    P2PPong._post('/beacon', { keyHash, packet });
+    if (payload.offer) wsSig.sdp = JSON.stringify(payload.offer);
+    if (payload.answer) wsSig.sdp = JSON.stringify(payload.answer);
+    if (payload.candidate) wsSig.sdp = JSON.stringify(payload.candidate);
+    if (window.firebaseDB && P2PPong._firebaseActive) {
+        const ref = window.firebaseRef(window.firebaseDB, signalKey);
+        window.firebaseSet(ref, wsSig).then(() => { setTimeout(() => { window.firebaseSet(ref, null).catch(() => {}); }, 30000); }).catch(() => {});
+    }
+    const httpKey = 'webrtc_http_' + chId + '_' + myPeerId;
+    P2PPong._post('/beacon', { keyHash: httpKey, packet: JSON.stringify(wsSig) }).catch(() => {});
 }
 
 function startWebRTCPoll() {
     stopWebRTCPoll();
-    if (!activeChannelId) return;
+    const chId = activeChannelId || P2PPong._chId;
+    if (!chId) return;
     const myPeerId = P2PPong._peerId;
     const theirPeerId = P2PPong._remotePeerId;
-    const listenKey = 'webrtc_' + theirPeerId + '_to_' + myPeerId + '_' + activeChannelId;
-    lastSignalTimestamp = 0;
-    const poll = () => {
-        if (!activeChannelId) return;
-        P2PPong._get('/beacon?key=' + listenKey).then(d => {
-            if (d?.packet) {
-                try {
-                    const sig = JSON.parse(d.packet);
-                    if (sig.peerId === myPeerId) return;
-                    if (sig.timestamp <= lastSignalTimestamp) return;
-                    lastSignalTimestamp = sig.timestamp;
-                    const conv = {
-                        from: sig.peerId,
-                        type: sig.type === 'webrtc-offer' ? 'offer' : sig.type === 'webrtc-answer' ? 'answer' : sig.type === 'webrtc-ice' ? 'candidate' : sig.type === 'webrtc-hangup' ? 'hangup' : sig.type
-                    };
-                    if (sig.sdp) { const sdp = JSON.parse(sig.sdp); if (conv.type === 'offer') { conv.offer = sdp; conv.senderNick = sig.senderNick; conv.senderAvatar = sig.senderAvatar; } else if (conv.type === 'answer') { conv.answer = sdp; } else if (conv.type === 'candidate') { conv.candidate = sdp; } }
-                    handleIncomingSignal(conv);
-                } catch(e) {}
-            }
-            if (activeChannelId) webrtcPollInterval = setTimeout(poll, 500);
-        }).catch(() => { if (activeChannelId) webrtcPollInterval = setTimeout(poll, 1000); });
-    };
+    if (theirPeerId && window.firebaseDB && P2PPong._firebaseActive) {
+        const listenPath = 'webrtc_signals/' + chId + '/' + theirPeerId;
+        const ref = window.firebaseRef(window.firebaseDB, listenPath);
+        firebaseWebRTCListener = window.firebaseOnValue(ref, (snapshot) => {
+            const sig = snapshot.val();
+            if (!sig || sig.peerId === myPeerId) return;
+            const conv = {
+                from: sig.peerId,
+                type: sig.type === 'webrtc-offer' ? 'offer' : sig.type === 'webrtc-answer' ? 'answer' : sig.type === 'webrtc-ice' ? 'candidate' : sig.type === 'webrtc-hangup' ? 'hangup' : sig.type
+            };
+            if (sig.sdp) { const sdp = JSON.parse(sig.sdp); if (conv.type === 'offer') { conv.offer = sdp; conv.senderNick = sig.senderNick; conv.senderAvatar = sig.senderAvatar; } else if (conv.type === 'answer') { conv.answer = sdp; } else if (conv.type === 'candidate') { conv.candidate = sdp; } }
+            handleIncomingSignal(conv);
+        });
+        firebaseWebRTCRef = ref;
+    }
+    // HTTP поллинг резерв
+    let lastTimestamp = 0;
+    const poll = () => { if (!activeChannelId && !P2PPong._chId) return; const httpKey = 'webrtc_http_' + chId + '_' + (theirPeerId || 'unknown'); P2PPong._get('/beacon?key=' + httpKey).then(d => { if (d?.packet) { try { const sig = JSON.parse(d.packet); if (sig.peerId !== P2PPong._peerId && sig.timestamp > lastTimestamp) { lastTimestamp = sig.timestamp; } } catch(e) {} } if (activeChannelId || P2PPong._chId) webrtcPollInterval = setTimeout(poll, 2000); }).catch(() => { if (activeChannelId || P2PPong._chId) webrtcPollInterval = setTimeout(poll, 2000); }); };
     poll();
 }
-function stopWebRTCPoll() { if (webrtcPollInterval) { clearTimeout(webrtcPollInterval); webrtcPollInterval = null; } }
+function stopWebRTCPoll() {
+    if (webrtcPollInterval) { clearTimeout(webrtcPollInterval); webrtcPollInterval = null; }
+    if (firebaseWebRTCListener && firebaseWebRTCRef) { try { window.firebaseOff(firebaseWebRTCRef); } catch(e) {} firebaseWebRTCListener = null; firebaseWebRTCRef = null; }
+}
 
 async function initWebRTC() {
     cleanupWebRTC();
@@ -140,14 +145,13 @@ async function makeCall() { if (!activeChannelId) return rMsg('Нет актив
 async function acceptCall() { if (!incomingOffer) return; stopMelodi(); callActive = true; showCallScreen('active'); startCallTimer(); await initWebRTC(); await pc.setRemoteDescription(new RTCSessionDescription(incomingOffer)); const answer = await pc.createAnswer({ offerToReceiveAudio: true }); await pc.setLocalDescription(answer); await new Promise(r => { if (pc.iceGatheringState === 'complete') r(); else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') r(); }; }); sendSignalingMessage({ type: 'answer', answer: pc.localDescription, from: P2PPong._peerId }); incomingOffer = null; }
 function handleHangup(isInitiator = true) {
     stopWelk(); stopMelodi(); stopCallTimer();
-    if (activeChannelId) {
+    const chId = activeChannelId || P2PPong._chId;
+    if (chId && window.firebaseDB) {
         const myPeerId = P2PPong._peerId, theirPeerId = P2PPong._remotePeerId;
-        const myKey = 'webrtc_' + myPeerId + '_to_' + theirPeerId + '_' + activeChannelId;
-        const theirKey = 'webrtc_' + theirPeerId + '_to_' + myPeerId + '_' + activeChannelId;
-        P2PPong._get('/delete?key=' + myKey).catch(() => {});
-        P2PPong._get('/delete?key=' + theirKey).catch(() => {});
-        if (isInitiator) sendSignalingMessage({ type: 'hangup', from: myPeerId });
+        if (myPeerId) { const myRef = window.firebaseRef(window.firebaseDB, 'webrtc_signals/' + chId + '/' + myPeerId); window.firebaseSet(myRef, null).catch(() => {}); }
+        if (theirPeerId) { const theirRef = window.firebaseRef(window.firebaseDB, 'webrtc_signals/' + chId + '/' + theirPeerId); window.firebaseSet(theirRef, null).catch(() => {}); }
     }
+    if (isInitiator && activeChannelId) sendSignalingMessage({ type: 'hangup', from: P2PPong._peerId });
     cleanupWebRTC(); callActive = false; incomingOffer = null; showIdleScreen(); rMsg('Вызов завершен');
 }
 function handleIncomingSignal(payload) { if (payload.from === P2PPong._peerId) return; switch (payload.type) { case 'offer': if (callActive) { sendSignalingMessage({ type: 'hangup', from: P2PPong._peerId }); return; } incomingOffer = new RTCSessionDescription(payload.offer); theirNick = payload.senderNick || 'Лучник'; theirAvatar = payload.senderAvatar || '001'; showCallScreen('incoming'); startMelodi(); break; case 'answer': if (pc && callActive) { stopWelk(); pc.setRemoteDescription(new RTCSessionDescription(payload.answer)); showCallScreen('active'); startCallTimer(); } break; case 'hangup': handleHangup(false); break; } }
