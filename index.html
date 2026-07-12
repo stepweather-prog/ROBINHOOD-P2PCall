@@ -33,36 +33,31 @@
         .robin-bar-sender{font-weight:900;font-size:0.85em;color:var(--text-bright)}
         .robin-bar-msg{font-size:0.85em;color:rgba(255,255,255,0.85);white-space:normal;word-break:break-word}
         .robin-arrow-container{display:inline-block;vertical-align:middle;margin-left:6px}
-        .main-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:1;padding:15px;gap:20px}
-        .call-timer{font-size:1.6em;font-weight:bold;color:var(--seeding-color);font-family:monospace}
-        .call-peer-name{font-size:1.2em;font-weight:bold;color:var(--accent-light)}
-        .call-status-text{font-size:0.9em;color:var(--text-dim)}
-        .btn-round{width:65px;height:65px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;background:var(--call-btn-bg);border:1px solid var(--call-btn-border);color:var(--text);backdrop-filter:blur(8px)}
+        .main-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:1;padding:10px;gap:14px;max-height:calc(100vh - 120px)}
+        .call-timer{font-size:1.4em;font-weight:bold;color:var(--seeding-color);font-family:monospace}
+        .call-peer-name{font-size:1em;font-weight:bold;color:var(--accent-light)}
+        .call-status-text{font-size:0.8em;color:var(--text-dim)}
+        .btn-round{width:56px;height:56px;border-radius:50%;border:2px solid var(--call-btn-border);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;background:var(--call-btn-bg);color:var(--text);backdrop-filter:blur(8px);font-size:20px}
         .btn-round:active{transform:scale(0.9)}
-        .btn-round img{width:55%;height:55%;object-fit:contain}
+        .btn-round img{width:50%;height:50%;object-fit:contain}
         .btn-call{border-color:var(--seeding-color);background:var(--call-accept-bg)}
-        .btn-hangup{background:var(--danger);color:white}
-        .btn-main{width:90px;height:90px;border-radius:50%;border:3px solid var(--accent);cursor:pointer;background:var(--btn-bg);display:flex;align-items:center;justify-content:center;transition:all 0.3s;font-size:36px;backdrop-filter:blur(8px)}
-        .btn-main:active{background:var(--btn-hover);box-shadow:0 0 35px rgba(196,162,75,0.5);transform:scale(0.92)}
-        .btn-main img{width:50%;height:50%;object-fit:contain}
+        .btn-hangup{background:var(--danger);color:white;border-color:var(--danger)}
+        .btn-main{width:80px;height:80px;border-radius:50%;border:3px solid var(--accent);cursor:pointer;background:var(--btn-bg);display:flex;align-items:center;justify-content:center;transition:all 0.3s;backdrop-filter:blur(8px)}
+        .btn-main:active{background:var(--btn-hover);box-shadow:0 0 30px rgba(196,162,75,0.5);transform:scale(0.92)}
+        .btn-main img{width:45%;height:45%;object-fit:contain}
         .hidden{display:none!important}
-        .controls-row{display:flex;gap:18px;align-items:center;justify-content:center}
-        #call-archer-container{width:min(200px,50vw);height:min(200px,50vw)}
-        .main-input-row{display:flex;gap:6px;width:90%;max-width:320px}
-        .main-input-row input{flex:1;padding:10px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;color:var(--input-text);font-size:14px;font-family:monospace;outline:none}
-        .main-input-row input:focus{border-color:var(--accent-light);box-shadow:0 0 8px rgba(196,162,75,0.5)}
-        .main-input-row button{padding:10px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent),#b8903a);color:#1a1f0f;cursor:pointer;font-weight:bold;white-space:nowrap;font-size:14px}
-        .main-input-row button:active{transform:scale(0.95)}
-        .call-action-btn{width:85px;height:85px;border-radius:50%;border:3px solid;font-size:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;background:transparent;backdrop-filter:blur(8px)}
-        .call-action-btn img{width:50%;height:50%;object-fit:contain}
-        .call-action-btn.accept{border-color:var(--seeding-color);color:var(--seeding-color);background:rgba(76,175,80,0.2);box-shadow:0 0 25px rgba(76,175,80,0.3)}
-        .call-action-btn.reject{border-color:var(--danger);color:var(--danger);background:rgba(244,67,54,0.2);box-shadow:0 0 25px rgba(244,67,54,0.3)}
+        .controls-row{display:flex;gap:20px;align-items:center;justify-content:center}
+        #call-archer-container{width:min(150px,40vw);height:min(150px,40vw)}
+        .call-action-btn{width:75px;height:75px;border-radius:50%;border:3px solid;font-size:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;background:transparent;backdrop-filter:blur(8px);animation:callPulse 2s ease-in-out infinite}
+        .call-action-btn img{width:45%;height:45%;object-fit:contain}
+        .call-action-btn.accept{border-color:var(--seeding-color);color:var(--seeding-color);background:rgba(76,175,80,0.2);box-shadow:0 0 20px rgba(76,175,80,0.3)}
+        .call-action-btn.reject{border-color:var(--danger);color:var(--danger);background:rgba(244,67,54,0.2);box-shadow:0 0 20px rgba(244,67,54,0.3)}
         .call-action-btn:active{transform:scale(0.8);filter:brightness(1.5)}
-        .call-avatar-large{width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--accent);animation:callPulse 2s ease-in-out infinite}
-        @keyframes callPulse{0%,100%{box-shadow:0 0 20px rgba(196,162,75,0.3)}50%{box-shadow:0 0 40px rgba(196,162,75,0.6)}}
-        .volume-controls{display:flex;gap:12px;align-items:center;width:80%;max-width:300px;margin-top:8px}
-        .volume-slider{-webkit-appearance:none;height:4px;background:var(--call-btn-bg);border-radius:2px;outline:none}
-        .volume-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--accent-light)}
+        .call-avatar-large{width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--accent);animation:callPulse 2s ease-in-out infinite}
+        @keyframes callPulse{0%,100%{box-shadow:0 0 15px rgba(196,162,75,0.3)}50%{box-shadow:0 0 30px rgba(196,162,75,0.6)}}
+        .volume-controls{display:flex;gap:10px;align-items:center;width:80%;max-width:280px;padding:8px 12px;background:rgba(255,255,255,0.08);border-radius:20px;backdrop-filter:blur(8px);margin-bottom:4px}
+        .volume-slider{-webkit-appearance:none;height:5px;background:rgba(255,255,255,0.2);border-radius:3px;outline:none}
+        .volume-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent-light);cursor:pointer;border:2px solid white}
         .bottom-sheet,.avatar-selector{position:fixed;top:0;left:0;width:min(85%,380px);height:100%;background:var(--sheet-bg);border-right:2px solid var(--border);z-index:200;transform:translateX(-100%);transition:transform 0.3s;overflow-y:auto;backdrop-filter:blur(16px)}
         .bottom-sheet.open,.avatar-selector.show{transform:translateX(0)}
         .bottom-sheet-header{padding:16px;font-weight:bold;color:var(--accent-light);border-bottom:1px solid var(--border);display:flex;justify-content:space-between}
@@ -130,12 +125,18 @@
         <button class="btn-main" id="btn-main-action"><img src="assets/icons/08icon.png" alt="craft"></button>
     </div>
     
-    <div id="call-screen" class="hidden" style="display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;">
+    <div id="call-screen" class="hidden" style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;">
+        <div class="hidden volume-controls" id="volume-controls">
+            <span style="font-size:0.7em;color:var(--text-dim);">🎤</span>
+            <input type="range" id="mic-volume" min="0" max="100" value="100" class="volume-slider" style="flex:1;">
+            <span style="font-size:0.7em;color:var(--text-dim);">🔊</span>
+            <input type="range" id="speaker-volume" min="0" max="100" value="100" class="volume-slider" style="flex:1;">
+        </div>
         <div id="call-archer-container"></div>
         <img class="call-avatar-large" id="call-peer-avatar" src="assets/icons/01icon.png" alt="peer">
         <div class="call-peer-name" id="call-peer-name">Лучник</div>
         <div class="call-timer hidden" id="call-timer">00:00</div>
-        <div class="call-status-text" id="call-status-text">Соединение...</div>
+        <div class="call-status-text" id="call-status-text"></div>
         <div class="controls-row hidden" id="outgoing-end-row">
             <button class="btn-round btn-hangup" id="btn-cancel-call"><img src="assets/icons/17icon.png" alt="end"></button>
         </div>
@@ -147,12 +148,6 @@
             <button class="btn-round" id="btn-mic">🎤</button>
             <button class="btn-round btn-hangup" id="btn-end-call"><img src="assets/icons/17icon.png" alt="end"></button>
             <button class="btn-round" id="btn-speaker">🔊</button>
-        </div>
-        <div class="hidden volume-controls" id="volume-controls">
-            <span style="font-size:0.7em;color:var(--text-dim);">🎤</span>
-            <input type="range" id="mic-volume" min="0" max="100" value="100" class="volume-slider" style="flex:1;">
-            <span style="font-size:0.7em;color:var(--text-dim);">🔊</span>
-            <input type="range" id="speaker-volume" min="0" max="100" value="100" class="volume-slider" style="flex:1;">
         </div>
     </div>
 </div>
