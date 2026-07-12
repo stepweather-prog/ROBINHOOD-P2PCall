@@ -1,4 +1,4 @@
-// robincall-ui.js — Firebase основной, HTTP резервный
+// robincall-ui.js — фильтрация TCP кандидатов
 let activeChannelId = null;
 let selectedAvatar = 'icons/01icon.png';
 let myNick = 'Лучник';
@@ -19,6 +19,7 @@ let callArcherAnim = null;
 let welkAudio = null, melodiAudio = null;
 let firebaseSignalRef = null, firebaseSignalListener = null;
 let httpPollInterval = null;
+let candidateCount = 0;
 
 const remoteAudio = document.createElement('audio');
 remoteAudio.autoplay = true;
@@ -26,7 +27,9 @@ document.body.appendChild(remoteAudio);
 
 const rtcConfig = {
     iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }, { urls: 'stun:stun.cloudflare.com:3478' },
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun.cloudflare.com:3478' },
         { urls: 'turn:robinhoodp2p.metered.live:3478?transport=udp', username: '466624d8364bb4660ed45c7d', credential: 'mpODzmBDhwG/b+VL' }
     ], iceCandidatePoolSize: 2
 };
@@ -69,58 +72,16 @@ function stopMelodi() { if (melodiAudio) { melodiAudio.pause(); melodiAudio.curr
 function startCallTimer() { callStartTime = Date.now(); $('call-timer').classList.remove('hidden'); callTimerInterval = setInterval(() => { const e = Math.floor((Date.now() - callStartTime) / 1000); $('call-timer').textContent = Math.floor(e / 60).toString().padStart(2, '0') + ':' + (e % 60).toString().padStart(2, '0'); }, 1000); }
 function stopCallTimer() { if (callTimerInterval) clearInterval(callTimerInterval); $('call-timer').classList.add('hidden'); }
 
-// === СИГНАЛИНГ: FIREBASE + HTTP ===
-function sendSignalingMessage(payload) {
-    const chId = activeChannelId || P2PPong._chId; if (!chId) return;
-    const myPeerId = P2PPong._peerId;
-    let wsSig = { type: payload.type === 'offer' ? 'webrtc-offer' : payload.type === 'answer' ? 'webrtc-answer' : payload.type === 'candidate' ? 'webrtc-ice' : payload.type === 'hangup' ? 'webrtc-hangup' : payload.type, peerId: myPeerId, from: myPeerId, timestamp: Date.now() };
-    if (payload.offer) wsSig.sdp = JSON.stringify(payload.offer);
-    if (payload.answer) wsSig.sdp = JSON.stringify(payload.answer);
-    if (payload.candidate) wsSig.sdp = JSON.stringify(payload.candidate);
-    const packet = JSON.stringify(wsSig);
-    // Firebase (основной)
-    if (window.firebaseDB && P2PPong._firebaseActive) {
-        const ref = window.firebaseRef(window.firebaseDB, 'webrtc_signals/' + chId + '/' + myPeerId);
-        window.firebaseSet(ref, wsSig).then(() => { setTimeout(() => window.firebaseSet(ref, null).catch(() => {}), 30000); }).catch(() => {});
-    }
-    // HTTP (резерв)
-    P2PPong._post('/beacon', { keyHash: 'webrtc_http_' + chId + '_' + myPeerId, packet }).catch(() => {});
-}
+function sendSignalingMessage(payload) { const chId = activeChannelId || P2PPong._chId; if (!chId) return; const myPeerId = P2PPong._peerId; let wsSig = { type: payload.type === 'offer' ? 'webrtc-offer' : payload.type === 'answer' ? 'webrtc-answer' : payload.type === 'candidate' ? 'webrtc-ice' : payload.type === 'hangup' ? 'webrtc-hangup' : payload.type, peerId: myPeerId, from: myPeerId, timestamp: Date.now() }; if (payload.offer) wsSig.sdp = JSON.stringify(payload.offer); if (payload.answer) wsSig.sdp = JSON.stringify(payload.answer); if (payload.candidate) wsSig.sdp = JSON.stringify(payload.candidate); const packet = JSON.stringify(wsSig); if (window.firebaseDB && P2PPong._firebaseActive) { const ref = window.firebaseRef(window.firebaseDB, 'webrtc_signals/' + chId + '/' + myPeerId); window.firebaseSet(ref, wsSig).then(() => { setTimeout(() => window.firebaseSet(ref, null).catch(() => {}), 30000); }).catch(() => {}); } P2PPong._post('/beacon', { keyHash: 'webrtc_http_' + chId + '_' + myPeerId, packet }).catch(() => {}); }
+function startSignalListen() { stopSignalListen(); const chId = activeChannelId || P2PPong._chId; if (!chId) return; const myPeerId = P2PPong._peerId, theirPeerId = P2PPong._remotePeerId; if (!theirPeerId) return; if (window.firebaseDB && P2PPong._firebaseActive) { const ref = window.firebaseRef(window.firebaseDB, 'webrtc_signals/' + chId + '/' + theirPeerId); firebaseSignalListener = window.firebaseOnValue(ref, (snapshot) => { const sig = snapshot.val(); if (sig && sig.peerId !== myPeerId) processSignal(sig); }); firebaseSignalRef = ref; } const poll = () => { if (!activeChannelId && !P2PPong._chId) return; P2PPong._get('/beacon?key=webrtc_http_' + chId + '_' + theirPeerId).then(d => { if (d?.packet) { try { const sig = JSON.parse(d.packet); if (sig.peerId !== myPeerId) processSignal(sig); } catch(e) {} } if (activeChannelId || P2PPong._chId) httpPollInterval = setTimeout(poll, 2000); }).catch(() => { if (activeChannelId || P2PPong._chId) httpPollInterval = setTimeout(poll, 2000); }); }; poll(); }
+function stopSignalListen() { if (httpPollInterval) { clearTimeout(httpPollInterval); httpPollInterval = null; } if (firebaseSignalListener && firebaseSignalRef) { try { window.firebaseOff(firebaseSignalRef); } catch(e) {} firebaseSignalListener = null; firebaseSignalRef = null; } }
+function processSignal(sig) { const conv = { from: sig.peerId, type: sig.type === 'webrtc-offer' ? 'offer' : sig.type === 'webrtc-answer' ? 'answer' : sig.type === 'webrtc-ice' ? 'candidate' : sig.type === 'webrtc-hangup' ? 'hangup' : sig.type }; if (sig.sdp) { const sdp = JSON.parse(sig.sdp); if (conv.type === 'offer') conv.offer = sdp; else if (conv.type === 'answer') conv.answer = sdp; else if (conv.type === 'candidate') conv.candidate = sdp; } handleIncomingSignal(conv); }
 
-function startSignalListen() {
-    stopSignalListen();
-    const chId = activeChannelId || P2PPong._chId; if (!chId) return;
-    const myPeerId = P2PPong._peerId, theirPeerId = P2PPong._remotePeerId;
-    if (!theirPeerId) return;
-    // Firebase слушатель (мгновенный)
-    if (window.firebaseDB && P2PPong._firebaseActive) {
-        const ref = window.firebaseRef(window.firebaseDB, 'webrtc_signals/' + chId + '/' + theirPeerId);
-        firebaseSignalListener = window.firebaseOnValue(ref, (snapshot) => {
-            const sig = snapshot.val();
-            if (sig && sig.peerId !== myPeerId) processSignal(sig);
-        });
-        firebaseSignalRef = ref;
-    }
-    // HTTP поллинг (резерв, раз в 2 сек)
-    const poll = () => { if (!activeChannelId && !P2PPong._chId) return; P2PPong._get('/beacon?key=webrtc_http_' + chId + '_' + theirPeerId).then(d => { if (d?.packet) { try { const sig = JSON.parse(d.packet); if (sig.peerId !== myPeerId) processSignal(sig); } catch(e) {} } if (activeChannelId || P2PPong._chId) httpPollInterval = setTimeout(poll, 2000); }).catch(() => { if (activeChannelId || P2PPong._chId) httpPollInterval = setTimeout(poll, 2000); }); };
-    poll();
-}
-function stopSignalListen() {
-    if (httpPollInterval) { clearTimeout(httpPollInterval); httpPollInterval = null; }
-    if (firebaseSignalListener && firebaseSignalRef) { try { window.firebaseOff(firebaseSignalRef); } catch(e) {} firebaseSignalListener = null; firebaseSignalRef = null; }
-}
-
-function processSignal(sig) {
-    const conv = { from: sig.peerId, type: sig.type === 'webrtc-offer' ? 'offer' : sig.type === 'webrtc-answer' ? 'answer' : sig.type === 'webrtc-ice' ? 'candidate' : sig.type === 'webrtc-hangup' ? 'hangup' : sig.type };
-    if (sig.sdp) { const sdp = JSON.parse(sig.sdp); if (conv.type === 'offer') conv.offer = sdp; else if (conv.type === 'answer') conv.answer = sdp; else if (conv.type === 'candidate') conv.candidate = sdp; }
-    handleIncomingSignal(conv);
-}
-
-async function initWebRTC() { if (pc) { try { pc.close(); } catch(e) {}; pc = null; } try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: false }); } catch (e) { rMsg('Ошибка доступа к микрофону!'); throw e; } pc = new RTCPeerConnection(rtcConfig); stream.getTracks().forEach(track => pc.addTrack(track, stream)); pc.ontrack = (event) => { if (event.streams[0]) { remoteAudio.srcObject = event.streams[0]; remoteAudio.play().catch(() => {}); } }; pc.onicecandidate = (event) => { if (event.candidate) sendSignalingMessage({ type: 'candidate', candidate: event.candidate }); }; pc.oniceconnectionstatechange = () => { if (pc.iceConnectionState === 'failed') handleHangup(false); }; }
+async function initWebRTC() { if (pc) { try { pc.close(); } catch(e) {}; pc = null; } try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: false }); } catch (e) { rMsg('Ошибка доступа к микрофону!'); throw e; } pc = new RTCPeerConnection(rtcConfig); stream.getTracks().forEach(track => pc.addTrack(track, stream)); pc.ontrack = (event) => { if (event.streams[0]) { remoteAudio.srcObject = event.streams[0]; remoteAudio.play().catch(() => {}); } }; pc.onicecandidate = (event) => { if (event.candidate) { const c = event.candidate.candidate; if (!c.includes('tcp') && !c.includes('TCP')) { candidateCount++; sendSignalingMessage({ type: 'candidate', candidate: event.candidate }); } } }; pc.oniceconnectionstatechange = () => { if (pc.iceConnectionState === 'failed') handleHangup(false); }; }
 function cleanupWebRTC() { if (pc) { try { pc.close(); } catch(e) {}; pc = null; } if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } remoteAudio.srcObject = null; }
 
-async function makeCall() { if (!activeChannelId) return rMsg('Нет канала'); callActive = true; showCallScreen('outgoing'); startWelk(); await initWebRTC(); const offer = await pc.createOffer({ offerToReceiveAudio: true }); await pc.setLocalDescription(offer); await new Promise(r => { if (pc.iceGatheringState === 'complete') r(); else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') r(); }; }); sendSignalingMessage({ type: 'offer', offer: pc.localDescription }); }
-async function acceptCall() { if (!incomingOffer) return; stopMelodi(); callActive = true; showCallScreen('active'); startCallTimer(); await initWebRTC(); await pc.setRemoteDescription(new RTCSessionDescription(incomingOffer)); const answer = await pc.createAnswer({ offerToReceiveAudio: true }); await pc.setLocalDescription(answer); await new Promise(r => { if (pc.iceGatheringState === 'complete') r(); else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') r(); }; }); sendSignalingMessage({ type: 'answer', answer: pc.localDescription }); incomingOffer = null; }
+async function makeCall() { if (!activeChannelId) return rMsg('Нет канала'); callActive = true; showCallScreen('outgoing'); startWelk(); await initWebRTC(); candidateCount = 0; const offer = await pc.createOffer({ offerToReceiveAudio: true }); await pc.setLocalDescription(offer); await Promise.race([new Promise(r => { if (pc.iceGatheringState === 'complete') r(); else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') r(); }; }), new Promise(r => setTimeout(r, 3000))]); sendSignalingMessage({ type: 'offer', offer: pc.localDescription }); }
+async function acceptCall() { if (!incomingOffer) return; stopMelodi(); callActive = true; showCallScreen('active'); startCallTimer(); await initWebRTC(); candidateCount = 0; await pc.setRemoteDescription(new RTCSessionDescription(incomingOffer)); const answer = await pc.createAnswer({ offerToReceiveAudio: true }); await pc.setLocalDescription(answer); await Promise.race([new Promise(r => { if (pc.iceGatheringState === 'complete') r(); else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') r(); }; }), new Promise(r => setTimeout(r, 3000))]); sendSignalingMessage({ type: 'answer', answer: pc.localDescription }); incomingOffer = null; }
 function handleHangup(isInitiator = true) { stopWelk(); stopMelodi(); stopCallTimer(); if (isInitiator && activeChannelId && callActive) sendSignalingMessage({ type: 'hangup' }); cleanupWebRTC(); callActive = false; incomingOffer = null; showIdleScreen(); rMsg('Вызов завершен'); }
 function handleIncomingSignal(payload) { if (payload.from === P2PPong._peerId) return; switch (payload.type) { case 'offer': if (callActive) { sendSignalingMessage({ type: 'hangup' }); return; } incomingOffer = new RTCSessionDescription(payload.offer); showCallScreen('incoming'); startMelodi(); break; case 'answer': if (pc && callActive) { stopWelk(); pc.setRemoteDescription(new RTCSessionDescription(payload.answer)); showCallScreen('active'); startCallTimer(); } break; case 'candidate': if (pc && payload.candidate) pc.addIceCandidate(new RTCIceCandidate(payload.candidate)).catch(() => {}); break; case 'hangup': handleHangup(false); break; } }
 
