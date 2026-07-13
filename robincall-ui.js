@@ -90,7 +90,71 @@ async function performDestruction(channelId, source = 'local') { stopSignalListe
 function getAvatarUrl(s) { if (!s || s === 'icons/01icon.png') return 'assets/icons/01icon.png'; if (s === '001') return 'assets/avatar/001ava.png'; if (s.startsWith('assets/')) return s.endsWith('.png') ? s : s + 'ava.png'; if (s.includes('/')) return s.endsWith('.png') ? s : s + 'ava.png'; return 'assets/avatar/' + s + 'ava.png'; }
 function loadAvatars() { const list = $('avatar-list'); if (!list) return; list.innerHTML = ''; const f = document.createDocumentFragment(); avatars.forEach(src => { const img = document.createElement('img'); img.src = src; img.className = 'avatar-option'; img.loading = 'lazy'; img.onerror = () => img.src = 'assets/icons/01icon.png'; img.onclick = () => { $('profile-avatar-small').src = src; $('robin-avatar').src = src; selectedAvatar = src.includes('/') ? src.split('/').pop()?.replace('ava.png', '') || 'icons/01icon.png' : src; try { localStorage.setItem('robinhood_avatar', src); } catch (e) {} P2PPong.setMyProfile($('nick-label')?.textContent || 'Лучник', selectedAvatar); closeSheets(); rMsg('🖼 Аватар обновлён'); }; f.appendChild(img); }); list.appendChild(f); }
 function applyTheme(id) { document.documentElement.setAttribute('data-theme', id); try { localStorage.setItem('robinhood_theme', id); } catch (e) {} const tn = $('theme-name'); if (tn) tn.textContent = (themes.find(t => t.id === id) || themes[0]).name; }
-function generateRandomTheme() { const hue = Math.floor(Math.random() * 360), sat = 40 + Math.floor(Math.random() * 50), bl = 5 + Math.floor(Math.random() * 15), bd = 2 + Math.floor(Math.random() * 8), id = 'random_' + Date.now(); const s = `[data-theme="${id}"]{--bg-primary:hsl(${hue},${sat}%,${bl}%);--bg-secondary:hsl(${hue},${sat-10}%,${bd}%);--accent:hsl(${(hue+30)%360},${sat+10}%,50%);--accent-light:hsl(${(hue+30)%360},${sat+20}%,70%);--text:hsl(${hue},20%,85%);--text-bright:hsl(${hue},25%,92%);--text-dim:hsl(${hue},15%,60%);--border:hsl(${(hue+30)%360},${sat+10}%,50%);--btn-bg:hsla(${(hue+30)%360},${sat+10}%,50%,0.1);--btn-border:hsla(${(hue+30)%360},${sat+10}%,50%,0.3);--btn-hover:hsla(${(hue+30)%360},${sat+10}%,50%,0.25);--sheet-bg:linear-gradient(145deg,hsl(${hue},${sat}%,${bl}%)0%,hsl(${hue},${sat-10}%,${bd}%)100%);--input-bg:hsla(${hue},${sat-10}%,${bl+2}%,0.9);--robin-bg:hsla(${hue},${sat}%,${bl+8}%,0.9);--robin-accent:hsl(${(hue+30)%360},${sat+20}%,65%);--overlay-bg:rgba(0,0,0,0.6);--call-bg:linear-gradient(180deg,hsl(${hue},${sat}%,${bl}%)0%,hsl(${hue},${sat-10}%,${bd}%)100%);--call-btn-bg:hsla(${(hue+30)%360},${sat+10}%,50%,0.1);--call-btn-border:hsla(${(hue+30)%360},${sat+10}%,50%,0.3);--input-text:hsl(${hue},20%,85%)}`; let el = document.getElementById('gen-theme'); if (!el) { el = document.createElement('style'); el.id = 'gen-theme'; document.head.appendChild(el); } el.textContent = s; document.documentElement.setAttribute('data-theme', id); $('theme-name').textContent = 'Авто'; try { localStorage.setItem('robinhood_theme', id); } catch (e) {} }
+function generateRandomTheme() {
+    const hue = Math.floor(Math.random() * 360),
+          sat = 40 + Math.floor(Math.random() * 50),
+          bgLight = 5 + Math.floor(Math.random() * 15),
+          bgDark = 2 + Math.floor(Math.random() * 8),
+          id = 'random_' + Date.now();
+    
+    function hslToRgb(h, s, l) {
+        let r, g, b;
+        if (s === 0) { r = g = b = l; }
+        else {
+            const hue2rgb = (p, q, t) => {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1/6) return p + (q - p) * 6 * t;
+                if (t < 1/2) return q;
+                if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                return p;
+            };
+            const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+            const p = 2 * l - q;
+            r = hue2rgb(p, q, h + 1/3);
+            g = hue2rgb(p, q, h);
+            b = hue2rgb(p, q, h - 1/3);
+        }
+        return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+    }
+    
+    const accentHue = (hue + 30) % 360;
+    const [bgR, bgG, bgB] = hslToRgb(hue / 360, sat / 100, bgLight / 100);
+    const [bg2R, bg2G, bg2B] = hslToRgb(hue / 360, (sat - 10) / 100, bgDark / 100);
+    const [accentR, accentG, accentB] = hslToRgb(accentHue / 360, (sat + 10) / 100, 50 / 100);
+    const [accentLR, accentLG, accentLB] = hslToRgb(accentHue / 360, (sat + 20) / 100, 70 / 100);
+    
+    const s = `[data-theme="${id}"]{
+        --bg-primary: hsl(${hue},${sat}%,${bgLight}%);
+        --bg-primary-rgb: ${bgR}, ${bgG}, ${bgB};
+        --bg-secondary: hsl(${hue},${sat-10}%,${bgDark}%);
+        --bg-secondary-rgb: ${bg2R}, ${bg2G}, ${bg2B};
+        --accent: hsl(${accentHue},${sat+10}%,50%);
+        --accent-rgb: ${accentR}, ${accentG}, ${accentB};
+        --accent-light: hsl(${accentHue},${sat+20}%,70%);
+        --accent-light-rgb: ${accentLR}, ${accentLG}, ${accentLB};
+        --text: hsl(${hue},20%,85%);
+        --text-bright: hsl(${hue},25%,92%);
+        --text-dim: hsl(${hue},15%,60%);
+        --border: hsl(${accentHue},${sat+10}%,50%);
+        --btn-bg: hsla(${accentHue},${sat+10}%,50%,0.1);
+        --btn-border: hsla(${accentHue},${sat+10}%,50%,0.3);
+        --btn-hover: hsla(${accentHue},${sat+10}%,50%,0.25);
+        --input-bg: hsla(${hue},${sat-10}%,${bgLight+2}%,0.9);
+        --input-text: hsl(${hue},20%,85%);
+        --robin-accent: hsl(${accentHue},${sat+20}%,65%);
+        --overlay-bg: rgba(0,0,0,0.6);
+        --call-bg: linear-gradient(180deg,hsl(${hue},${sat}%,${bgLight}%)0%,hsl(${hue},${sat-10}%,${bgDark}%)100%);
+    }`;
+    
+    let el = document.getElementById('gen-theme');
+    if (!el) { el = document.createElement('style'); el.id = 'gen-theme'; document.head.appendChild(el); }
+    el.textContent = s;
+    document.documentElement.setAttribute('data-theme', id);
+    const tn = document.getElementById('theme-name');
+    if (tn) tn.textContent = 'Авто';
+    try { localStorage.setItem('robinhood_theme', id); } catch (e) {}
+}
 function applyBackground(index) { const vbg = document.querySelector('.video-bg'); if (!vbg) return; const bg = videoBackgrounds[index]; $('videobg-name').textContent = bg.name; if (bg.type === 'image') { vbg.pause(); vbg.removeAttribute('src'); vbg.querySelector('source')?.removeAttribute('src'); vbg.load(); vbg.style.backgroundImage = `url('${bg.src}')`; vbg.style.backgroundSize = 'cover'; vbg.style.backgroundPosition = 'center'; vbg.style.display = 'block'; vbg.style.opacity = '1'; } else { vbg.style.backgroundImage = ''; vbg.style.backgroundSize = ''; vbg.style.backgroundPosition = ''; vbg.querySelector('source').src = bg.src; vbg.load(); vbg.play(); vbg.style.display = ''; vbg.style.opacity = '0.35'; } }
 function cycleBackground() { currentBgIndex = (currentBgIndex + 1) % videoBackgrounds.length; applyBackground(currentBgIndex); }
 function showVerifyModal(c) { if (verificationModalShown) return; verificationModalShown = true; verificationDone = false; window._verifyCode = c; window._verifyInput = ''; $('verify-instruction').textContent = 'Введи 7-значный код'; $('verify-error').style.display = 'none'; $('verify-code-display').textContent = '_______'; const grid = $('verify-code-grid'); grid.innerHTML = ''; for (let i = 1; i <= 9; i++) { const btn = document.createElement('button'); btn.textContent = i; btn.className = 'lock-num'; btn.onclick = () => addVerifyDigit(i.toString()); grid.appendChild(btn); } const btn0 = document.createElement('button'); btn0.textContent = '0'; btn0.className = 'lock-num'; btn0.onclick = () => addVerifyDigit('0'); grid.appendChild(btn0); const btnDel = document.createElement('button'); btnDel.textContent = '⌫'; btnDel.className = 'lock-num'; btnDel.style.background = 'rgba(244,67,54,0.3)'; btnDel.onclick = () => { window._verifyInput = window._verifyInput.slice(0, -1); $('verify-code-display').textContent = window._verifyInput.padEnd(7, '_'); }; grid.appendChild(btnDel); $('btn-verify-reset').onclick = () => { window._verifyInput = ''; $('verify-code-display').textContent = '_______'; }; $('verify-modal')?.classList.add('active'); }
