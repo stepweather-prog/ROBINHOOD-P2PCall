@@ -200,6 +200,9 @@
         #verify-code-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:240px;margin:12px auto}
         .lock-num{width:65px;height:65px;font-size:1.8em;border-radius:50%;border:2px solid var(--border);background:var(--btn-bg);color:var(--text);cursor:pointer}
         .lock-num:active{background:var(--accent)}
+        
+        #remote-video { width:100%; max-width:300px; border-radius:14px; background:rgba(0,0,0,0.3); display:none; object-fit:cover; }
+        #local-video { position:absolute; top:10px; right:10px; width:100px; height:140px; border-radius:10px; background:rgba(0,0,0,0.5); display:none; object-fit:cover; border:2px solid rgba(var(--accent-rgb),0.5); z-index:2; }
     </style>
 </head>
 <body>
@@ -215,10 +218,11 @@
     <div class="header-row-2">
         <div class="header-btn" id="btn-avatar"><img src="assets/icons/01icon.png" class="header-avatar" id="profile-avatar-small" alt="avatar"></div>
         <div class="header-btn" id="btn-craft"><img src="assets/icons/08icon.png" alt="craft"></div>        
+        <div class="header-btn" id="btn-videocall"><img src="assets/icons/04icon.png" alt="video"></div>
         <div class="header-btn" id="btn-clear"><img src="assets/icons/18icon.png" alt="clear"></div>
         <div class="header-btn" id="btn-settings"><img src="assets/icons/11icon.png" alt="settings"></div>
     </div>
-    <div class="header-row-3"><span class="header-label" id="nick-label">Твой ник</span><span class="header-label">Открыть колчан</span><span class="header-label">Скурить чат</span><span class="header-label">Опции Шервуда</span></div>
+    <div class="header-row-3"><span class="header-label" id="nick-label">Твой ник</span><span class="header-label">Открыть колчан</span><span class="header-label">Видеозвонок</span><span class="header-label">Скурить чат</span><span class="header-label">Опции Шервуда</span></div>
     <div class="robin-bar" id="robin-bar"><img src="assets/icons/01icon.png" class="robin-bar-avatar" id="robin-avatar"><div class="robin-bar-text"><div class="robin-bar-sender" id="robin-bar-sender">RobinCall</div><div class="robin-bar-msg" id="robin-text">Святые сокеты стабильны!</div></div></div>
 </div>
 
@@ -227,7 +231,9 @@
         <button class="btn-main" id="btn-main-action"><img src="assets/icons/08icon.png" alt="craft"></button>
     </div>
     
-    <div id="call-screen" class="hidden" style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;">
+    <div id="call-screen" class="hidden" style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;position:relative;">
+        <video id="local-video" autoplay playsinline muted></video>
+        <video id="remote-video" autoplay playsinline></video>
         <div class="hidden volume-controls" id="volume-controls">
             <span style="font-size:0.7em;color:var(--text-dim);">🎤</span>
             <input type="range" id="mic-volume" min="0" max="100" value="100" class="volume-slider" style="flex:1;">
@@ -248,6 +254,7 @@
         </div>
         <div class="controls-row hidden" id="active-row">
             <button class="btn-round" id="btn-mic">🎤</button>
+            <button class="btn-round" id="btn-video">📹</button>
             <button class="btn-round btn-hangup" id="btn-end-call"><img src="assets/icons/17icon.png" alt="end"></button>
             <button class="btn-round" id="btn-speaker">🔊</button>
         </div>
